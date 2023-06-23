@@ -318,23 +318,14 @@ public final class Long extends Number
 
         char[] hex256 = DigitCache.HEX256;
 
-        int i0 = ((int) (i >> 56)) & 0xff;
-        int i1 = ((int) (i >> 48)) & 0xff;
-        int i2 = ((int) (i >> 40)) & 0xff;
-        int i3 = ((int) (i >> 32)) & 0xff;
-        int i4 = ((int) (i >> 24)) & 0xff;
-        int i5 = ((int) (i >> 16)) & 0xff;
-        int i6 = ((int) (i >> 8)) & 0xff;
-        int i7 = ((int) i) & 0xff;
-
-        char c0 = hex256[i0];
-        char c1 = hex256[i1];
-        char c2 = hex256[i2];
-        char c3 = hex256[i3];
-        char c4 = hex256[i4];
-        char c5 = hex256[i5];
-        char c6 = hex256[i6];
-        char c7 = hex256[i7];
+        char c0 = hex256[((int) (i >> 56)) & 0xff];
+        char c1 = hex256[((int) (i >> 48)) & 0xff];
+        char c2 = hex256[((int) (i >> 40)) & 0xff];
+        char c3 = hex256[((int) (i >> 32)) & 0xff];
+        char c4 = hex256[((int) (i >> 24)) & 0xff];
+        char c5 = hex256[((int) (i >> 16)) & 0xff];
+        char c6 = hex256[((int) (i >> 8)) & 0xff];
+        char c7 = hex256[((int) i) & 0xff];
 
         byte[] buf;
 
@@ -412,23 +403,14 @@ public final class Long extends Number
     private static String toHexStringUTF16(long i) {
         char[] hex256 = DigitCache.HEX256;
 
-        int i0 = ((int) (i >> 56)) & 0xff;
-        int i1 = ((int) (i >> 48)) & 0xff;
-        int i2 = ((int) (i >> 40)) & 0xff;
-        int i3 = ((int) (i >> 32)) & 0xff;
-        int i4 = ((int) (i >> 24)) & 0xff;
-        int i5 = ((int) (i >> 16)) & 0xff;
-        int i6 = ((int) (i >> 8)) & 0xff;
-        int i7 = ((int) i) & 0xff;
-
-        char c0 = hex256[i0];
-        char c1 = hex256[i1];
-        char c2 = hex256[i2];
-        char c3 = hex256[i3];
-        char c4 = hex256[i4];
-        char c5 = hex256[i5];
-        char c6 = hex256[i6];
-        char c7 = hex256[i7];
+        char c0 = hex256[((int) (i >> 56)) & 0xff];
+        char c1 = hex256[((int) (i >> 48)) & 0xff];
+        char c2 = hex256[((int) (i >> 40)) & 0xff];
+        char c3 = hex256[((int) (i >> 32)) & 0xff];
+        char c4 = hex256[((int) (i >> 24)) & 0xff];
+        char c5 = hex256[((int) (i >> 16)) & 0xff];
+        char c6 = hex256[((int) (i >> 8)) & 0xff];
+        char c7 = hex256[((int) i) & 0xff];
 
         final int off = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0;
 

@@ -294,15 +294,10 @@ public final class Integer extends Number
 
         char[] hex256 = Long.DigitCache.HEX256;
 
-        int i0 = (i >> 24) & 0xff;
-        int i1 = (i >> 16) & 0xff;
-        int i2 = (i >> 8) & 0xff;
-        int i3 = i & 0xff;
-
-        char c0 = hex256[i0];
-        char c1 = hex256[i1];
-        char c2 = hex256[i2];
-        char c3 = hex256[i3];
+        char c0 = hex256[(i >> 24) & 0xff];
+        char c1 = hex256[(i >> 16) & 0xff];
+        char c2 = hex256[(i >> 8) & 0xff];
+        char c3 = hex256[i & 0xff];
 
         byte[] buf;
         if ((i >> 4) == 0) {
@@ -342,15 +337,10 @@ public final class Integer extends Number
     private static String toHexStringUTF16(int i) {
         char[] hex256 = Long.DigitCache.HEX256;
 
-        int i0 = (i >> 24) & 0xff;
-        int i1 = (i >> 16) & 0xff;
-        int i2 = (i >> 8) & 0xff;
-        int i3 = i & 0xff;
-
-        char c0 = hex256[i0];
-        char c1 = hex256[i1];
-        char c2 = hex256[i2];
-        char c3 = hex256[i3];
+        char c0 = hex256[(i >> 24) & 0xff];
+        char c1 = hex256[(i >> 16) & 0xff];
+        char c2 = hex256[(i >> 8) & 0xff];
+        char c3 = hex256[i & 0xff];
 
         byte[] buf;
 
