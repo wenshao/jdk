@@ -27,6 +27,7 @@ package java.lang;
 
 import jdk.internal.misc.CDS;
 import jdk.internal.misc.VM;
+import jdk.internal.util.ByteArray;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -159,6 +160,10 @@ public final class Integer extends Number
             return toString(i);
         }
 
+        if (radix == 16) {
+            return toHexString(i);
+        }
+
         if (COMPACT_STRINGS) {
             byte[] buf = new byte[33];
             boolean negative = (i < 0);
@@ -283,7 +288,129 @@ public final class Integer extends Number
      * @since   1.0.2
      */
     public static String toHexString(int i) {
-        return toUnsignedString0(i, 4);
+        if (!COMPACT_STRINGS) {
+            return toHexStringUTF16(i);
+        }
+
+        char[] hex256 = Long.DigitCache.HEX256;
+
+        int i0 = (i >> 24) & 0xff;
+        int i1 = (i >> 16) & 0xff;
+        int i2 = (i >> 8) & 0xff;
+        int i3 = i & 0xff;
+
+        char c0 = hex256[i0];
+        char c1 = hex256[i1];
+        char c2 = hex256[i2];
+        char c3 = hex256[i3];
+
+        byte[] buf;
+        if ((i >> 4) == 0) {
+            buf = new byte[1];
+            buf[0] = (byte) c3;
+        } else if ((i >> 8) == 0) {
+            buf = new byte[2];
+            ByteArray.setChar(buf, 0, c3);
+        } else if ((i >> 12) == 0) {
+            buf = new byte[3];
+            buf[0] = (byte) c2;
+            ByteArray.setChar(buf, 1, c3);
+        } else if ((i >> 16) == 0) {
+            buf = new byte[4];
+            ByteArray.setInt(buf, 0, (c2 << 16) | c3);
+        } else if ((i >> 20) == 0) {
+            buf = new byte[5];
+            buf[0] = (byte) c1;
+            ByteArray.setInt(buf, 1, (c2 << 16) | c3);
+        } else if ((i >> 24) == 0) {
+            buf = new byte[6];
+            ByteArray.setChar(buf, 0, c1);
+            ByteArray.setInt(buf, 2, (c2 << 16) | c3);
+        } else if ((i >> 28) == 0) {
+            buf = new byte[7];
+            buf[0] = (byte) c0;
+            ByteArray.setChar(buf, 1, c1);
+            ByteArray.setInt(buf, 3, (c2 << 16) | c3);
+        } else {
+            buf = new byte[8];
+            ByteArray.setLong(buf, 0, ((long) c0 << 48) | ((long) c1 << 32) | ((long) c2 << 16) | c3);
+        }
+
+        return new String(buf, LATIN1);
+    }
+
+    private static String toHexStringUTF16(int i) {
+        char[] hex256 = Long.DigitCache.HEX256;
+
+        int i0 = (i >> 24) & 0xff;
+        int i1 = (i >> 16) & 0xff;
+        int i2 = (i >> 8) & 0xff;
+        int i3 = i & 0xff;
+
+        char c0 = hex256[i0];
+        char c1 = hex256[i1];
+        char c2 = hex256[i2];
+        char c3 = hex256[i3];
+
+        byte[] buf;
+
+        final int off = StringUTF16.isBigEndian() ? 1 : 0;
+
+        if ((i >> 4) == 0) {
+            buf = new byte[2];
+            buf[off] = (byte) c3;
+        } else if ((i >> 8) == 0) {
+            buf = new byte[4];
+            buf[off] = (byte) (c3 >> 8);
+            buf[2 + off] = (byte) c3;
+        } else if ((i >> 12) == 0) {
+            buf = new byte[6];
+            buf[off] = (byte) c2;
+            buf[2 + off] = (byte) (c3 >> 8);
+            buf[4 + off] = (byte) c3;
+        } else if ((i >> 16) == 0) {
+            buf = new byte[8];
+            buf[off] = (byte) (c2 >> 8);
+            buf[2 + off] = (byte) c2;
+            buf[4 + off] = (byte) (c3 >> 8);
+            buf[6 + off] = (byte) c3;
+        } else if ((i >> 20) == 0) {
+            buf = new byte[10];
+            buf[off] = (byte) c1;
+            buf[2 + off] = (byte) (c2 >> 8);
+            buf[4 + off] = (byte) c2;
+            buf[6 + off] = (byte) (c3 >> 8);
+            buf[8 + off] = (byte) c3;
+        } else if ((i >> 24) == 0) {
+            buf = new byte[12];
+            buf[off] = (byte) (c1 >> 8);
+            buf[2 + off] = (byte) c1;
+            buf[4 + off] = (byte) (c2 >> 8);
+            buf[6 + off] = (byte) c2;
+            buf[8 + off] = (byte) (c3 >> 8);
+            buf[10 + off] = (byte) c3;
+        } else if ((i >> 28) == 0) {
+            buf = new byte[14];
+            buf[off] = (byte) c0;
+            buf[2 + off] = (byte) (c1 >> 8);
+            buf[4 + off] = (byte) c1;
+            buf[6 + off] = (byte) (c2 >> 8);
+            buf[8 + off] = (byte) c2;
+            buf[10 + off] = (byte) (c3 >> 8);
+            buf[12 + off] = (byte) c3;
+        } else {
+            buf = new byte[16];
+            buf[off] = (byte) (c0 >> 8);
+            buf[2 + off] = (byte) c0;
+            buf[4 + off] = (byte) (c1 >> 8);
+            buf[6 + off] = (byte) c1;
+            buf[8 + off] = (byte) (c2 >> 8);
+            buf[10 + off] = (byte) c2;
+            buf[12 + off] = (byte) (c3 >> 8);
+            buf[14 + off] = (byte) c3;
+        }
+
+        return new String(buf, UTF16);
     }
 
     /**
