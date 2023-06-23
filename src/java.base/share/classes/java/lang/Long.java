@@ -31,11 +31,11 @@ import java.lang.constant.Constable;
 import java.lang.constant.ConstantDesc;
 import java.math.*;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
 import jdk.internal.misc.CDS;
-import java.util.Arrays;
 import jdk.internal.util.ByteArray;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
@@ -449,12 +449,12 @@ public final class Long extends Number
     }
 
     static String fastUUID(long lsb, long msb) {
+        // code size 320, less than FreqInlineSize 325
         if (COMPACT_STRINGS) {
             char[] H256 = DigitCache.HEX256;
 
             byte[] buf = new byte[36];
-
-            buf[8] = buf[13] = buf[18] = buf[12] = '-';
+            Arrays.fill(buf, 8, 24, (byte) '-');
 
             ByteArray.setLong(
                     buf,
@@ -474,7 +474,8 @@ public final class Long extends Number
                     buf,
                     14,
                     (H256[(((int) msb) >> 8) & 0xff] << 16)
-                            | H256[((int) msb) & 0xff]);
+                            | H256[((int) msb) & 0xff]
+            );
             ByteArray.setInt(
                     buf,
                     19,
