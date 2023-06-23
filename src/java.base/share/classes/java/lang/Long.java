@@ -449,61 +449,6 @@ public final class Long extends Number
     }
 
     static String fastUUID(long lsb, long msb) {
-        // code size 320, less than FreqInlineSize 325
-        if (COMPACT_STRINGS) {
-            char[] H256 = DigitCache.HEX256;
-
-            byte[] buf = new byte[36];
-            Arrays.fill(buf, 8, 24, (byte) '-');
-
-            ByteArray.setLong(
-                    buf,
-                    0,
-                    ((long) H256[((int) (msb >> 56)) & 0xff] << 48)
-                            | ((long) H256[((int) (msb >> 48)) & 0xff] << 32)
-                            | ((long) H256[((int) (msb >> 40)) & 0xff] << 16)
-                            | H256[((int) (msb >> 32)) & 0xff]
-            );
-            ByteArray.setInt(
-                    buf,
-                    9,
-                    (H256[(((int) msb) >> 24) & 0xff] << 16)
-                            | H256[(((int) msb) >> 16) & 0xff]
-            );
-            ByteArray.setInt(
-                    buf,
-                    14,
-                    (H256[(((int) msb) >> 8) & 0xff] << 16)
-                            | H256[((int) msb) & 0xff]
-            );
-            ByteArray.setInt(
-                    buf,
-                    19,
-                    (H256[(((int) (lsb >> 56))) & 0xff] << 16)
-                            | H256[(((int) (lsb >> 48))) & 0xff]
-            );
-            ByteArray.setLong(
-                    buf,
-                    24,
-                    ((long) H256[(((int) (lsb >> 40))) & 0xff] << 48)
-                            | ((long) H256[((int) (lsb >> 32)) & 0xff] << 32)
-                            | ((long) H256[(((int) lsb) >> 24) & 0xff] << 16)
-                            | H256[(((int) lsb) >> 16) & 0xff]
-            );
-            ByteArray.setInt(
-                    buf,
-                    32,
-                    (H256[(((int) lsb) >> 8) & 0xff] << 16)
-                            | H256[((int) lsb) & 0xff]
-            );
-
-            return new String(buf, LATIN1);
-        }
-
-        return fastUUIDUTF16(lsb, msb);
-    }
-
-    static String fastUUIDUTF16(long lsb, long msb) {
         char[] H256 = DigitCache.HEX256;
 
         char i0 = H256[((int) (msb >> 56)) & 0xff];
@@ -522,6 +467,23 @@ public final class Long extends Number
         char i13 = H256[(((int) lsb) >> 16) & 0xff];
         char i14 = H256[(((int) lsb) >> 8) & 0xff];
         char i15 = H256[((int) lsb) & 0xff];
+
+        if (COMPACT_STRINGS) {
+            byte[] buf = new byte[36];
+
+            ByteArray.setLong(buf, 0, ((long) i0 << 48) | ((long) i1 << 32) | ((long) i2 << 16) | i3);
+            buf[8]  = '-';
+            ByteArray.setInt(buf, 9, (i4 << 16) | i5);
+            buf[13] = '-';
+            ByteArray.setInt(buf, 14, (i6 << 16) | i7);
+            buf[18] = '-';
+            ByteArray.setInt(buf, 19, (i8 << 16) | i9);
+            buf[23] = '-';
+            ByteArray.setLong(buf, 24, ((long) i10 << 48) | ((long) i11 << 32) | ((long) i12 << 16) | i13);
+            ByteArray.setInt(buf, 32, (i14 << 16) | i15);
+
+            return new String(buf, LATIN1);
+        }
 
         byte[] buf = new byte[72];
         int off = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN ? 1 : 0;
