@@ -79,6 +79,13 @@ public class Longs {
     }
 
     @Benchmark
+    public void toHexStringSmall(Blackhole bh) {
+        for (long value : longArraySmall) {
+            bh.consume(Long.toHexString(value));
+        }
+    }
+
+    @Benchmark
     public void decode(Blackhole bh) {
         for (String s : strings) {
             bh.consume(Long.decode(s));
@@ -90,6 +97,13 @@ public class Longs {
     public void toStringBig(Blackhole bh) {
         for (long value : longArrayBig) {
             bh.consume(Long.toString(value));
+        }
+    }
+
+    @Benchmark
+    public void toHexStringBig(Blackhole bh) {
+        for (long value : longArrayBig) {
+            bh.consume(Long.toHexString(value));
         }
     }
 

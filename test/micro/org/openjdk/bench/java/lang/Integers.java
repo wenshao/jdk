@@ -98,6 +98,13 @@ public class Integers {
         }
     }
 
+    @Benchmark
+    public void toHexStringSmall(Blackhole bh) {
+        for (int i : intsSmall) {
+            bh.consume(Integer.toHexString(i));
+        }
+    }
+
     /** Performs toString on very small values, just one or two digits. */
     @Benchmark
     public void toStringTiny(Blackhole bh) {
@@ -106,11 +113,25 @@ public class Integers {
         }
     }
 
+    @Benchmark
+    public void toHexStringTiny(Blackhole bh) {
+        for (int i : intsTiny) {
+            bh.consume(Integer.toHexString(i));
+        }
+    }
+
     /** Performs toString on large values, roughly 10 digits. */
     @Benchmark
     public void toStringBig(Blackhole bh) {
         for (int i : intsBig) {
             bh.consume(Integer.toString(i));
+        }
+    }
+
+    @Benchmark
+    public void toHexStringBig(Blackhole bh) {
+        for (int i : intsBig) {
+            bh.consume(Integer.toHexString(i));
         }
     }
 
