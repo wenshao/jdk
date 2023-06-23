@@ -453,7 +453,8 @@ public final class Long extends Number
             char[] H256 = DigitCache.HEX256;
 
             byte[] buf = new byte[36];
-            Arrays.fill(buf, 8, 23, (byte) '-');
+
+            buf[8] = buf[13] = buf[18] = buf[12] = '-';
 
             ByteArray.setLong(
                     buf,
