@@ -427,7 +427,6 @@ import jdk.internal.vm.annotation.IntrinsicCandidate;
     }
 
     @Override
-    @IntrinsicCandidate
     public synchronized StringBuffer append(int i) {
         toStringCache = null;
         super.append(i);

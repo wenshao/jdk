@@ -400,17 +400,14 @@ bool Compile::should_delay_string_inlining(ciMethod* call_method, JVMState* jvms
       case vmIntrinsics::_StringBuilder_int:
       case vmIntrinsics::_StringBuilder_String:
       case vmIntrinsics::_StringBuilder_append_char:
-      case vmIntrinsics::_StringBuilder_append_int:
       case vmIntrinsics::_StringBuilder_append_String:
       case vmIntrinsics::_StringBuilder_toString:
       case vmIntrinsics::_StringBuffer_void:
       case vmIntrinsics::_StringBuffer_int:
       case vmIntrinsics::_StringBuffer_String:
       case vmIntrinsics::_StringBuffer_append_char:
-      case vmIntrinsics::_StringBuffer_append_int:
       case vmIntrinsics::_StringBuffer_append_String:
       case vmIntrinsics::_StringBuffer_toString:
-      case vmIntrinsics::_Integer_toString:
         return true;
 
       case vmIntrinsics::_String_String:

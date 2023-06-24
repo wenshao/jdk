@@ -248,7 +248,6 @@ public final class StringBuilder
     }
 
     @Override
-    @IntrinsicCandidate
     public StringBuilder append(int i) {
         super.append(i);
         return this;
