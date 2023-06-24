@@ -35,6 +35,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.AverageTime)
@@ -54,6 +55,9 @@ public class StringBuilders {
     private StringBuilder sbLatin2;
     private StringBuilder sbUtf16;
     private StringBuilder sbUtf17;
+    private int[] intsTiny;
+    private int[] intsSmall;
+    private int[] intsBig;
 
     @Setup
     public void setup() {
@@ -69,6 +73,18 @@ public class StringBuilders {
         sbLatin2 = new StringBuilder("Latin1 string");
         sbUtf16 = new StringBuilder("UTF-\uFF11\uFF16 string");
         sbUtf17 = new StringBuilder("UTF-\uFF11\uFF16 string");
+
+        int size = 500;
+        intsTiny = new int[size];
+        intsSmall = new int[size];
+        intsBig = new int[size];
+
+        Random r = new Random(0);
+        for (int i = 0; i < size; i++) {
+            intsTiny[i] = r.nextInt(99);
+            intsSmall[i] = 100 * i + i + 103;
+            intsBig[i] = ((100 * i + i) << 24) + 4543 + i * 4;
+        }
     }
 
     @Benchmark
@@ -221,6 +237,36 @@ public class StringBuilders {
         result.append(1337);
         result.append(2100);
         result.append(2600);
+        return result.toString();
+    }
+
+
+    @Benchmark
+    public String toStringCharWithIntTiny() {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < intsTiny.length; i++) {
+            result.append(intsTiny[i]);
+        }
+        return result.toString();
+    }
+
+
+    @Benchmark
+    public String toStringCharWithIntSmall() {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < intsTiny.length; i++) {
+            result.append(intsSmall[i]);
+        }
+        return result.toString();
+    }
+
+
+    @Benchmark
+    public String toStringCharWithIntBig() {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < intsTiny.length; i++) {
+            result.append(intsBig[i]);
+        }
         return result.toString();
     }
 
