@@ -27,6 +27,8 @@ package java.lang;
 
 import jdk.internal.misc.CDS;
 import jdk.internal.misc.VM;
+import jdk.internal.util.ByteArray;
+import jdk.internal.util.DecDigits;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -453,16 +455,100 @@ public final class Integer extends Number
      */
     @IntrinsicCandidate
     public static String toString(int i) {
-        int size = stringSize(i);
-        if (COMPACT_STRINGS) {
-            byte[] buf = new byte[size];
-            getChars(i, size, buf);
-            return new String(buf, LATIN1);
-        } else {
+        if (!COMPACT_STRINGS) {
+            int size = stringSize(i);
             byte[] buf = new byte[size * 2];
             StringUTF16.getChars(i, size, buf);
             return new String(buf, UTF16);
         }
+
+        if (i == Integer.MIN_VALUE) {
+            return "-2147483648";
+        }
+
+        boolean negative = i < 0;
+        final int[] digits = DecDigits.DIGITS;
+        int j = negative ? -i : i;
+
+        int off = 0;
+        final int q1 = j / 1000;
+        if (q1 == 0) {
+            int v = digits[j];
+            final int start = v >> 24;
+            byte[] buf = new byte[3 - start + (negative ? 1 : 0)];
+            if (negative) {
+                buf[0] = '-';
+                off = 1;
+            }
+
+            if (start == 0) {
+                ByteArray.setChar(buf, off, (char) (v >> 8));
+                off += 2;
+            } else if (start == 1) {
+                buf[off++] = (byte) (v >> 8);
+            }
+
+            buf[off] = (byte) v;
+            return new String(buf, LATIN1);
+        }
+
+        final int r1 = j - q1 * 1000;
+        final int q2 = q1 / 1000;
+        final int v1 = digits[r1];
+        if (q2 == 0) {
+            final int v2 = digits[q1];
+            int start = v2 >> 24;
+
+            byte[] buf = new byte[3 - start + (negative ? 4 : 3)];
+            if (negative) {
+                buf[0] = '-';
+                off = 1;
+            }
+
+            if (start == 0) {
+                ByteArray.setChar(buf, off, (char) (v2 >> 8));
+                off += 2;
+            } else if (start == 1) {
+                buf[off++] = (byte) (v2 >> 8);
+            }
+            ByteArray.setInt(buf, off, (v2 << 24) | (v1 & 0xffffff));
+            return new String(buf, LATIN1);
+        }
+
+        final int r2 = q1 - q2 * 1000;
+        final int q3 = q2 / 1000;
+        final int v2 = digits[r2];
+        byte[] buf;
+        if (q3 == 0) {
+            int v = digits[q2];
+            final int start = v >> 24;
+
+            buf = new byte[3 - start + (negative ? 7 : 6)];
+            if (negative) {
+                buf[0] = '-';
+                off = 1;
+            }
+
+            if (start == 0) {
+                ByteArray.setChar(buf, off, (char) (v >> 8));
+                off += 2;
+            } else if (start == 1) {
+                buf[off++] = (byte) (v >> 8);
+            }
+            buf[off++] = (byte) v;
+        } else {
+            buf = new byte[negative ? 11 : 10];
+            if (negative) {
+                buf[0] = '-';
+                off = 1;
+            }
+            ByteArray.setInt(buf, off, ((q3 + '0') << 24) | (digits[q2 - q3 * 1000] & 0xffffff));
+            off += 4;
+        }
+
+        ByteArray.setChar(buf, off, (char) (v2 >> 8));
+        ByteArray.setInt(buf, off + 2, (v2 << 24) | (v1 & 0xffffff));
+        return new String(buf, LATIN1);
     }
 
     /**
