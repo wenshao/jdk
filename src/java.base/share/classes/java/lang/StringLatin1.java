@@ -41,7 +41,6 @@ import static java.lang.String.checkIndex;
 import static java.lang.String.checkOffset;
 
 final class StringLatin1 {
-
     public static char charAt(byte[] value, int index) {
         checkIndex(index, value.length);
         return (char)(value[index] & 0xff);
@@ -423,7 +422,11 @@ final class StringLatin1 {
         // Now check if there are any characters that need to be changed, or are surrogate
         for (first = 0 ; first < len; first++) {
             int cp = value[first] & 0xff;
-            if (cp != CharacterDataLatin1.instance.toLowerCase(cp)) {  // no need to check Character.ERROR
+            if (cp < 'A') {
+                continue;
+            }
+
+            if (cp <= 'Z' || (cp >= 192 && cp <= 222)) {
                 break;
             }
         }
@@ -438,11 +441,10 @@ final class StringLatin1 {
                                                        // lowerCase characters.
         for (int i = first; i < len; i++) {
             int cp = value[i] & 0xff;
-            cp = CharacterDataLatin1.instance.toLowerCase(cp);
-            if (!canEncode(cp)) {                      // not a latin1 character
-                return toLowerCaseEx(str, value, first, locale, false);
+            if ((cp >= 'A' && cp <= 'Z') || (cp >= 192 && cp <= 222)) {
+                cp += 32;
             }
-            result[i] = (byte)cp;
+            result[i] = (byte) cp;
         }
         return new String(result, LATIN1);
     }
@@ -496,8 +498,8 @@ final class StringLatin1 {
 
         // Now check if there are any characters that need to be changed, or are surrogate
         for (first = 0 ; first < len; first++ ) {
-            int cp = value[first] & 0xff;
-            if (cp != CharacterDataLatin1.instance.toUpperCaseEx(cp)) {   // no need to check Character.ERROR
+            int ch = value[first] & 0xff;
+            if ((ch >= 'a' && ch <= 'z') || ch == 181 || ch >= 224) {
                 break;
             }
         }
@@ -513,11 +515,13 @@ final class StringLatin1 {
                                                        // upperCase characters.
         for (int i = first; i < len; i++) {
             int cp = value[i] & 0xff;
-            cp = CharacterDataLatin1.instance.toUpperCaseEx(cp);
-            if (!canEncode(cp)) {                      // not a latin1 character
+            if (cp == 255 || cp == 181) {  // not a latin1 character
                 return toUpperCaseEx(str, value, first, locale, false);
             }
-            result[i] = (byte)cp;
+            if ((cp >= 'a' && cp <= 'z') || cp >= 224) {
+                cp -= 32;
+            }
+            result[i] = (byte) cp;
         }
         return new String(result, LATIN1);
     }
@@ -584,8 +588,8 @@ final class StringLatin1 {
         int length = value.length;
         int left = 0;
         while (left < length) {
-            char ch = getChar(value, left);
-            if (ch != ' ' && ch != '\t' && !CharacterDataLatin1.instance.isWhitespace(ch)) {
+            int ch = value[left] & 0xff;
+            if (ch <= ' ' & ((1L << ch) & 0b111110000000000000011111000000000L) != 0) {
                 break;
             }
             left++;
@@ -597,8 +601,8 @@ final class StringLatin1 {
         int length = value.length;
         int right = length;
         while (0 < right) {
-            char ch = getChar(value, right - 1);
-            if (ch != ' ' && ch != '\t' && !CharacterDataLatin1.instance.isWhitespace(ch)) {
+            int ch = value[right - 1] & 0xff;
+            if (ch <= ' ' & ((1L << ch) & 0b111110000000000000011111000000000L) != 0) {
                 break;
             }
             right--;
