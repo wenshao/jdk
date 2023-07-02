@@ -422,11 +422,7 @@ final class StringLatin1 {
         // Now check if there are any characters that need to be changed, or are surrogate
         for (first = 0 ; first < len; first++) {
             int cp = value[first] & 0xff;
-            if (cp < 'A') {
-                continue;
-            }
-
-            if (cp <= 'Z' || (cp >= 192 && cp <= 222)) {
+            if (cp >= 'A' && (cp <= 'Z' || (cp >= 192 && cp <= 222))) {
                 break;
             }
         }
@@ -441,7 +437,7 @@ final class StringLatin1 {
                                                        // lowerCase characters.
         for (int i = first; i < len; i++) {
             int cp = value[i] & 0xff;
-            if ((cp >= 'A' && cp <= 'Z') || (cp >= 192 && cp <= 222)) {
+            if (cp >= 'A' && (cp <= 'Z' || (cp >= 192 && cp <= 222))) {
                 cp += 32;
             }
             result[i] = (byte) cp;
@@ -499,7 +495,7 @@ final class StringLatin1 {
         // Now check if there are any characters that need to be changed, or are surrogate
         for (first = 0 ; first < len; first++ ) {
             int ch = value[first] & 0xff;
-            if ((ch >= 'a' && ch <= 'z') || ch == 181 || ch >= 224) {
+            if (ch >= 'a' && (ch <= 'z' || ch == 181 || ch >= 224)) {
                 break;
             }
         }
@@ -518,7 +514,7 @@ final class StringLatin1 {
             if (cp == 255 || cp == 181) {  // not a latin1 character
                 return toUpperCaseEx(str, value, first, locale, false);
             }
-            if ((cp >= 'a' && cp <= 'z') || cp >= 224) {
+            if (cp >= 'a' && (cp <= 'z' || cp >= 224)) {
                 cp -= 32;
             }
             result[i] = (byte) cp;
