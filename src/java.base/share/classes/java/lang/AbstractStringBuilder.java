@@ -29,11 +29,13 @@ import jdk.internal.math.DoubleToDecimal;
 import jdk.internal.math.FloatToDecimal;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.util.Arrays;
 import java.util.Spliterator;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
+import jdk.internal.misc.Unsafe;
 import jdk.internal.util.ArraysSupport;
 import jdk.internal.util.Preconditions;
 
@@ -42,6 +44,7 @@ import static java.lang.String.UTF16;
 import static java.lang.String.LATIN1;
 import static java.lang.String.checkIndex;
 import static java.lang.String.checkOffset;
+import static jdk.internal.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
 /**
  * A mutable sequence of characters.
@@ -61,6 +64,32 @@ import static java.lang.String.checkOffset;
  */
 abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
     permits StringBuilder, StringBuffer {
+    private static final Unsafe UNSAFE = Unsafe.getUnsafe();
+
+    private static final int LATIN1_TRUE;
+    private static final int LATIN1_FALS;
+    private static final long UTF16_TRUE;
+    private static final long UTF16_FALS;
+    static {
+        int latin1_true = 't' | ('r' << 8) | ('u' << 16) | ('e' << 24);
+        int latin1_fals = 'f' | ('a' << 8) + ('l' << 16) | ('s' << 24);
+        long utf16_true = Long.expand(latin1_true, 0x00FF00FF00FF00FFL);
+        long utf16_fals = Long.expand(latin1_fals, 0x00FF00FF00FF00FFL);;
+
+        boolean isBigEndian = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
+        if (isBigEndian) {
+            latin1_true = Integer.reverseBytes(latin1_true);
+            latin1_fals = Integer.reverseBytes(latin1_fals);
+            utf16_true = Long.reverseBytes(utf16_true << 8);
+            utf16_fals = Long.reverseBytes(utf16_fals << 8);
+        }
+
+        LATIN1_TRUE = latin1_true;
+        LATIN1_FALS = latin1_fals;
+        UTF16_TRUE = utf16_true;
+        UTF16_FALS = utf16_fals;
+    }
+
     /**
      * The value is used for character storage.
      */
@@ -764,22 +793,33 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         byte[] val = this.value;
         if (isLatin1()) {
             if (b) {
-                val[count++] = 't';
-                val[count++] = 'r';
-                val[count++] = 'u';
-                val[count++] = 'e';
+                UNSAFE.putIntUnaligned(
+                        val,
+                        ARRAY_BYTE_BASE_OFFSET + count,
+                        LATIN1_TRUE);
+                count += 4;
             } else {
-                val[count++] = 'f';
-                val[count++] = 'a';
-                val[count++] = 'l';
-                val[count++] = 's';
-                val[count++] = 'e';
+                UNSAFE.putIntUnaligned(
+                        val,
+                        ARRAY_BYTE_BASE_OFFSET + count,
+                        LATIN1_FALS);
+                val[count + 4] = 'e';
+                count += 5;
             }
         } else {
             if (b) {
-                count = StringUTF16.putCharsAt(val, count, 't', 'r', 'u', 'e');
+                UNSAFE.putLongUnaligned(
+                        val,
+                        ARRAY_BYTE_BASE_OFFSET + (count << 1),
+                        UTF16_TRUE);
+                count += 4;
             } else {
-                count = StringUTF16.putCharsAt(val, count, 'f', 'a', 'l', 's', 'e');
+                UNSAFE.putLongUnaligned(
+                        val,
+                        ARRAY_BYTE_BASE_OFFSET + (count << 1),
+                        UTF16_FALS);
+                StringUTF16.putChar(value, count + 4, 'e');
+                count += 5;
             }
         }
         this.count = count;
