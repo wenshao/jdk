@@ -25,11 +25,16 @@
 
 package java.util;
 
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.ObjectInputStream;
 import java.time.Instant;
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.util.ByteArrayLittleEndian;
 import sun.util.calendar.BaseCalendar;
 import sun.util.calendar.CalendarSystem;
 import sun.util.calendar.CalendarUtils;
@@ -128,6 +133,8 @@ import sun.util.calendar.ZoneInfo;
 public class Date
     implements java.io.Serializable, Cloneable, Comparable<Date>
 {
+    private static final JavaLangAccess jla = SharedSecrets.getJavaLangAccess();
+
     private static final BaseCalendar gcal =
                                 CalendarSystem.getGregorianCalendar();
     private static BaseCalendar jcal;
@@ -1028,37 +1035,64 @@ public class Date
     public String toString() {
         // "EEE MMM dd HH:mm:ss zzz yyyy";
         BaseCalendar.Date date = normalize();
-        StringBuilder sb = new StringBuilder(28);
+
+        int year = date.getYear();
+        int yearSize = year >= 1000 && year <= 9999 ? 4 : DecimalDigits.stringSize(year);
+
+        byte[] buf = new byte[24 + yearSize];
+
         int index = date.getDayOfWeek();
         if (index == BaseCalendar.SUNDAY) {
             index = 8;
         }
-        convertToAbbr(sb, wtb[index]).append(' ');                        // EEE
-        convertToAbbr(sb, wtb[date.getMonth() - 1 + 2 + 7]).append(' ');  // MMM
-        CalendarUtils.sprintf0d(sb, date.getDayOfMonth(), 2).append(' '); // dd
+        convertToAbbr(buf, 0, wtb[index]); // EEE
+        buf[3] = ' ';
+        convertToAbbr(buf, 4, wtb[date.getMonth() - 1 + 2 + 7]); // MMM
+        buf[7] = ' ';
+        ByteArrayLittleEndian.setShort(
+                buf,
+                8,
+                DecimalDigits.digit(date.getDayOfMonth())); // dd
+        buf[10] = ' ';
+        ByteArrayLittleEndian.setShort(
+                buf,
+                11,
+                DecimalDigits.digit(date.getHours())); // HH
+        buf[13] = ':';
+        ByteArrayLittleEndian.setShort(
+                buf,
+                14,
+                DecimalDigits.digit(date.getMinutes())); // mm
+        buf[16] = ':';
+        ByteArrayLittleEndian.setShort(
+                buf,
+                17,
+                DecimalDigits.digit(date.getSeconds())); // ss
+        buf[19] = ' ';
 
-        CalendarUtils.sprintf0d(sb, date.getHours(), 2).append(':');   // HH
-        CalendarUtils.sprintf0d(sb, date.getMinutes(), 2).append(':'); // mm
-        CalendarUtils.sprintf0d(sb, date.getSeconds(), 2).append(' '); // ss
         TimeZone zi = date.getZone();
-        if (zi != null) {
-            sb.append(zi.getDisplayName(date.isDaylightTime(), TimeZone.SHORT, Locale.US)); // zzz
-        } else {
-            sb.append("GMT");
+        String shortName = zi != null ? zi.getDisplayName(date.isDaylightTime(), TimeZone.SHORT, Locale.US) : "GMT";
+        buf[20] = (byte) shortName.charAt(0);
+        buf[21] = (byte) shortName.charAt(1);
+        buf[22] = (byte) shortName.charAt(2);
+        buf[23] = ' ';
+
+        DecimalDigits.getChars(year, buf.length, buf);
+        try {
+            return jla.newStringNoRepl(buf, StandardCharsets.ISO_8859_1);
+        } catch (CharacterCodingException cce) {
+            throw new AssertionError(cce);
         }
-        sb.append(' ').append(date.getYear());  // yyyy
-        return sb.toString();
     }
 
     /**
      * Converts the given name to its 3-letter abbreviation (e.g.,
-     * "monday" -> "Mon") and stored the abbreviation in the given
-     * {@code StringBuilder}.
+     * "monday" -> "Mon") and stored the abbreviation in the given buf
      */
-    private static final StringBuilder convertToAbbr(StringBuilder sb, String name) {
-        sb.append(Character.toUpperCase(name.charAt(0)));
-        sb.append(name.charAt(1)).append(name.charAt(2));
-        return sb;
+    private static final void convertToAbbr(byte[] buf, int off, String name) {
+        buf[off] = (byte) (name.charAt(0) - 32);
+        buf[off + 1] = (byte) name.charAt(1);
+        buf[off + 2] = (byte) name.charAt(2);
     }
 
     /**
@@ -1118,18 +1152,56 @@ public class Date
     public String toGMTString() {
         // d MMM yyyy HH:mm:ss 'GMT'
         long t = getTime();
-        BaseCalendar cal = getCalendarSystem(t);
         BaseCalendar.Date date =
-            (BaseCalendar.Date) cal.getCalendarDate(getTime(), (TimeZone)null);
-        StringBuilder sb = new StringBuilder(32);
-        CalendarUtils.sprintf0d(sb, date.getDayOfMonth(), 1).append(' '); // d
-        convertToAbbr(sb, wtb[date.getMonth() - 1 + 2 + 7]).append(' ');  // MMM
-        sb.append(date.getYear()).append(' ');                            // yyyy
-        CalendarUtils.sprintf0d(sb, date.getHours(), 2).append(':');      // HH
-        CalendarUtils.sprintf0d(sb, date.getMinutes(), 2).append(':');    // mm
-        CalendarUtils.sprintf0d(sb, date.getSeconds(), 2);                // ss
-        sb.append(" GMT");                                                // ' GMT'
-        return sb.toString();
+            (BaseCalendar.Date) getCalendarSystem(t)
+                    .getCalendarDate(getTime(), (TimeZone)null);
+
+        int year = date.getYear();
+        int yearSize = year >= 1000 && year <= 9999 ? 4 : DecimalDigits.stringSize(year);
+        int dayOfMonth = date.getDayOfMonth();
+
+        byte[] buf = new byte[(dayOfMonth < 10 ? 19 : 20) + yearSize];
+        int off;
+        if (dayOfMonth < 10) {
+            buf[0] = (byte) ('0' + dayOfMonth);
+            off = 1;
+        } else {
+            ByteArrayLittleEndian.setShort(
+                    buf,
+                    0,
+                    DecimalDigits.digit(dayOfMonth)); // dd
+            off = 2;
+        }
+        buf[off++] = ' ';
+        convertToAbbr(buf, off, wtb[date.getMonth() + 8]); // EEE
+        buf[off + 3] = ' ';
+        DecimalDigits.getChars(year, off + yearSize + 4, buf);
+        off += yearSize + 4;
+        buf[off++] = ' ';
+        ByteArrayLittleEndian.setShort(
+                buf,
+                off,
+                DecimalDigits.digit(date.getHours())); // HH
+        buf[off + 2] = ':';
+        ByteArrayLittleEndian.setShort(
+                buf,
+                off + 3,
+                DecimalDigits.digit(date.getMinutes())); // mm
+        buf[off + 5] = ':';
+        ByteArrayLittleEndian.setShort(
+                buf,
+                off + 6,
+                DecimalDigits.digit(date.getSeconds())); // mm
+        buf[off + 8] = ' ';
+        buf[off + 9] = 'G';
+        buf[off + 10] = 'M';
+        buf[off + 11] = 'T';
+
+        try {
+            return jla.newStringNoRepl(buf, StandardCharsets.ISO_8859_1);
+        } catch (CharacterCodingException cce) {
+            throw new AssertionError(cce);
+        }
     }
 
     /**
