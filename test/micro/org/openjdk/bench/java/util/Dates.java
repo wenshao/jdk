@@ -30,6 +30,7 @@ import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.Date;
@@ -50,6 +51,13 @@ public class Dates {
     int minutes = 47;
     int seconds = 12;
 
+    Date date;
+
+    @Setup
+    public void setup() {
+        date = new Date(1693836447048L);
+    }
+
     @Benchmark
     public Date testEmptyConstructor() {
         return new Date();
@@ -62,5 +70,11 @@ public class Dates {
         minutes++;
         seconds++;
         return new Date(year, month, day, hours, minutes, seconds);
+    }
+
+    /** Test Date.toString() */
+    @Benchmark
+    public void testToString() {
+        date.toString();
     }
 }
