@@ -1973,7 +1973,6 @@ public final class LocalDateTime
     @Override
     public String toString() {
         int yearSize = LocalDate.yearSize(date.getYear());
-
         int nano = time.getNano();
         int nanoSize = LocalTime.nanoSize(nano);
 

@@ -1932,7 +1932,6 @@ public final class OffsetDateTime
     @SuppressWarnings("deprecation")
     public String toString() {
         int yearSize = LocalDate.yearSize(dateTime.getYear());
-
         int nano = dateTime.getNano();
         int nanoSize = LocalTime.nanoSize(nano);
 

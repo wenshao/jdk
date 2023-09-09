@@ -2174,7 +2174,6 @@ public final class LocalDate
 
     int getChars(byte[] buf, int off) {
         int year = this.year;
-
         int yearSize = yearSize(year);
         int yearAbs = Math.abs(year);
         if (yearAbs < 1000) {
