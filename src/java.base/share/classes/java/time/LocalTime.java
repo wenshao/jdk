@@ -1688,10 +1688,10 @@ public final class LocalTime
                 buf,
                 off + 3,
                 jla.digitPair(minute)); // minute
-        buf[off + 4] = ':';
+        buf[off + 5] = ':';
         ByteArrayLittleEndian.setShort(
                 buf,
-                off + 5,
+                off + 6,
                 jla.digitPair(second)); // second
         return off + 8;
     }
@@ -1711,7 +1711,7 @@ public final class LocalTime
         off += 4;
 
         int rem1 = nano - div * 1000;
-        int v = 0;
+        int v;
         if (rem1 == 0) {
             int rem2 = div - div2 * 1000;
             if (rem2 == 0) {
@@ -1726,15 +1726,16 @@ public final class LocalTime
         ByteArrayLittleEndian.setShort(
                 buf,
                 off,
-                (short) v
+                (short) (v >> 8)
         );
+        off += 2;
 
         if (rem1 == 0) {
-            buf[off + 2] = (byte) (v >> 24);
+            buf[off] = (byte) (v >> 24);
         } else {
             ByteArrayLittleEndian.setInt(
                     buf,
-                    off + 2,
+                    off,
                     DIGITS_K[rem1] & 0xffffff00 | (v >> 24)
             );
         }

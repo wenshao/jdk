@@ -1938,7 +1938,7 @@ public final class OffsetDateTime
 
         String offSetId = offset.getId();
 
-        byte[] buf = new byte[yearSize + 15 + offSetId.length()];
+        byte[] buf = new byte[yearSize + 15 + nanoSize + offSetId.length()];
 
         int off = toLocalDate().getChars(buf, 0);
         buf[off] = 'T';

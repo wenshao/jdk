@@ -2167,7 +2167,7 @@ public final class LocalDate
 
     static int yearSize(int year) {
         if (Math.abs(year) < 1000) {
-            return year < 0 ? 4 : 5;
+            return year < 0 ? 5 : 4;
         }
         return jla.stringSize(year) + (year > 9999 ? 1 : 0);
     }
@@ -2176,12 +2176,13 @@ public final class LocalDate
         int year = this.year;
 
         int yearSize = yearSize(year);
-        if (Math.abs(year) < 1000) {
+        int yearAbs = Math.abs(year);
+        if (yearAbs < 1000) {
             if (year < 0) {
-                buf[off] = '+';
+                buf[off] = '-';
             }
-            int y01 = year / 100;
-            int y23 = year - y01 * 100;
+            int y01 = yearAbs / 100;
+            int y23 = yearAbs - y01 * 100;
 
             ByteArrayLittleEndian.setInt(
                     buf,

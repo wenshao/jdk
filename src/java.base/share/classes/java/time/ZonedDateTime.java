@@ -2240,7 +2240,7 @@ public final class ZonedDateTime
             offsetLength += zoneLength + 2;
         }
 
-        byte[] buf = new byte[yearSize + 15 + offsetLength];
+        byte[] buf = new byte[yearSize + 15 + nanoSize + offsetLength];
 
         int off = toLocalDate().getChars(buf, 0);
         buf[off] = 'T';
