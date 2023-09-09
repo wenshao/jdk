@@ -1037,7 +1037,7 @@ public class Date
         BaseCalendar.Date date = normalize();
 
         int year = date.getYear();
-        int yearSize = year >= 1000 && year <= 9999 ? 4 : DecimalDigits.stringSize(year);
+        int yearSize = year >= 1000 && year <= 9999 ? 4 : jla.stringSize(year);
 
         byte[] buf = new byte[24 + yearSize];
 
@@ -1052,22 +1052,22 @@ public class Date
         ByteArrayLittleEndian.setShort(
                 buf,
                 8,
-                DecimalDigits.digit(date.getDayOfMonth())); // dd
+                jla.digitPair(date.getDayOfMonth())); // dd
         buf[10] = ' ';
         ByteArrayLittleEndian.setShort(
                 buf,
                 11,
-                DecimalDigits.digit(date.getHours())); // HH
+                jla.digitPair(date.getHours())); // HH
         buf[13] = ':';
         ByteArrayLittleEndian.setShort(
                 buf,
                 14,
-                DecimalDigits.digit(date.getMinutes())); // mm
+                jla.digitPair(date.getMinutes())); // mm
         buf[16] = ':';
         ByteArrayLittleEndian.setShort(
                 buf,
                 17,
-                DecimalDigits.digit(date.getSeconds())); // ss
+                jla.digitPair(date.getSeconds())); // ss
         buf[19] = ' ';
 
         TimeZone zi = date.getZone();
@@ -1077,7 +1077,7 @@ public class Date
         buf[22] = (byte) shortName.charAt(2);
         buf[23] = ' ';
 
-        DecimalDigits.getChars(year, buf.length, buf);
+        jla.getChars(year, buf.length, buf);
         try {
             return jla.newStringNoRepl(buf, StandardCharsets.ISO_8859_1);
         } catch (CharacterCodingException cce) {
@@ -1157,7 +1157,7 @@ public class Date
                     .getCalendarDate(getTime(), (TimeZone)null);
 
         int year = date.getYear();
-        int yearSize = year >= 1000 && year <= 9999 ? 4 : DecimalDigits.stringSize(year);
+        int yearSize = year >= 1000 && year <= 9999 ? 4 : jla.stringSize(year);
         int dayOfMonth = date.getDayOfMonth();
 
         byte[] buf = new byte[(dayOfMonth < 10 ? 19 : 20) + yearSize];
@@ -1169,29 +1169,29 @@ public class Date
             ByteArrayLittleEndian.setShort(
                     buf,
                     0,
-                    DecimalDigits.digit(dayOfMonth)); // dd
+                    jla.digitPair(dayOfMonth)); // dd
             off = 2;
         }
         buf[off++] = ' ';
         convertToAbbr(buf, off, wtb[date.getMonth() + 8]); // EEE
         buf[off + 3] = ' ';
-        DecimalDigits.getChars(year, off + yearSize + 4, buf);
+        jla.getChars(year, off + yearSize + 4, buf);
         off += yearSize + 4;
         buf[off++] = ' ';
         ByteArrayLittleEndian.setShort(
                 buf,
                 off,
-                DecimalDigits.digit(date.getHours())); // HH
+                jla.digitPair(date.getHours())); // HH
         buf[off + 2] = ':';
         ByteArrayLittleEndian.setShort(
                 buf,
                 off + 3,
-                DecimalDigits.digit(date.getMinutes())); // mm
+                jla.digitPair(date.getMinutes())); // mm
         buf[off + 5] = ':';
         ByteArrayLittleEndian.setShort(
                 buf,
                 off + 6,
-                DecimalDigits.digit(date.getSeconds())); // mm
+                jla.digitPair(date.getSeconds())); // mm
         buf[off + 8] = ' ';
         buf[off + 9] = 'G';
         buf[off + 10] = 'M';
