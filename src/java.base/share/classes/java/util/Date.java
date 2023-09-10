@@ -1032,6 +1032,7 @@ public class Date
      * @see     java.util.Date#toLocaleString()
      * @see     java.util.Date#toGMTString()
      */
+    @SuppressWarnings("deprecation")
     public String toString() {
         // "EEE MMM dd HH:mm:ss zzz yyyy";
         BaseCalendar.Date date = normalize();
@@ -1039,7 +1040,11 @@ public class Date
         int year = date.getYear();
         int yearSize = year >= 1000 && year <= 9999 ? 4 : jla.stringSize(year);
 
-        byte[] buf = new byte[24 + yearSize];
+        TimeZone zi = date.getZone();
+        String shortName = zi != null ? zi.getDisplayName(date.isDaylightTime(), TimeZone.SHORT, Locale.US) : "GMT";
+        int shortNameLength = shortName.length();
+
+        byte[] buf = new byte[21 + yearSize + shortNameLength];
 
         int index = date.getDayOfWeek();
         if (index == BaseCalendar.SUNDAY) {
@@ -1070,12 +1075,8 @@ public class Date
                 jla.digitPair(date.getSeconds())); // ss
         buf[19] = ' ';
 
-        TimeZone zi = date.getZone();
-        String shortName = zi != null ? zi.getDisplayName(date.isDaylightTime(), TimeZone.SHORT, Locale.US) : "GMT";
-        buf[20] = (byte) shortName.charAt(0);
-        buf[21] = (byte) shortName.charAt(1);
-        buf[22] = (byte) shortName.charAt(2);
-        buf[23] = ' ';
+        shortName.getBytes(0, shortNameLength, buf, 20);
+        buf[20 + shortNameLength] = ' ';
 
         jla.getChars(year, buf.length, buf);
         try {
