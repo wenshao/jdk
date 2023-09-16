@@ -50,17 +50,17 @@ public class StringFormat {
 
     @Benchmark
     public String intFormat() {
-        return "%d".formatted(s, i);
+        return "%d".formatted(i);
     }
 
     @Benchmark
     public String int02Format() {
-        return "%02d".formatted(s, i);
+        return "%02d".formatted(i);
     }
 
     @Benchmark
     public String longFormat() {
-        return "%d".formatted(s, (long) i);
+        return "%d".formatted((long) i);
     }
 
     @Benchmark
