@@ -49,6 +49,16 @@ public class StringFormat {
     public int i = 17;
 
     @Benchmark
+    public String intFormat() {
+        return "%d".formatted(s, i);
+    }
+
+    @Benchmark
+    public String longFormat() {
+        return "%d".formatted(s, (long) i);
+    }
+
+    @Benchmark
     public String stringFormat() {
         return "%s".formatted(s);
     }
