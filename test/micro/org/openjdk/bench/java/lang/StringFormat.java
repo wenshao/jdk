@@ -54,6 +54,11 @@ public class StringFormat {
     }
 
     @Benchmark
+    public String int02Format() {
+        return "%02d".formatted(s, i);
+    }
+
+    @Benchmark
     public String longFormat() {
         return "%d".formatted(s, (long) i);
     }
