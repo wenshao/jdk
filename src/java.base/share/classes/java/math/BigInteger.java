@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -29,6 +29,8 @@
 
 package java.math;
 
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
@@ -43,8 +45,11 @@ import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.RecursiveTask;
 import java.util.concurrent.ThreadLocalRandom;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.math.DoubleConsts;
 import jdk.internal.math.FloatConsts;
+import jdk.internal.util.DecimalDigits;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -135,6 +140,8 @@ import jdk.internal.vm.annotation.Stable;
  */
 
 public class BigInteger extends Number implements Comparable<BigInteger> {
+    private static final JavaLangAccess jla = SharedSecrets.getJavaLangAccess();
+
     /**
      * The signum of this BigInteger: -1 for negative, 0 for zero, or
      * 1 for positive.  Note that the BigInteger zero <em>must</em> have
@@ -4096,6 +4103,14 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
 
         BigInteger abs = this.abs();
 
+        if (mag.length <= SCHOENHAGE_BASE_CONVERSION_THRESHOLD && radix == 10) {
+            try {
+                return jla.newStringNoRepl(smallToString(signum < 0, abs), StandardCharsets.ISO_8859_1);
+            } catch (CharacterCodingException e) {
+                throw new AssertionError(e);
+            }
+        }
+
         // Ensure buffer capacity sufficient to contain string representation
         //     floor(bitLength*log(2)/log(radix)) + 1
         // plus an additional character for the sign if negative.
@@ -4169,26 +4184,131 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
             tmp = q2;
         }
 
-        // Get string version of first digit group
-        String s = Long.toString(digitGroups[numGroups-1], radix);
+        long digit = digitGroups[numGroups - 1];
+        if (radix == 10) {
+            padWithZeros(buf, digits - (DecimalDigits.stringSize(digit) + (numGroups - 1) * digitsPerLong[10]));
+            buf.append(digit);
+        } else {
+            // Get string version of first digit group
+            String s = Long.toString(digit, radix);
 
-        // Pad with internal zeros if necessary.
-        padWithZeros(buf, digits - (s.length() +
-            (numGroups - 1)*digitsPerLong[radix]));
+            // Pad with internal zeros if necessary.
+            padWithZeros(buf, digits - (s.length() +
+                    (numGroups - 1) * digitsPerLong[radix]));
 
-        // Put first digit group into result buffer
-        buf.append(s);
+            // Put first digit group into result buffer
+            buf.append(s);
+        }
 
         // Append remaining digit groups each padded with leading zeros
         for (int i=numGroups-2; i >= 0; i--) {
             // Prepend (any) leading zeros for this digit group
-            s = Long.toString(digitGroups[i], radix);
-            int numLeadingZeros = digitsPerLong[radix] - s.length();
+            if (radix == 10) {
+                digit = digitGroups[i];
+                int numLeadingZeros = digitsPerLong[10] - DecimalDigits.stringSize(digit);
+                if (numLeadingZeros != 0) {
+                    buf.append(ZEROS, 0, numLeadingZeros);
+                }
+                buf.append(digit);
+            } else {
+                String s = Long.toString(digitGroups[i], radix);
+                int numLeadingZeros = digitsPerLong[radix] - s.length();
+                if (numLeadingZeros != 0) {
+                    buf.append(ZEROS, 0, numLeadingZeros);
+                }
+                buf.append(s);
+            }
+        }
+    }
+
+    private void smallToString(StringBuilder buf, int digits) {
+        assert signum >= 0;
+
+        if (signum == 0) {
+            padWithZeros(buf, digits);
+            return;
+        }
+
+        // Compute upper bound on number of digit groups and allocate space
+        int maxNumDigitGroups = (4 * mag.length + 6) / 7;
+        long[] digitGroups = new long[maxNumDigitGroups];
+
+        // Translate number to string, a digit group at a time
+        BigInteger tmp = this;
+        int numGroups = 0;
+        while (tmp.signum != 0) {
+            BigInteger d = longRadix[10];
+
+            MutableBigInteger q = new MutableBigInteger(),
+                    a = new MutableBigInteger(tmp.mag);
+
+            digitGroups[numGroups++] = a.divideKnuthSmall(q).toLong();
+            tmp = q.toBigInteger(1);
+        }
+
+        long digit = digitGroups[numGroups - 1];
+        padWithZeros(buf, digits - (DecimalDigits.stringSize(digit) + (numGroups - 1) * digitsPerLong[10]));
+        buf.append(digit);
+
+        // Append remaining digit groups each padded with leading zeros
+        for (int i = numGroups - 2; i >= 0; i--) {
+            // Prepend (any) leading zeros for this digit group
+            digit = digitGroups[i];
+            int numLeadingZeros = digitsPerLong[10] - DecimalDigits.stringSize(digit);
             if (numLeadingZeros != 0) {
                 buf.append(ZEROS, 0, numLeadingZeros);
             }
-            buf.append(s);
+            buf.append(digit);
         }
+    }
+
+    static byte[] smallToString(boolean negative, BigInteger bigInt) {
+        // Compute upper bound on number of digit groups and allocate space
+        int maxNumDigitGroups = (4 * bigInt.mag.length + 6) / 7;
+        long[] digitGroups = new long[maxNumDigitGroups];
+
+        // Translate number to string, a digit group at a time
+        BigInteger tmp = bigInt;
+        int numGroups = 0;
+        while (tmp.signum != 0) {
+            MutableBigInteger q = new MutableBigInteger();
+            MutableBigInteger a = new MutableBigInteger(tmp.mag);
+            digitGroups[numGroups++] = a.divideKnuthSmall(q).toLong();
+            tmp = q.toBigInteger(1);
+        }
+
+        // Get string version of first digit group
+        long digit = digitGroups[numGroups - 1];
+        int digitSize = DecimalDigits.stringSize(digit);
+
+        final int digitsPerLong = 18;
+        int bufSize = digitSize + (negative ? 1 : 0) + digitsPerLong * (numGroups - 1);
+
+        byte[] buf = new byte[bufSize];
+        int off = 0;
+        if (negative) {
+            buf[off] = '-';
+            off = 1;
+        }
+
+        // Put first digit group into result buffer
+        DecimalDigits.getCharsLatin1(digit, digitSize + off, buf);
+        off += digitSize;
+
+        // Append remaining digit groups each padded with leading zeros
+        for (int i = numGroups - 2; i >= 0; i--) {
+            // Prepend (any) leading zeros for this digit group
+            digit = digitGroups[i];
+            digitSize = DecimalDigits.stringSize(digit);
+            int numLeadingZeros = digitsPerLong - digitSize;
+            for (int j = 0; j < numLeadingZeros; j++) {
+                buf[off + j] = '0';
+            }
+            DecimalDigits.getCharsLatin1(digit, digitsPerLong + off, buf);
+            off += digitsPerLong;
+        }
+
+        return buf;
     }
 
     /**
@@ -4214,7 +4334,11 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
         // at the beginning of the string or digits <= 0. As u.signum() >= 0,
         // smallToString() will not prepend a negative sign.
         if (u.mag.length <= SCHOENHAGE_BASE_CONVERSION_THRESHOLD) {
-            u.smallToString(radix, sb, digits);
+            if (radix == 10) {
+                u.smallToString(sb, digits);
+            } else {
+                u.smallToString(radix, sb, digits);
+            }
             return;
         }
 
@@ -4686,7 +4810,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
         62, 39, 31, 27, 24, 22, 20, 19, 18, 18, 17, 17, 16, 16, 15, 15, 15, 14,
         14, 14, 14, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12};
 
-    private static BigInteger longRadix[] = {null, null,
+    static final BigInteger longRadix[] = {null, null,
         valueOf(0x4000000000000000L), valueOf(0x383d9170b85ff80bL),
         valueOf(0x4000000000000000L), valueOf(0x6765c793fa10079dL),
         valueOf(0x41c21cb8e1000000L), valueOf(0x3642798750226111L),
@@ -4709,10 +4833,12 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
     /*
      * These two arrays are the integer analogue of above.
      */
+    @Stable
     private static int digitsPerInt[] = {0, 0, 30, 19, 15, 13, 11,
         11, 10, 9, 9, 8, 8, 8, 8, 7, 7, 7, 7, 7, 7, 7, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5};
 
+    @Stable
     private static int intRadix[] = {0, 0,
         0x40000000, 0x4546b3db, 0x40000000, 0x48c27395, 0x159fd800,
         0x75db9c97, 0x40000000, 0x17179149, 0x3b9aca00, 0xcc6db61,
