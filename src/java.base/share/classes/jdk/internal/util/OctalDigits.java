@@ -30,18 +30,14 @@ import java.lang.invoke.MethodHandle;
 import jdk.internal.vm.annotation.Stable;
 
 /**
- * Digits class for octal digits.
+ * Digits provides a fast methodology for converting integers and longs to
+ * octal ASCII strings.
  *
  * @since 21
  */
-public final class OctalDigits implements Digits {
+public final class OctalDigits {
     @Stable
     private static final short[] DIGITS;
-
-    /**
-     * Singleton instance of OctalDigits.
-     */
-    public static final Digits INSTANCE = new OctalDigits();
 
     static {
         short[] digits = new short[8 * 8];
@@ -64,28 +60,44 @@ public final class OctalDigits implements Digits {
     private OctalDigits() {
     }
 
-    @Override
-    public int digits(long value, byte[] buffer, int index,
-                      MethodHandle putCharMH) throws Throwable {
+    /**
+     * Insert digits for long value in buffer from high index to low index.
+     *
+     * @param value      value to convert
+     * @param buffer     byte buffer to copy into
+     * @param index      insert point + 1
+     * @param putCharMH  method to put character
+     *
+     * @return the last index used
+     *
+     * @throws Throwable if putCharMH fails (unusual).
+     */
+    public static int digits(long value, byte[] buffer, int index) {
         while ((value & ~0x3F) != 0) {
             int digits = DIGITS[(int) (value & 0x3F)];
             value >>>= 6;
-            putCharMH.invokeExact(buffer, --index, digits >> 8);
-            putCharMH.invokeExact(buffer, --index, digits & 0xFF);
+            buffer[--index] = (byte) (digits >> 8);
+            buffer[--index] = (byte) (digits & 0xFF);
         }
 
         int digits = DIGITS[(int) (value & 0x3F)];
-        putCharMH.invokeExact(buffer, --index, digits >> 8);
+        buffer[--index] = (byte) (digits >> 8);
 
         if (7 < value) {
-            putCharMH.invokeExact(buffer, --index, digits & 0xFF);
+            buffer[--index] = (byte) (digits & 0xFF);
         }
 
         return index;
     }
 
-    @Override
-    public int size(long value) {
+    /**
+     * Calculate the number of digits required to represent the long.
+     *
+     * @param value value to convert
+     *
+     * @return number of digits
+     */
+    public static int size(long value) {
         return (66 - Long.numberOfLeadingZeros(value)) / 3;
     }
 }

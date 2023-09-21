@@ -30,11 +30,12 @@ import java.lang.invoke.MethodHandle;
 import jdk.internal.vm.annotation.Stable;
 
 /**
- * Digits class for decimal digits.
+ * Digits provides a fast methodology for converting integers and longs to
+ * decimal ASCII strings.
  *
  * @since 21
  */
-public final class DecimalDigits implements Digits {
+public final class DecimalDigits {
 
     /**
      * Each element of the array represents the packaging of two ascii characters based on little endian:<p>
@@ -73,66 +74,134 @@ public final class DecimalDigits implements Digits {
     }
 
     /**
-     * Singleton instance of DecimalDigits.
-     */
-    public static final Digits INSTANCE = new DecimalDigits();
-
-    /**
      * Constructor.
      */
     private DecimalDigits() {
     }
 
-    @Override
-    public int digits(long value, byte[] buffer, int index,
-                      MethodHandle putCharMH) throws Throwable {
-        boolean negative = value < 0;
+    /**
+     * Places characters representing the integer i into the
+     * character array buf. The characters are placed into
+     * the buffer backwards starting with the least significant
+     * digit at the specified index (exclusive), and working
+     * backwards from there.
+     *
+     * @implNote This method converts positive inputs into negative
+     * values, to cover the Integer.MIN_VALUE case. Converting otherwise
+     * (negative to positive) will expose -Integer.MIN_VALUE that overflows
+     * integer.
+     *
+     * @param i     value to convert
+     * @param index next index, after the least significant digit
+     * @param buf   target buffer, Latin1-encoded
+     * @return index of the most significant digit or minus sign, if present
+     */
+    public static int getCharsLatin1(int i, int index, byte[] buf) {
+        // Used by trusted callers.  Assumes all necessary bounds checks have been done by the caller.
+        int q;
+        int charPos = index;
+
+        boolean negative = i < 0;
         if (!negative) {
-            value = -value;
+            i = -i;
         }
 
-        long q;
-        int r;
-        while (value <= Integer.MIN_VALUE) {
-            q = value / 100;
-            r = (int)((q * 100) - value);
-            value = q;
-            int digits = DIGITS[r];
-
-            putCharMH.invokeExact(buffer, --index, digits >> 8);
-            putCharMH.invokeExact(buffer, --index, digits & 0xFF);
+        // Generate two digits per iteration
+        while (i <= -100) {
+            q = i / 100;
+            charPos -= 2;
+            writeDigitPair(buf, charPos, (q * 100) - i);
+            i = q;
         }
 
-        int iq, ivalue = (int)value;
-        while (ivalue <= -100) {
-            iq = ivalue / 100;
-            r = (iq * 100) - ivalue;
-            ivalue = iq;
-            int digits = DIGITS[r];
-            putCharMH.invokeExact(buffer, --index, digits >> 8);
-            putCharMH.invokeExact(buffer, --index, digits & 0xFF);
-        }
-
-        if (ivalue < 0) {
-            ivalue = -ivalue;
-        }
-
-        int digits = DIGITS[ivalue];
-        putCharMH.invokeExact(buffer, --index, digits >> 8);
-
-        if (9 < ivalue) {
-            putCharMH.invokeExact(buffer, --index, digits & 0xFF);
+        // We know there are at most two digits left at this point.
+        if (i < -9) {
+            charPos -= 2;
+            writeDigitPair(buf, charPos, -i);
+        } else {
+            buf[--charPos] = (byte)('0' - i);
         }
 
         if (negative) {
-            putCharMH.invokeExact(buffer, --index, (int)'-');
+            buf[--charPos] = (byte)'-';
         }
-
-        return index;
+        return charPos;
     }
 
-    @Override
-    public int size(long value) {
+
+    /**
+     * Places characters representing the long i into the
+     * character array buf. The characters are placed into
+     * the buffer backwards starting with the least significant
+     * digit at the specified index (exclusive), and working
+     * backwards from there.
+     *
+     * @implNote This method converts positive inputs into negative
+     * values, to cover the Long.MIN_VALUE case. Converting otherwise
+     * (negative to positive) will expose -Long.MIN_VALUE that overflows
+     * long.
+     *
+     * @param i     value to convert
+     * @param index next index, after the least significant digit
+     * @param buf   target buffer, Latin1-encoded
+     * @return index of the most significant digit or minus sign, if present
+     */
+    public static int getCharsLatin1(long i, int index, byte[] buf) {
+        // Used by trusted callers.  Assumes all necessary bounds checks have been done by the caller.
+        long q;
+        int charPos = index;
+
+        boolean negative = (i < 0);
+        if (!negative) {
+            i = -i;
+        }
+
+        // Get 2 digits/iteration using longs until quotient fits into an int
+        while (i <= Integer.MIN_VALUE) {
+            q = i / 100;
+            charPos -= 2;
+            writeDigitPair(buf, charPos, (int)((q * 100) - i));
+            i = q;
+        }
+
+        // Get 2 digits/iteration using ints
+        int q2;
+        int i2 = (int)i;
+        while (i2 <= -100) {
+            q2 = i2 / 100;
+            charPos -= 2;
+            writeDigitPair(buf, charPos, (q2 * 100) - i2);
+            i2 = q2;
+        }
+
+        // We know there are at most two digits left at this point.
+        if (i2 < -9) {
+            charPos -= 2;
+            writeDigitPair(buf, charPos, -i2);
+        } else {
+            buf[--charPos] = (byte)('0' - i2);
+        }
+
+        if (negative) {
+            buf[--charPos] = (byte)'-';
+        }
+        return charPos;
+    }
+
+    public static void writeDigitPair(byte[] buf, int charPos, int value) {
+        short pair = digitPair(value);
+        buf[charPos] = (byte)(pair);
+        buf[charPos + 1] = (byte)(pair >> 8);
+    }
+
+    /**
+     * Calculate the number of digits required to represent the long.
+     *
+     * @param value value to convert
+     *
+     * @return number of digits
+     */
+    public static int size(long value) {
         boolean negative = value < 0;
         int sign = negative ? 1 : 0;
 
