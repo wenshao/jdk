@@ -99,23 +99,6 @@ class FormatItem {
         return (MethodHandle)SELECT_PUTCHAR_MH.invokeExact(indexCoder);
     }
 
-    private static final MethodHandle PUT_CHAR_DIGIT;
-
-    static {
-        try {
-            Lookup lookup = MethodHandles.lookup();
-            PUT_CHAR_DIGIT = lookup.findStatic(FormatItem.class, "putByte",
-                    MethodType.methodType(void.class,
-                            byte[].class, int.class, int.class));
-        } catch (ReflectiveOperationException ex) {
-            throw new AssertionError("putByte lookup failed", ex);
-        }
-    }
-
-    private static void putByte(byte[] buffer, int index, int ch) {
-        buffer[index] = (byte)ch;
-    }
-
     private FormatItem() {
         throw new AssertionError("private constructor");
     }
