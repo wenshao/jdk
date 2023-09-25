@@ -469,16 +469,28 @@ public final class StringConcatFactory {
         if (paramCount == 1) {
             String prefix = constants[0];
             // Empty constants will be
+            boolean hasPrimitives = mt.hasPrimitives();
             if (prefix == null) {
                 if (suffix == null) {
                     return unaryConcat(mt.parameterType(0));
-                } else if (!mt.hasPrimitives()) {
+                } else if (hasPrimitives) {
+                    return suffixConcat(suffix, mt.parameterType(0));
+                } else {
                     return MethodHandles.insertArguments(simpleConcat(), 1, suffix);
-                } // else fall-through
-            } else if (suffix == null && !mt.hasPrimitives()) {
+                }
+            } else if (suffix == null) {
                 // Non-primitive argument
-                return MethodHandles.insertArguments(simpleConcat(), 0, prefix);
-            } // fall-through if there's both a prefix and suffix
+                if (hasPrimitives) {
+                    return prefixConcat(prefix, mt.parameterType(0));
+                } else {
+                    return MethodHandles.insertArguments(simpleConcat(), 0, prefix);
+                }
+            } else {
+                // fall-through if there's both a prefix and suffix
+                if (hasPrimitives) {
+                    return tripleConcat(prefix, suffix, mt.parameterType(0));
+                }
+            }
         }
         if (paramCount == 2 && !mt.hasPrimitives() && suffix == null
                 && constants[0] == null && constants[1] == null) {
@@ -993,6 +1005,44 @@ public final class StringConcatFactory {
         } else {
             throw new InternalError("Unhandled type for unary concatenation: " + cl);
         }
+    }
+
+    private static MethodHandle prefixConcat(String prefix, Class<?> cl) {
+        Class<?> ptype;
+        if (cl == short.class || cl == byte.class) {
+            ptype = int.class;
+        } else {
+            ptype = cl;
+        }
+
+        MethodHandle mh = JLA.stringConcatHelper("concat", MethodType.methodType(String.class, String.class, ptype));
+        return MethodHandles.insertArguments(mh, 0, prefix);
+    }
+
+    private static MethodHandle suffixConcat(String suffix, Class<?> cl) {
+        Class<?> ptype;
+        if (cl == short.class || cl == byte.class) {
+            ptype = int.class;
+        } else {
+            ptype = cl;
+        }
+
+        MethodHandle mh = JLA.stringConcatHelper("concat", MethodType.methodType(String.class, ptype, String.class));
+        return MethodHandles.insertArguments(mh, 1, suffix);
+    }
+
+    private static MethodHandle tripleConcat(String prefix, String suffix, Class<?> cl) {
+        Class<?> ptype;
+        if (cl == short.class || cl == byte.class) {
+            ptype = int.class;
+        } else {
+            ptype = cl;
+        }
+
+        MethodHandle mh = JLA.stringConcatHelper(
+                "concat",
+                MethodType.methodType(String.class, String.class, String.class, ptype));
+        return MethodHandles.insertArguments(mh, 0, prefix, suffix);
     }
 
     private static final @Stable MethodHandle[] NULL_PREPENDERS = new MethodHandle[TYPE_COUNT];

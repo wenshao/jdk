@@ -592,4 +592,168 @@ final class StringConcatHelper {
         }
     }
 
+    //////////////////// prefix concat /////////////////////////////
+    static String concat(String prefix, int value) {
+        byte coder = prefix.coder();
+        int valSize = Integer.stringSize(value);
+        int length = prefix.length() + valSize;
+        byte[] bytes = new byte[length << coder];
+        prefix.getBytes(bytes, 0, coder);
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(value, length, bytes);
+        } else {
+            StringUTF16.getChars(value, length, bytes);
+        }
+        return new String(bytes, coder);
+    }
+
+    static String concat(String prefix, long value) {
+        byte coder = prefix.coder();
+        int valSize = Long.stringSize(value);
+        int length = prefix.length() + valSize;
+        byte[] bytes = new byte[length << coder];
+        prefix.getBytes(bytes, 0, coder);
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(value, length, bytes);
+        } else {
+            StringUTF16.getChars(value, length, bytes);
+        }
+        return new String(bytes, coder);
+    }
+
+    static String concat(String prefix, float val) {
+        return concat(prefix, Float.toString(val));
+    }
+
+    static String concat(String prefix, double val) {
+        return concat(prefix, Double.toString(val));
+    }
+
+    static String concat(String prefix, boolean val) {
+        return concat(prefix, String.valueOf(val));
+    }
+
+    static String concat(String prefix, String val) {
+        byte coder = (byte) (prefix.coder() | val.coder());
+        int prefixLength = prefix.length();
+        byte[] bytes = new byte[(prefixLength + val.length()) << coder];
+        prefix.getBytes(bytes, 0, coder);
+        val.getBytes(bytes, prefixLength, coder);
+        return new String(bytes, coder);
+    }
+
+    static String concat(String prefix, char ch) {
+        return concat(prefix, Character.toString(ch));
+    }
+
+    //////////////////// triple concat /////////////////////////////
+    static String concat(String prefix, String suffix, int value) {
+        int valSize = Integer.stringSize(value);
+        byte coder = (byte) (prefix.coder() | suffix.coder());
+        int prefixLength = prefix.length();
+        int suffixLength = suffix.length();
+        byte[] bytes = new byte[(prefixLength + valSize + suffixLength) << coder];
+        prefix.getBytes(bytes, 0, coder);
+        int prefixAndValSize = prefixLength + valSize;
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(value, prefixAndValSize, bytes);
+        } else {
+            StringUTF16.getChars(value, prefixAndValSize, bytes);
+        }
+        suffix.getBytes(bytes, prefixAndValSize, coder);
+        return new String(bytes, coder);
+    }
+
+    static String concat(String prefix, String suffix, long value) {
+        int valSize = Long.stringSize(value);
+        byte coder = (byte) (prefix.coder() | suffix.coder());
+        int prefixLength = prefix.length();
+        int suffixLength = suffix.length();
+        byte[] bytes = new byte[(prefixLength + valSize + suffixLength) << coder];
+        prefix.getBytes(bytes, 0, coder);
+        int prefixAndValSize = prefixLength + valSize;
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(value, prefixAndValSize, bytes);
+        } else {
+            StringUTF16.getChars(value, prefixAndValSize, bytes);
+        }
+        suffix.getBytes(bytes, prefixAndValSize, coder);
+        return new String(bytes, coder);
+    }
+
+    static String concat(String prefix, String suffix, boolean value) {
+        return concat(prefix, suffix, String.valueOf(value));
+    }
+
+    static String concat(String prefix, String suffix, char value) {
+        return concat(prefix, suffix, String.valueOf(value));
+    }
+
+    static String concat(String prefix, String suffix, float val) {
+        return concat(prefix, suffix, Float.toString(val));
+    }
+
+    static String concat(String prefix, String suffix, double val) {
+        return concat(prefix, suffix, Double.toString(val));
+    }
+
+    static String concat(String prefix, String suffix, String val) {
+        int valSize = val.length();
+        byte coder = (byte) (prefix.coder() | suffix.coder() | val.coder());
+        int prefixLength = prefix.length();
+        int suffixLength = suffix.length();
+
+        byte[] bytes = new byte[(prefixLength + valSize + suffixLength) << coder];
+        prefix.getBytes(bytes, 0, coder);
+        val.getBytes(bytes, prefixLength, coder);
+        suffix.getBytes(bytes, prefixLength + valSize, coder);
+        return new String(bytes, coder);
+    }
+
+    //////////////////// suffix concat /////////////////////////////
+    static String concat(int value, String suffix) {
+        byte coder = suffix.coder();
+        int valSize = Integer.stringSize(value);
+        int length = suffix.length() + valSize;
+
+        byte[] bytes = new byte[length << coder];
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(value, valSize, bytes);
+        } else {
+            StringUTF16.getChars(value, valSize, bytes);
+        }
+        suffix.getBytes(bytes, valSize, coder);
+        return new String(bytes, coder);
+    }
+
+    static String concat(long value, String suffix) {
+        byte coder = suffix.coder();
+        int valSize = Long.stringSize(value);
+        int length = suffix.length() + valSize;
+
+        byte[] bytes = new byte[length << coder];
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(value, valSize, bytes);
+        } else {
+            StringUTF16.getChars(value, valSize, bytes);
+        }
+        suffix.getBytes(bytes, valSize, coder);
+        return new String(bytes, coder);
+    }
+
+    static String concat(float val, String suffix) {
+        return concat(Float.toString(val), suffix);
+    }
+
+    static String concat(double val, String suffix) {
+        return concat(Double.toString(val), suffix);
+    }
+
+    static String concat(boolean val, String suffix) {
+        return concat(String.valueOf(val), suffix);
+    }
+
+    static String concat(char ch, String suffix) {
+        return concat(Character.toString(ch), suffix);
+    }
 }
