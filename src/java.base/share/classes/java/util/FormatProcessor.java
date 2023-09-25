@@ -217,7 +217,6 @@ public final class FormatProcessor implements Processor<String, RuntimeException
      * @throws MissingFormatArgumentException if not at end or found and not needed
      */
     private static boolean findFormat(String fragment, boolean needed) {
-        Formatter.FormatSpecifierParser parser = null;
         int max = fragment.length();
         for (int i = 0; i < max;) {
             int n = fragment.indexOf('%', i);
@@ -231,14 +230,11 @@ public final class FormatProcessor implements Processor<String, RuntimeException
             }
 
             char c = fragment.charAt(i);
-            if (parser == null) {
-                parser = new Formatter.FormatSpecifierParser(null, c, i, fragment, max);
-            } else {
-                parser.reset(c, i);
+            if (Formatter.isConversion(c)) {
+                return true;
             }
-
             String group;
-            int off = parser.parse();
+            int off = Formatter.parse(null, c, i, fragment, max);
 
             if (off == 1) {
                 char c1 = fragment.charAt(off);
