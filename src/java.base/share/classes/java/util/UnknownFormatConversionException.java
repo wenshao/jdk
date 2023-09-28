@@ -53,6 +53,18 @@ public non-sealed class UnknownFormatConversionException extends IllegalFormatEx
         this.s = s;
     }
 
+
+    /**
+     * Constructs an instance of this class with the unknown conversion.
+     *
+     * @param  c
+     *         Unknown conversion
+     */
+    public UnknownFormatConversionException(char c) {
+        this.s = String.valueOf(c);
+    }
+
+
     /**
      * Returns the unknown conversion.
      *

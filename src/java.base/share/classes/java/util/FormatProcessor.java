@@ -235,8 +235,8 @@ public final class FormatProcessor implements Processor<String, RuntimeException
                 i++;
                 continue;
             }
-            int off = new Formatter.FormatSpecifierParser(null, c, i, fragment, max)
-                    .parse();
+            int off = new Formatter.FormatSpecifierParser(null, fragment, max)
+                    .parse(c, i);
             if (off == 0) {
                 return false;
             }

@@ -54,6 +54,17 @@ public non-sealed class DuplicateFormatFlagsException extends IllegalFormatExcep
         this.flags = f;
     }
 
+
+    /**
+     * Constructs an instance of this class with the specified flags.
+     *
+     * @param  flag
+     *         The set of format flags which contain a duplicate flag.
+     */
+    public DuplicateFormatFlagsException(int flag) {
+        this(Formatter.Flags.toString(flag));
+    }
+
     /**
      * Returns the set of flags which contains a duplicate flag.
      *

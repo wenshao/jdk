@@ -54,6 +54,16 @@ public non-sealed class IllegalFormatFlagsException extends IllegalFormatExcepti
     }
 
     /**
+     * Constructs an instance of this class with the specified flags.
+     *
+     * @param  flags
+     *         The set of format flags which contain an illegal combination
+     */
+    public IllegalFormatFlagsException(int flags) {
+        this.flags = Formatter.Flags.toString(flags);
+    }
+
+    /**
      * Returns the set of flags which contains an illegal combination.
      *
      * @return  The flags
