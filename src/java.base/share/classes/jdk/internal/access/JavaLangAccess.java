@@ -444,6 +444,8 @@ public interface JavaLangAccess {
     @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
    long stringBuilderConcatPrepend(long lengthCoder, byte[] buf, StringBuilder sb);
 
+   void stringBuilderAppend(StringBuilder sb, byte[] str, int off, int len);
+
     /**
      * Join strings
      */

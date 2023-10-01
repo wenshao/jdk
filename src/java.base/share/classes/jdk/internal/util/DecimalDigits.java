@@ -398,7 +398,7 @@ public final class DecimalDigits implements Digits {
         return charPos;
     }
 
-    private static void writeDigitPairLatin1(byte[] buf, int charPos, int value) {
+    public static void writeDigitPairLatin1(byte[] buf, int charPos, int value) {
         short pair = DIGITS[value];
         buf[charPos] = (byte)(pair);
         buf[charPos + 1] = (byte)(pair >> 8);

@@ -2547,6 +2547,10 @@ public final class System {
                 return sb.prepend(lengthCoder, buf);
             }
 
+            public void stringBuilderAppend(StringBuilder sb, byte[] str, int off, int len) {
+                sb.append(str, off, len);
+            }
+
             public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }
