@@ -32,6 +32,8 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 
+import java.time.*;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.FormatProcessor.FMT;
@@ -74,5 +76,25 @@ public class StringTemplateFMT {
     @Benchmark
     public String complexFormat() {
         return FMT."%3s\{s} %10d\{i} %4S\{s} %04X\{i} %4S\{s} %04X\{i} %4S\{s} %04X\{i}";
+    }
+
+    @Benchmark
+    public String ldtFormat() {
+        return FMT."%s\{ldt}";
+    }
+
+    @Benchmark
+    public String localTimeFormat() {
+        return FMT."%s\{localTime}";
+    }
+
+    @Benchmark
+    public String instantFormat() {
+        return FMT."%s\{instant}";
+    }
+
+    @Benchmark
+    public String dateFormat() {
+        return FMT."%s\{date}";
     }
 }
