@@ -52,6 +52,11 @@ public class StringTemplateFMT {
 
     public String s = "str";
     public int i = 17;
+    public ZonedDateTime zdt = ZonedDateTime.now();
+    public LocalDateTime ldt = zdt.toLocalDateTime();
+    public LocalTime localTime = ldt.toLocalTime();
+    public Instant instant = Instant.from(zdt);
+    public Date date = Date.from(instant);
 
     @Benchmark
     public String stringFormat() {
