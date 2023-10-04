@@ -84,6 +84,11 @@ public class StringTemplateFMT {
     }
 
     @Benchmark
+    public String zdtFormat() {
+        return FMT."%s\{zdt}";
+    }
+
+    @Benchmark
     public String ldtFormat() {
         return FMT."%s\{ldt}";
     }
