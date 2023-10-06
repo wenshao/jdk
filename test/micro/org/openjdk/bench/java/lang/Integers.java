@@ -71,7 +71,7 @@ public class Integers {
         intsBig   = new int[size];
         res       = new int[size];
         for (int i = 0; i < size; i++) {
-            int nextInt = (r.nextInt(10000) - (5000));
+            int nextInt = r.nextInt(10000) - (5000);
             strings[i] = Integer.toString(nextInt);
             stringsUnsigned[i] = Integer.toString(Math.abs(nextInt));
             intsTiny[i] = r.nextInt(99);

@@ -66,7 +66,7 @@ public class Longs {
         longArraySmall = new long[size];
         longArrayBig = new long[size];
         for (int i = 0; i < size; i++) {
-            long nextLong = random.nextLong(10000) - 5000);
+            long nextLong = random.nextLong(10000) - 5000;
             strings[i] = Long.toString(nextLong);
             stringsUnsigned[i] = Long.toString(Math.abs(nextLong));
             longArraySmall[i] = 100L * i + i + 103L;
