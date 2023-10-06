@@ -98,7 +98,7 @@ public class Integers {
     @Benchmark
     public void parseUnisgnedInt(Blackhole bh) {
         for (String s : stringsUnsigned) {
-            bh.consume(Integer.parseUnsignedInt(stringsUnsigned));
+            bh.consume(Integer.parseUnsignedInt(s));
         }
     }
 
