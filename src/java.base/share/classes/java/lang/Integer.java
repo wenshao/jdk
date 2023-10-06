@@ -551,13 +551,11 @@ public final class Integer extends Number
         }
 
         if (radix < Character.MIN_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s less than Character.MIN_RADIX", radix));
+            throw NumberFormatException.forMinRadix(radix);
         }
 
         if (radix > Character.MAX_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s greater than Character.MAX_RADIX", radix));
+            throw NumberFormatException.forMaxRadix(radix);
         }
 
         int len = s.length();
@@ -621,13 +619,11 @@ public final class Integer extends Number
         Objects.checkFromToIndex(beginIndex, endIndex, s.length());
 
         if (radix < Character.MIN_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s less than Character.MIN_RADIX", radix));
+            throw NumberFormatException.forMinRadix(radix);
         }
 
         if (radix > Character.MAX_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s greater than Character.MAX_RADIX", radix));
+            throw NumberFormatException.forMaxRadix(radix);
         }
 
         /*
@@ -735,13 +731,11 @@ public final class Integer extends Number
         }
 
         if (radix < Character.MIN_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s less than Character.MIN_RADIX", radix));
+            throw NumberFormatException.forMinRadix(radix);
         }
 
         if (radix > Character.MAX_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s greater than Character.MAX_RADIX", radix));
+            throw NumberFormatException.forMaxRadix(radix);
         }
 
         int len = s.length();
@@ -751,8 +745,7 @@ public final class Integer extends Number
         int i = 0;
         char firstChar = s.charAt(i++);
         if (firstChar == '-') {
-            throw new NumberFormatException(String.format(
-                "Illegal leading minus sign on unsigned string %s.", s));
+            throw NumberFormatException.forUnsign(s);
         }
         int digit = ~0xFF;
         if (firstChar != '+') {
@@ -775,8 +768,7 @@ public final class Integer extends Number
         if (digit < 0) {
             throw NumberFormatException.forInputString(s, radix);
         }
-        throw new NumberFormatException(String.format(
-            "String value %s exceeds range of unsigned int.", s));
+        throw NumberFormatException.forUnsignInt(s);
     }
 
     /**
@@ -812,13 +804,11 @@ public final class Integer extends Number
         Objects.checkFromToIndex(beginIndex, endIndex, s.length());
 
         if (radix < Character.MIN_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s less than Character.MIN_RADIX", radix));
+            throw NumberFormatException.forMinRadix(radix);
         }
 
         if (radix > Character.MAX_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s greater than Character.MAX_RADIX", radix));
+            throw NumberFormatException.forMaxRadix(radix);
         }
 
         /*
@@ -833,8 +823,7 @@ public final class Integer extends Number
         int i = beginIndex;
         char firstChar = s.charAt(i++);
         if (firstChar == '-') {
-            throw new NumberFormatException(
-                "Illegal leading minus sign on unsigned string " + s + ".");
+            throw NumberFormatException.forUnsign(s);
         }
         int digit = ~0xFF;
         if (firstChar != '+') {
@@ -858,8 +847,8 @@ public final class Integer extends Number
             throw NumberFormatException.forCharSequence(s, beginIndex,
                 endIndex, i - (digit < -1 ? 0 : 1));
         }
-        throw new NumberFormatException(String.format(
-            "String value %s exceeds range of unsigned int.", s));
+
+        throw NumberFormatException.forUnsignInt(s);
     }
 
     /**
