@@ -79,6 +79,13 @@ public class Longs {
     }
 
     @Benchmark
+    public void parseLong(Blackhole bh) {
+        for (String s : strings) {
+            bh.consume(Long.parseLong(s));
+        }
+    }
+
+    @Benchmark
     public void decode(Blackhole bh) {
         for (String s : strings) {
             bh.consume(Long.decode(s));

@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import jdk.internal.misc.CDS;
+import jdk.internal.util.DecimalDigits;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -737,6 +738,36 @@ public final class Long extends Number
      *             parsable {@code long}.
      */
     public static long parseLong(String s) throws NumberFormatException {
+        if (s != null && s.coder() == String.LATIN1) {
+            byte[] value = s.value();
+
+            int len = value.length;
+            if (len == 0) {
+                throw new NumberFormatException("");
+            }
+            int digit = ~0xFF;
+            int i = 0;
+            byte firstChar = value[i++];
+            if (firstChar != '-' && firstChar != '+') {
+                digit = DecimalDigits.digit(firstChar);
+            }
+            if (digit >= 0 || digit == ~0xFF && len > 1) {
+                long limit = firstChar != '-' ? MIN_VALUE + 1 : MIN_VALUE;
+                final long multmin = -922337203685477580L; // actual limit / 10
+                long result = -(digit & 0xFF);
+                boolean inRange = true;
+                /* Accumulating negatively avoids surprises near MAX_VALUE */
+                while (i < len && (digit = DecimalDigits.digit(value[i++])) >= 0
+                        && (inRange = result > multmin
+                        || result == multmin && digit <= (int) (10 * multmin - limit))) {
+                    result = 10 * result - digit;
+                }
+                if (inRange && i == len && digit >= 0) {
+                    return firstChar != '-' ? -result : result;
+                }
+            }
+            throw NumberFormatException.forInputString(s, 10);
+        }
         return parseLong(s, 10);
     }
 

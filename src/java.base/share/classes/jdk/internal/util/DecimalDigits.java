@@ -72,6 +72,44 @@ public final class DecimalDigits implements Digits {
         DIGITS = digits;
     }
 
+    // Digit values for codePoints in the 0-255 range. Contents generated using:
+    // for (char i = 0; i < 256; i++) {
+    //     int v = -1;
+    //     if (i >= '0' && i <= '9') { v = i - '0'; }
+    //     if (i % 20 == 0) System.out.println();
+    //     System.out.printf("%2d, ", v);
+    // }
+    //
+    // Analysis has shown that generating the whole array allows the JIT to generate
+    // better code compared to a slimmed down array, such as one cutting off after 'z'
+    @Stable
+    private static final byte[] DIGITS_LATIN1 = new byte[] {
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+
+    /**
+     * Returns the numeric value of the character {@code ch}
+     * <p>
+     * if the value of {@code ch} is not a valid digit, {@code -1} is returned.
+     *
+     * @param   ch      the character to be converted.
+     * @return  the numeric value represented by the character.
+     */
+    public static int digit(byte ch) {
+        return DIGITS_LATIN1[ch & 0xFF];
+    }
+
     /**
      * Singleton instance of DecimalDigits.
      */
