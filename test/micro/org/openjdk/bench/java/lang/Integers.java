@@ -105,7 +105,7 @@ public class Integers {
     @Benchmark
     public void parseUnisgnedIntCharSequence(Blackhole bh) {
         for (String s : stringsUnsigned) {
-            bh.consume(Integer.parseUnsignedInt(s, 0, s.length, 10));
+            bh.consume(Integer.parseUnsignedInt(s, 0, s.length(), 10));
         }
     }
 
