@@ -112,14 +112,14 @@ public class Longs {
     }
 
     @Benchmark
-    public void parseLongUnsigned(Blackhole bh) {
+    public void parseUnsignedLong(Blackhole bh) {
         for (String s : stringsUnsigned) {
             bh.consume(Long.parseUnsignedLong(s));
         }
     }
 
     @Benchmark
-    public void parseLongUnsignedCharSequence(Blackhole bh) {
+    public void parseUnsignedLongCharSequence(Blackhole bh) {
         for (String s : stringsUnsigned) {
             bh.consume(Long.parseUnsignedLong(s, 0, s.length(), 10));
         }
