@@ -42,6 +42,7 @@ import java.util.Objects;
 
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
+import jdk.internal.util.DecimalDigits;
 
 /**
  * Immutable, arbitrary-precision signed decimal numbers.  A {@code
@@ -4154,45 +4155,6 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
         return BigDecimal.valueOf(1, this.scale(), 1);
     }
 
-    // Private class to build a string representation for BigDecimal object. The
-    // StringBuilder field acts as a buffer to hold the temporary representation
-    // of BigDecimal. The cmpCharArray holds all the characters for the compact
-    // representation of BigDecimal (except for '-' sign' if it is negative) if
-    // its intCompact field is not INFLATED.
-    static class StringBuilderHelper {
-        final StringBuilder sb;    // Placeholder for BigDecimal string
-        final byte[] cmpCharArray; // character array to place the intCompact
-
-        StringBuilderHelper() {
-            sb = new StringBuilder(32);
-            // All non negative longs can be made to fit into 19 character array.
-            cmpCharArray = new byte[19];
-        }
-
-        // Accessors.
-        StringBuilder getStringBuilder() {
-            sb.setLength(0);
-            return sb;
-        }
-
-        byte[] getCompactCharArray() {
-            return cmpCharArray;
-        }
-
-        /**
-         * Places characters representing the intCompact in {@code long} into
-         * cmpCharArray and returns the offset to the array where the
-         * representation starts.
-         *
-         * @param intCompact the number to put into the cmpCharArray.
-         * @return offset to the array where the representation starts.
-         * Note: intCompact must be greater or equal to zero.
-         */
-        int putIntCompact(long intCompact) {
-            return JLA.getCharsLatin1(intCompact, cmpCharArray.length, cmpCharArray);
-        }
-    }
-
     /**
      * Lay out this {@code BigDecimal} into a {@code char[]} array.
      * The Java 1.2 equivalent to this was called {@code getValueString}.
@@ -4203,6 +4165,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
      *         {@code BigDecimal}
      */
     private String layoutChars(boolean sci) {
+        int scale = this.scale;
         if (scale == 0)                      // zero scale is trivial
             return (intCompact != INFLATED) ?
                 Long.toString(intCompact):
@@ -4210,13 +4173,16 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
         if (scale == 2  &&
             intCompact >= 0 && intCompact < Integer.MAX_VALUE) {
             // currency fast path
+            int lowInt = (int)intCompact % 100;
             int highInt = (int)intCompact / 100;
-            int lowInt = (int) intCompact - highInt * 100;
             int highIntSize = JLA.stringSize(highInt);
             byte[] buf = new byte[highIntSize + 3];
             JLA.getCharsLatin1(highInt, highIntSize, buf);
             buf[highIntSize] = '.';
-            JLA.writeDigitPairLatin1(buf, highIntSize + 1, lowInt);
+            DecimalDigits.writeDigitPairLatin1(
+                    buf,
+                    highIntSize + 1,
+                    (int) intCompact - highInt * 100);
             try {
                 return JLA.newStringNoRepl(buf, StandardCharsets.ISO_8859_1);
             } catch (CharacterCodingException e) {
@@ -4224,47 +4190,37 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
             }
         }
 
-        StringBuilderHelper sbHelper = new StringBuilderHelper();
-        byte[] coeff;
-        int offset;  // offset is the starting index for coeff array
         // Get the significand as an absolute value
-        if (intCompact != INFLATED) {
-            offset = sbHelper.putIntCompact(Math.abs(intCompact));
-            coeff  = sbHelper.getCompactCharArray();
-        } else {
-            offset = 0;
-            coeff = intVal.abs().toString().getBytes(StandardCharsets.ISO_8859_1);
-        }
+        String coeff = intCompact != INFLATED
+                ? Long.toString(Math.abs(intCompact))
+                : intVal.abs().toString();
 
         // Construct a buffer, with sufficient capacity for all cases.
         // If E-notation is needed, length will be: +1 if negative, +1
         // if '.' needed, +2 for "E+", + up to 10 for adjusted exponent.
         // Otherwise it could have +1 if negative, plus leading "0.00000"
-        StringBuilder buf = sbHelper.getStringBuilder();
+        StringBuilder buf = new StringBuilder(32);
         if (signum() < 0)             // prefix '-' if negative
             buf.append('-');
-        int coeffLen = coeff.length - offset;
+        int coeffLen = coeff.length();
         long adjusted = -(long)scale + (coeffLen -1);
         if ((scale >= 0) && (adjusted >= -6)) { // plain number
             int pad = scale - coeffLen;         // count of padding zeros
             if (pad >= 0) {                     // 0.xxx form
-                buf.append('0');
-                buf.append('.');
-                for (; pad>0; pad--) {
-                    buf.append('0');
-                }
-                JLA.stringBuilderAppend(buf, coeff, offset, coeffLen);
+                buf.append("0.")
+                   .repeat('0', pad)
+                   .append(coeff, 0, coeffLen);
             } else {                         // xx.xx form
-                JLA.stringBuilderAppend(buf, coeff, offset, -pad);
-                buf.append('.');
-                JLA.stringBuilderAppend(buf, coeff, -pad + offset, scale);
+                buf.append(coeff, 0, -pad)
+                   .append('.')
+                   .append(coeff, -pad, coeffLen);
             }
         } else { // E-notation is needed
             if (sci) {                       // Scientific notation
-                buf.append((char) coeff[offset]);   // first character
+                buf.append(coeff.charAt(0)); // first character
                 if (coeffLen > 1) {          // more to come
-                    buf.append('.');
-                    JLA.stringBuilderAppend(buf, coeff, offset + 1, coeffLen - 1);
+                    buf.append('.')
+                       .append(coeff, 1, coeffLen);
                 }
             } else {                         // Engineering notation
                 int sig = (int)(adjusted % 3);
@@ -4289,15 +4245,12 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
                         throw new AssertionError("Unexpected sig value " + sig);
                     }
                 } else if (sig >= coeffLen) {   // significand all in integer
-                    JLA.stringBuilderAppend(buf, coeff, offset, coeffLen);
-                    // may need some zeros, too
-                    for (int i = sig - coeffLen; i > 0; i--) {
-                        buf.append('0');
-                    }
+                    buf.append(coeff, 0, coeffLen)
+                       .repeat('0', sig - coeffLen); // may need some zeros, too
                 } else {                     // xx.xxE form
-                    JLA.stringBuilderAppend(buf, coeff, offset, sig);
-                    buf.append('.');
-                    JLA.stringBuilderAppend(buf, coeff, offset + sig, coeffLen - sig);
+                    buf.append(coeff, 0, sig)
+                       .append('.')
+                       .append(coeff, sig, coeffLen);
                 }
             }
             if (adjusted != 0) {             // [!sci could have made 0]
