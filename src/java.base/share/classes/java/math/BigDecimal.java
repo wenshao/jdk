@@ -30,6 +30,10 @@
 package java.math;
 
 import static java.math.BigInteger.LONG_MASK;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodType;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
@@ -39,6 +43,9 @@ import java.util.Arrays;
 import java.util.Objects;
 
 import jdk.internal.util.DecimalDigits;
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+
 
 /**
  * Immutable, arbitrary-precision signed decimal numbers.  A {@code
@@ -309,6 +316,7 @@ import jdk.internal.util.DecimalDigits;
  * @since 1.1
  */
 public class BigDecimal extends Number implements Comparable<BigDecimal> {
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
     /*
      * Let l = log_2(10).
      * Then, L < l < L + ulp(L) / 2, that is, L = roundTiesToEven(l).
@@ -4140,6 +4148,34 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
         return BigDecimal.valueOf(1, this.scale(), 1);
     }
 
+    static final class ConcatHelper {
+        static final MethodHandle STRING_PREPEND =
+                JLA.stringConcatHelper("prepend",
+                        MethodType.methodType(long.class, long.class, byte[].class, long.class));
+        static String scale2(long intCompact) {
+            long highInt = intCompact / 100;
+            int highIntSize = JLA.stringSize(highInt);
+            boolean negative = highInt == 0 && intCompact < 0;
+            if (negative) {
+                highIntSize++;
+            }
+            byte[] buf = new byte[highIntSize + 3];
+            try {
+                if (negative) {
+                    buf[0] = '-';
+                }
+                long coder = (long) ConcatHelper.STRING_PREPEND.invokeExact((long) highIntSize, buf, highInt);
+                buf[highIntSize] = '.';
+                short pair = DecimalDigits.digitPair((int)(Math.abs(intCompact) % 100));
+                buf[highIntSize + 1] = (byte)(pair & 0xff);
+                buf[highIntSize + 2] = (byte)(pair >> 8);
+                return JLA.newStringNoRepl(buf, StandardCharsets.ISO_8859_1);
+            } catch (Throwable e) {
+                throw new AssertionError(e);
+            }
+        }
+    }
+
     /**
      * Lay out this {@code BigDecimal} into a {@code char[]} array.
      * The Java 1.2 equivalent to this was called {@code getValueString}.
@@ -4154,12 +4190,9 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
         long intCompact = this.intCompact;
         if (scale == 0)                      // zero scale is trivial
             return unscaledString();
-        if (scale == 2  &&
-            intCompact >= 0 && intCompact < Integer.MAX_VALUE) {
+        if (scale == 2  && intCompact != INFLATED) {
             // currency fast path
-            int highInt = (int)intCompact / 100;
-            short pair = DecimalDigits.digitPair((int)intCompact % 100);
-            return "" + highInt + '.' + (char)(pair & 0xff) + (char)(pair >> 8);
+            return ConcatHelper.scale2(intCompact);
         }
 
         // Get the significand as an absolute value

@@ -2548,6 +2548,10 @@ public final class System {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }
 
+            public int stringSize(long i) {
+                return Long.stringSize(i);
+            }
+
             public Object classData(Class<?> c) {
                 return c.getClassData();
             }

@@ -439,6 +439,8 @@ public interface JavaLangAccess {
      */
     String join(String prefix, String suffix, String delimiter, String[] elements, int size);
 
+    int stringSize(long i);
+
     /*
      * Get the class data associated with the given class.
      * @param c the class
