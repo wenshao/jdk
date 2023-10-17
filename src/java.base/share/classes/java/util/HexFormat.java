@@ -28,6 +28,7 @@ package java.util;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.HexDigits;
+import jdk.internal.vm.annotation.Stable;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -143,16 +144,35 @@ public final class HexFormat {
 
     // Analysis has shown that generating the whole array allows the JIT to generate
     // better code compared to a slimmed down array, such as one cutting off after 'f'
-    private static final byte[] DIGITS = {
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-             0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
-            -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, 10, 11, 12, 13, 14, 15, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-            -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-    };
+    @Stable
+    private static final byte[] DIGITS;
+    static {
+        byte[] digits = new byte[256];
+        Arrays.fill(digits, (byte) -1);
+        digits['0'] = 0;
+        digits['1'] = 1;
+        digits['2'] = 2;
+        digits['3'] = 3;
+        digits['4'] = 4;
+        digits['5'] = 5;
+        digits['6'] = 6;
+        digits['7'] = 7;
+        digits['8'] = 8;
+        digits['9'] = 9;
+        digits['A'] = 10;
+        digits['B'] = 11;
+        digits['C'] = 12;
+        digits['D'] = 13;
+        digits['E'] = 14;
+        digits['F'] = 15;
+        digits['a'] = 10;
+        digits['b'] = 11;
+        digits['c'] = 12;
+        digits['d'] = 13;
+        digits['e'] = 14;
+        digits['f'] = 15;
+        DIGITS = digits;
+    }
     /**
      * Format each byte of an array as a pair of hexadecimal digits.
      * The hexadecimal characters are from lowercase alpha digits.
@@ -561,6 +581,20 @@ public final class HexFormat {
     }
 
     /**
+     * parse 4 hexadecimal characters
+     * @return The result of parse
+     */
+    static long parse4Nibbles(String str, int pos) {
+        byte[] ns = DIGITS;
+        char ch1 = str.charAt(pos);
+        char ch2 = str.charAt(pos + 1);
+        char ch3 = str.charAt(pos + 2);
+        char ch4 = str.charAt(pos + 3);
+        return (ch1 | ch2 | ch3 | ch4) > 0xff ?
+                -1 : ns[ch1] << 12 | ns[ch2] << 8 | ns[ch3] << 4 | ns[ch4];
+    }
+
+    /**
      * Returns a byte array containing hexadecimal values parsed from
      * a range of the character array.
      *
@@ -886,7 +920,7 @@ public final class HexFormat {
      *          otherwise {@code false}
      */
     public static boolean isHexDigit(int ch) {
-        return ((ch >>> 7) == 0 && DIGITS[ch] >= 0);
+        return ch >= 0 && ch < DIGITS.length && DIGITS[ch] >= 0;
     }
 
     /**
@@ -904,10 +938,31 @@ public final class HexFormat {
      */
     public static int fromHexDigit(int ch) {
         int value;
-        if ((ch >>> 7) == 0 && (value = DIGITS[ch]) >= 0) {
+        if (ch >= 0 && ch < DIGITS.length && (value = DIGITS[ch]) >= 0) {
             return value;
         }
         throw new NumberFormatException("not a hexadecimal digit: \"" + (char) ch + "\" = " + ch);
+    }
+
+    /**
+     * Returns the value for the hexadecimal character or codepoint.
+     * The value is:
+     * <ul>
+     * <li>{@code (ch - '0')} for {@code '0'} through {@code '9'} inclusive,
+     * <li>{@code (ch - 'A' + 10)} for {@code 'A'} through {@code 'F'} inclusive, and
+     * <li>{@code (ch - 'a' + 10)} for {@code 'a'} through {@code 'f'} inclusive.
+     * </ul>
+     *
+     * @param ch a character
+     * @return the value {@code 0-15}
+     * @throws  NumberFormatException if the codepoint is not a hexadecimal character
+     */
+    public static int fromHexDigit(char ch) {
+        int value;
+        if (ch >= 0 && ch < DIGITS.length && (value = DIGITS[ch]) >= 0) {
+            return value;
+        }
+        throw new NumberFormatException("not a hexadecimal digit: \"" + ch + "\" = " + ch);
     }
 
     /**

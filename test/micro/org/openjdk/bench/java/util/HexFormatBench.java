@@ -35,6 +35,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HexFormat;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -59,6 +60,8 @@ public class HexFormatBench {
 
     HexFormat LOWER_FORMATTER = HexFormat.of();
     HexFormat UPPER_FORMATTER = HexFormat.of().withUpperCase();
+
+    String hex = "0123456789abcdefABCDEF0123456789abcdefABCDEF0123456789abcdefABCDEF0123456789abcdefABCDEF";
 
     @Setup
     public void setupStrings() {
@@ -170,6 +173,13 @@ public class HexFormatBench {
     public void toHexDigitsLong(Blackhole bh) {
         for (long b : bytes) {
             bh.consume(LOWER_FORMATTER.toHexDigits(b));
+        }
+    }
+
+    @Benchmark
+    public void parseHex(Blackhole bh) {
+        for (int i = 0; i < hex.length(); i ++) {
+            bh.consume(LOWER_FORMATTER.parseHex(hex));
         }
     }
 }
