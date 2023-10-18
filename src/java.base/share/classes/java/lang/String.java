@@ -4723,7 +4723,11 @@ public final class String
      */
     void getBytes(byte[] dst, int dstBegin, byte coder) {
         if (coder() == coder) {
-            System.arraycopy(value, 0, dst, dstBegin << coder, value.length);
+            if (value.length == 1) {
+                dst[dstBegin] = value[0];
+            } else {
+                System.arraycopy(value, 0, dst, dstBegin << coder, value.length);
+            }
         } else {    // this.coder == LATIN && coder == UTF16
             StringLatin1.inflate(value, 0, dst, dstBegin, value.length);
         }

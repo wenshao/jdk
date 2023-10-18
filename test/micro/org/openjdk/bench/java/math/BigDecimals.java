@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Thread)
 @Warmup(iterations = 5, time = 1)
 @Measurement(iterations = 5, time = 1)
-@Fork(value = 3)
+@Fork(value = 3, jvmArgsAppend="-XX:StartFlightRecording=filename=flight_dec.jfr")
 public class BigDecimals {
 
     /** Make sure TEST_SIZE is used to size the arrays. We need this constant to parametrize the operations count. */
