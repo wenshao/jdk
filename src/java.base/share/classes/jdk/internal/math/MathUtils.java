@@ -25,12 +25,20 @@
 
 package jdk.internal.math;
 
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.vm.annotation.Stable;
+
 /**
  * This class exposes package private utilities for other classes.
  * Thus, all methods are assumed to be invoked with correct arguments,
  * so these are not checked at all.
  */
-final class MathUtils {
+public final class MathUtils {
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
     /*
      * For full details about this code see the following reference:
      *
@@ -63,6 +71,7 @@ final class MathUtils {
     }
 
     /* The first powers of 10. The last entry must be 10^(DoubleToDecimal.H) */
+    @Stable
     private static final long[] pow10 = {
         1L,
         10L,
@@ -82,6 +91,29 @@ final class MathUtils {
         1_000_000_000_000_000L,
         10_000_000_000_000_000L,
         100_000_000_000_000_000L,
+        1_000_000_000_000_000_000L,
+    };
+
+    @Stable
+    private static final String[] ZEROS = {
+            "0",
+            "00",
+            "000",
+            "0000",
+            "00000",
+            "000000",
+            "0000000",
+            "00000000",
+            "000000000",
+            "0000000000",
+            "00000000000",
+            "000000000000",
+            "0000000000000",
+            "00000000000000",
+            "000000000000000",
+            "0000000000000000",
+            "00000000000000000",
+            "000000000000000000"
     };
 
     /**
@@ -91,8 +123,30 @@ final class MathUtils {
      *          0 &le; {@code e} &le; {@link #H}.
      * @return 10<sup>{@code e}</sup>.
      */
-    static long pow10(int e) {
+    public static long pow10(int e) {
         return pow10[e];
+    }
+
+    /**
+     * Returns a string filled with the specified number of '0', or an empty string if count <= 0.
+     * @param count Number of filled '0'
+     * @return a string filled with the specified number of '0'
+     */
+    public static String zeros(int count) {
+        if (count <= 0) {
+            return "";
+        }
+
+        if (count <= ZEROS.length)
+            return ZEROS[count - 1];
+
+        try {
+            byte[] buf = new byte[count];
+            Arrays.fill(buf, (byte) '0');
+            return JLA.newStringNoRepl(buf, StandardCharsets.ISO_8859_1);
+        } catch (CharacterCodingException e) {
+            throw new AssertionError(e);
+        }
     }
 
     /**
