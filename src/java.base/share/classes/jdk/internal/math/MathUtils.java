@@ -30,7 +30,7 @@ package jdk.internal.math;
  * Thus, all methods are assumed to be invoked with correct arguments,
  * so these are not checked at all.
  */
-final class MathUtils {
+public final class MathUtils {
     /*
      * For full details about this code see the following reference:
      *
@@ -82,6 +82,7 @@ final class MathUtils {
         1_000_000_000_000_000L,
         10_000_000_000_000_000L,
         100_000_000_000_000_000L,
+        1_000_000_000_000_000_000L,
     };
 
     /**
@@ -91,7 +92,7 @@ final class MathUtils {
      *          0 &le; {@code e} &le; {@link #H}.
      * @return 10<sup>{@code e}</sup>.
      */
-    static long pow10(int e) {
+    public static long pow10(int e) {
         return pow10[e];
     }
 

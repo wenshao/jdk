@@ -39,6 +39,7 @@ import java.io.StreamCorruptedException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import jdk.internal.math.MathUtils;
 import jdk.internal.util.DecimalDigits;
 
 /**
@@ -3476,26 +3477,10 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
         if(scale==0) {
             return unscaledString();
         }
-        if(this.scale<0) { // No decimal point
-            if(signum()==0) {
-                return "0";
-            }
-            int trailingZeros = checkScaleNonZero((-(long)scale));
-            StringBuilder buf;
-            if(intCompact!=INFLATED) {
-                buf = new StringBuilder(20+trailingZeros);
-                buf.append(intCompact);
-            } else {
-                String str = intVal.toString();
-                buf = new StringBuilder(str.length()+trailingZeros);
-                buf.append(str);
-            }
-            for (int i = 0; i < trailingZeros; i++) {
-                buf.append('0');
-            }
-            return buf.toString();
+        if (intCompact != INFLATED) {
+            return ConcatHelper.scale(intCompact, scale);
         }
-        String str = unscaledAbsString();
+        String str = intVal.abs().toString();
         return getValueString(signum(), str, scale);
     }
 
@@ -4142,27 +4127,97 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
     }
 
     static final class ConcatHelper {
+        static final String[] ZEROS = {
+                "0",
+                "00",
+                "000",
+                "0000",
+                "00000",
+                "000000",
+                "0000000",
+                "00000000",
+                "000000000",
+                "0000000000",
+                "00000000000",
+                "000000000000",
+                "0000000000000",
+                "00000000000000",
+                "000000000000000",
+                "0000000000000000",
+                "00000000000000000",
+                "000000000000000000"
+        };
+
         private static final MethodHandle NEGATIVE_ZERO_CHAR_CHAR;
         private static final MethodHandle LONG_DOT_CHAR_CHAR;
+        private static final MethodHandle LONG_STR;
+        private static final MethodHandle STR_STR_LONG;
+        private static final MethodHandle LONG_DOT_LONG;
+        private static final MethodHandle LONG_DOT_LONG_STR;
+        private static final MethodHandle LONG_DOT_STR_LONG;
         static {
             try {
-                NEGATIVE_ZERO_CHAR_CHAR
-                        = StringConcatFactory.makeConcatWithConstants(
-                            MethodHandles.lookup(),
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                NEGATIVE_ZERO_CHAR_CHAR = StringConcatFactory.makeConcatWithConstants(
+                            lookup,
                             "neg_zero_scale2",
                             MethodType.methodType(String.class, char.class, char.class),
                             "-0.\1\1"
                         ).dynamicInvoker();
-                LONG_DOT_CHAR_CHAR
-                        = StringConcatFactory.makeConcatWithConstants(
+                LONG_DOT_CHAR_CHAR = StringConcatFactory.makeConcatWithConstants(
+                            lookup,
+                            "scale2",
+                            MethodType.methodType(String.class, long.class, char.class, char.class),
+                            "\1.\1\1"
+                        ).dynamicInvoker();
+
+                LONG_STR = StringConcatFactory.makeConcatWithConstants(
+                            lookup,
+                            "long_str",
+                            MethodType.methodType(String.class, long.class, String.class),
+                            "\1\1"
+                        ).dynamicInvoker();
+                STR_STR_LONG = StringConcatFactory.makeConcatWithConstants(
+                            lookup,
+                            "str_str_long",
+                            MethodType.methodType(String.class, String.class, String.class, long.class),
+                            "\1\1\1"
+                        ).dynamicInvoker();
+                LONG_DOT_LONG = StringConcatFactory.makeConcatWithConstants(
+                            lookup,
+                            "long_dot_long",
+                            MethodType.methodType(String.class, long.class, long.class),
+                            "\1.\1"
+                        ).dynamicInvoker();
+                LONG_DOT_LONG_STR = StringConcatFactory.makeConcatWithConstants(
+                            MethodHandles.lookup(),
+                            "long_dot_long_str",
+                            MethodType.methodType(String.class, long.class, long.class, String.class),
+                            "\1.\1\1"
+                        ).dynamicInvoker();
+                LONG_DOT_STR_LONG = StringConcatFactory.makeConcatWithConstants(
                         MethodHandles.lookup(),
-                        "scale2",
-                        MethodType.methodType(String.class, long.class, char.class, char.class),
+                        "long_dot_long_str",
+                        MethodType.methodType(String.class, long.class, String.class, long.class),
                         "\1.\1\1"
                 ).dynamicInvoker();
             } catch (Exception e) {
                 throw new Error("Bootstrap error", e);
             }
+        }
+
+        static String zeros(int count) {
+            if (count <= 0) {
+                return "";
+            }
+
+            if (count <= ZEROS.length) {
+                return ZEROS[count - 1];
+            }
+
+            return new StringBuilder(count)
+                    .repeat('0', count)
+                    .toString();
         }
 
         static String scale2(long intCompact) {
@@ -4176,6 +4231,46 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
                 }
 
                 return (String) LONG_DOT_CHAR_CHAR.invokeExact(highInt, c0, c1);
+            } catch (Throwable e) {
+                throw new AssertionError(e);
+            }
+        }
+
+        static String scale(long intCompact, int scale) {
+            try {
+                if (scale < 0) {
+                    return (String) LONG_STR.invokeExact(intCompact, zeros(-scale));
+                }
+
+                final boolean negative;
+                long intCompactAbs;
+                if (intCompact < 0) {
+                    negative = true;
+                    intCompactAbs = -intCompact;
+                } else {
+                    negative = false;
+                    intCompactAbs = intCompact;
+                }
+
+                int sizeAbs = DecimalDigits.INSTANCE.size(intCompactAbs);
+                int insertionPoint = sizeAbs - scale;
+                if (insertionPoint <= 0) {
+                    String prefix = negative ? "-0." : "0.";
+                    return (String) STR_STR_LONG.invokeExact(prefix, zeros(-insertionPoint), intCompactAbs);
+                }
+
+                long power = MathUtils.pow10(scale);
+                long div = intCompact / power;
+                long rem = intCompactAbs % power;
+
+                int fillZeros = scale - DecimalDigits.INSTANCE.size(rem);
+                if (fillZeros == 0) {
+                    return (String) LONG_DOT_LONG.invokeExact(div, rem);
+                } else if (fillZeros < 0) {
+                    return (String) LONG_DOT_LONG_STR.invokeExact(div, rem, zeros(-fillZeros));
+                } else {
+                    return (String) LONG_DOT_STR_LONG.invokeExact(div, zeros(fillZeros), rem);
+                }
             } catch (Throwable e) {
                 throw new AssertionError(e);
             }
@@ -4196,13 +4291,23 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
         long intCompact = this.intCompact;
         if (scale == 0)                      // zero scale is trivial
             return unscaledString();
-        if (scale == 2 && intCompact != INFLATED) {
+        if (intCompact != INFLATED) {
             // currency fast path
-            return ConcatHelper.scale2(intCompact);
+            if (scale == 2) {
+                return ConcatHelper.scale2(intCompact);
+            }
+
+            int coeffLen = DecimalDigits.INSTANCE.size(Math.abs(intCompact));
+            long adjusted = -(long)scale + (coeffLen -1);
+            if ((scale >= 0) && (adjusted >= -6)) { // plain number
+                return ConcatHelper.scale(intCompact, scale);
+            }
         }
 
         // Get the significand as an absolute value
-        String coeff = unscaledAbsString();
+        String coeff = intCompact != INFLATED
+                ? Long.toString(Math.abs(intCompact))
+                : intVal.abs().toString();
 
         // Construct a buffer, with sufficient capacity for all cases.
         // If E-notation is needed, length will be: +1 if negative, +1
@@ -4278,15 +4383,6 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
             buf.append(adjusted);
         }
         return buf.toString();
-    }
-
-    /**
-     * Get the significand as an absolute value
-     */
-    private String unscaledAbsString() {
-        return intCompact != INFLATED
-                ? Long.toString(Math.abs(intCompact))
-                : intVal.abs().toString();
     }
 
     private String unscaledString() {
