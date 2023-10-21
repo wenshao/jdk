@@ -703,6 +703,16 @@ public final class StringConcatFactory {
         if (prefix == null || prefix.isEmpty()) {
             return noPrefixPrepender(cl);
         } else {
+            // if remove this will slower
+            if (prefix.length() == 1
+                    && (cl == char.class || cl == int.class || cl == long.class)) {
+                char ch = prefix.charAt(0);
+                MethodHandle prepend = JLA.stringConcatHelper(
+                        "prepend",
+                        methodType(long.class, long.class, byte[].class, cl, char.class)).rebind();
+                return MethodHandles.insertArguments(prepend, 3, ch);
+            }
+
             return MethodHandles.insertArguments(
                     prepender(cl), 3, prefix);
         }
