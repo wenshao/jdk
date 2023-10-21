@@ -146,14 +146,6 @@ public class BigDecimals {
 
     @Benchmark
     @OperationsPerInvocation(TEST_SIZE)
-    public void testToPlainString(Blackhole bh) {
-        for (BigDecimal s : bigDecimals) {
-            bh.consume(s.toPlainString());
-        }
-    }
-
-    @Benchmark
-    @OperationsPerInvocation(TEST_SIZE)
     public void testToEngineeringString(Blackhole bh) {
         for (BigDecimal s : bigDecimals) {
             bh.consume(s.toEngineeringString());
