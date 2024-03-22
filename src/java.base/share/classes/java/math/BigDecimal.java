@@ -1335,9 +1335,8 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
     public static BigDecimal valueOf(long val) {
         if (val >= 0 && val < ZERO_THROUGH_TEN.length)
             return ZERO_THROUGH_TEN[(int)val];
-        else if (val != INFLATED)
-            return new BigDecimal(null, val, 0, 0);
-        return new BigDecimal(INFLATED_BIGINT, val, 0, 0);
+        return new BigDecimal(val == INFLATED ? INFLATED_BIGINT : null,
+                val, 0, 0);
     }
 
     static BigDecimal valueOf(long unscaledVal, int scale, int prec) {
