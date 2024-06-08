@@ -144,14 +144,63 @@ public final class HexDigits {
      * @return the last index used
      */
     public static int getCharsLatin1(long value, int index, byte[] buffer) {
-        while ((value & ~0xFF) != 0) {
+        while ((value & ~0xFFFFL) != 0) {
+            int v = (DIGITS[((int) value) & 0xFF] << 16) | DIGITS[((int) (value >>> 8)) & 0xFF];
+            index -= 4;
+            buffer[index]     = (byte)  v;
+            buffer[index + 1] = (byte) (v >> 8);
+            buffer[index + 2] = (byte) (v >> 16);
+            buffer[index + 3] = (byte) (v >> 24);
+            value >>>= 16;
+        }
+
+        if ((value & ~0xFF) != 0) {
             short pair = DIGITS[((int) value) & 0xFF];
-            buffer[--index] = (byte)(pair >> 8);
-            buffer[--index] = (byte)(pair);
+            index -= 2;
+            buffer[index] = (byte)(pair);
+            buffer[index + 1] = (byte)(pair >> 8);
             value >>>= 8;
         }
 
         int digits = DIGITS[(int) (value & 0xFF)];
+        buffer[--index] = (byte) (digits >> 8);
+
+        if (0xF < value) {
+            buffer[--index] = (byte) (digits & 0xFF);
+        }
+
+        return index;
+    }
+
+    /**
+     * Insert digits for long value in buffer from high index to low index.
+     *
+     * @param value      value to convert
+     * @param index      insert point + 1
+     * @param buffer     byte buffer to copy into
+     *
+     * @return the last index used
+     */
+    public static int getCharsLatin1(int value, int index, byte[] buffer) {
+        while ((value & ~0xFFFFL) != 0) {
+            int v = (DIGITS[value & 0xFF] << 16) | DIGITS[(value >>> 8) & 0xFF];
+            index -= 4;
+            buffer[index]     = (byte)  v;
+            buffer[index + 1] = (byte) (v >> 8);
+            buffer[index + 2] = (byte) (v >> 16);
+            buffer[index + 3] = (byte) (v >> 24);
+            value >>>= 16;
+        }
+
+        if ((value & ~0xFF) != 0) {
+            short pair = DIGITS[value & 0xFF];
+            index -= 2;
+            buffer[index] = (byte)(pair);
+            buffer[index + 1] = (byte)(pair >> 8);
+            value >>>= 8;
+        }
+
+        int digits = DIGITS[value & 0xFF];
         buffer[--index] = (byte) (digits >> 8);
 
         if (0xF < value) {
@@ -189,6 +238,33 @@ public final class HexDigits {
     }
 
     /**
+     * Insert digits for int value in buffer from high index to low index.
+     *
+     * @param value      value to convert
+     * @param index      insert point + 1
+     * @param buffer     byte buffer to copy into
+     *
+     * @return the last index used
+     */
+    public static int getCharsUTF16(int value, int index, byte[] buffer) {
+        while ((value & ~0xFF) != 0) {
+            int pair = (int) DIGITS[value & 0xFF];
+            JLA.putCharUTF16(buffer, --index, pair >> 8);
+            JLA.putCharUTF16(buffer, --index, pair & 0xFF);
+            value >>>= 8;
+        }
+
+        int digits = DIGITS[value & 0xFF];
+        JLA.putCharUTF16(buffer, --index, (byte) (digits >> 8));
+
+        if (0xF < value) {
+            JLA.putCharUTF16(buffer, --index, (byte) (digits & 0xFF));
+        }
+
+        return index;
+    }
+
+    /**
      * Calculate the number of digits required to represent the long.
      *
      * @param value value to convert
@@ -198,5 +274,17 @@ public final class HexDigits {
     public static int stringSize(long value) {
         return value == 0 ? 1 :
                 67 - Long.numberOfLeadingZeros(value) >> 2;
+    }
+
+    /**
+     * Calculate the number of digits required to represent the int.
+     *
+     * @param value value to convert
+     *
+     * @return number of digits
+     */
+    public static int stringSize(int value) {
+        return value == 0 ? 1 :
+                35 - Integer.numberOfLeadingZeros(value) >> 2;
     }
 }

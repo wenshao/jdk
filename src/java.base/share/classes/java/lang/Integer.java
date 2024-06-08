@@ -27,6 +27,7 @@ package java.lang;
 
 import jdk.internal.misc.CDS;
 import jdk.internal.misc.VM;
+import jdk.internal.util.HexDigits;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 import jdk.internal.vm.annotation.Stable;
@@ -284,7 +285,16 @@ public final class Integer extends Number
      * @since   1.0.2
      */
     public static String toHexString(int i) {
-        return toUnsignedString0(i, 4);
+        int size = HexDigits.stringSize(i);
+        if (COMPACT_STRINGS) {
+            byte[] buf = new byte[size];
+            HexDigits.getCharsLatin1(i, size, buf);
+            return new String(buf, LATIN1);
+        } else {
+            byte[] buf = new byte[size * 2];
+            HexDigits.getCharsUTF16(i, size, buf);
+            return new String(buf, UTF16);
+        }
     }
 
     /**
