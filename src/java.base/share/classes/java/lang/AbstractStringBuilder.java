@@ -27,6 +27,7 @@ package java.lang;
 
 import jdk.internal.math.DoubleToDecimal;
 import jdk.internal.math.FloatToDecimal;
+import jdk.internal.misc.Unsafe;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
@@ -35,6 +36,7 @@ import java.util.Spliterator;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
+import jdk.internal.util.ByteArrayLittleEndian;
 import jdk.internal.util.Preconditions;
 
 import static java.lang.String.COMPACT_STRINGS;
@@ -61,6 +63,44 @@ import static java.lang.String.checkOffset;
  */
 abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
     permits StringBuilder, StringBuffer {
+    static final Unsafe UNSAFE = Unsafe.getUnsafe();
+
+    static final int NULL_LATIN1; // null
+    static final int TRUE_LATIN1; // true
+    static final int FALS_LATIN1; // fals
+
+    static final long NULL_UTF16; // null
+    static final long TRUE_UTF16; // true
+    static final long FALS_UTF16; // fals
+
+    static {
+        byte[] bytes4 = new byte[4];
+        byte[] bytes8 = new byte[8];
+
+        bytes4[0] = 'n';
+        bytes4[1] = 'u';
+        bytes4[2] = 'l';
+        bytes4[3] = 'l';
+        NULL_LATIN1 = UNSAFE.getInt(bytes4, Unsafe.ARRAY_BYTE_BASE_OFFSET);
+        StringUTF16.inflate(bytes4, 0, bytes8, 0, 4);
+        NULL_UTF16 = UNSAFE.getLong(bytes8, Unsafe.ARRAY_BYTE_BASE_OFFSET);
+
+        bytes4[0] = 't';
+        bytes4[1] = 'r';
+        bytes4[2] = 'u';
+        bytes4[3] = 'e';
+        TRUE_LATIN1 = UNSAFE.getInt(bytes4, Unsafe.ARRAY_BYTE_BASE_OFFSET);
+        StringUTF16.inflate(bytes4, 0, bytes8, 0, 4);
+        TRUE_UTF16 = UNSAFE.getLong(bytes8, Unsafe.ARRAY_BYTE_BASE_OFFSET);
+
+        bytes4[0] = 'f';
+        bytes4[1] = 'a';
+        bytes4[2] = 'l';
+        bytes4[3] = 's';
+        FALS_LATIN1 = UNSAFE.getInt(bytes4, Unsafe.ARRAY_BYTE_BASE_OFFSET);
+        StringUTF16.inflate(bytes4, 0, bytes8, 0, 4);
+        FALS_UTF16 = UNSAFE.getLong(bytes8, Unsafe.ARRAY_BYTE_BASE_OFFSET);
+    }
     /**
      * The value is used for character storage.
      */
@@ -639,14 +679,17 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         int count = this.count;
         byte[] val = this.value;
         if (isLatin1()) {
-            val[count++] = 'n';
-            val[count++] = 'u';
-            val[count++] = 'l';
-            val[count++] = 'l';
+            UNSAFE.putInt(
+                    val,
+                    Unsafe.ARRAY_BYTE_BASE_OFFSET + count,
+                    NULL_LATIN1);
         } else {
-            count = StringUTF16.putCharsAt(val, count, 'n', 'u', 'l', 'l');
+            UNSAFE.putLong(
+                    val,
+                    Unsafe.ARRAY_BYTE_BASE_OFFSET + (count << 1),
+                    NULL_UTF16);
         }
-        this.count = count;
+        this.count = count + 4;
         return this;
     }
 
@@ -766,30 +809,28 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(boolean b) {
-        ensureCapacityInternal(count + (b ? 4 : 5));
         int count = this.count;
+        int spaceNeeded = count + (b ? 4 : 5);
+        ensureCapacityInternal(spaceNeeded);
         byte[] val = this.value;
         if (isLatin1()) {
-            if (b) {
-                val[count++] = 't';
-                val[count++] = 'r';
-                val[count++] = 'u';
-                val[count++] = 'e';
-            } else {
-                val[count++] = 'f';
-                val[count++] = 'a';
-                val[count++] = 'l';
-                val[count++] = 's';
-                val[count++] = 'e';
+            UNSAFE.putInt(
+                    val,
+                    Unsafe.ARRAY_BYTE_BASE_OFFSET + count,
+                    b ? TRUE_LATIN1 : FALS_LATIN1);
+            if (!b) {
+                val[count + 4] = 'e';
             }
         } else {
-            if (b) {
-                count = StringUTF16.putCharsAt(val, count, 't', 'r', 'u', 'e');
-            } else {
-                count = StringUTF16.putCharsAt(val, count, 'f', 'a', 'l', 's', 'e');
+            UNSAFE.putLong(
+                    val,
+                    Unsafe.ARRAY_BYTE_BASE_OFFSET + (count << 1),
+                    b ? TRUE_UTF16 : FALS_UTF16);
+            if (!b) {
+                StringUTF16.putChar(val, count + 4, 'e');
             }
         }
-        this.count = count;
+        this.count = spaceNeeded;
         return this;
     }
 
