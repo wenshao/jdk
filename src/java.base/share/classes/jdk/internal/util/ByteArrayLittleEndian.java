@@ -41,13 +41,6 @@ public final class ByteArrayLittleEndian {
     private ByteArrayLittleEndian() {
     }
 
-    private static final VarHandle SHORT = createLittleEndian(short[].class);
-    private static final VarHandle CHAR = createLittleEndian(char[].class);
-    private static final VarHandle INT = createLittleEndian(int[].class);
-    private static final VarHandle FLOAT = createLittleEndian(float[].class);
-    private static final VarHandle LONG = createLittleEndian(long[].class);
-    private static final VarHandle DOUBLE = createLittleEndian(double[].class);
-
     /*
      * Methods for unpacking primitive values from byte arrays starting at
      * a given offset.
@@ -79,7 +72,8 @@ public final class ByteArrayLittleEndian {
      * @see #setChar(byte[], int, char)
      */
     public static char getChar(byte[] array, int offset) {
-        return (char) CHAR.get(array, offset);
+        return (char) (((array[offset    ] & 0xff)     )
+                     | ((array[offset + 1] & 0xff) << 8));
     }
 
     /**
@@ -96,7 +90,8 @@ public final class ByteArrayLittleEndian {
      * @see #setShort(byte[], int, short)
      */
     public static short getShort(byte[] array, int offset) {
-        return (short) SHORT.get(array, offset);
+        return (short) (((array[offset    ] & 0xff)     )
+                      | ((array[offset + 1] & 0xff) << 8));
     }
 
     /**
@@ -113,7 +108,7 @@ public final class ByteArrayLittleEndian {
      * @see #setUnsignedShort(byte[], int, int)
      */
     public static int getUnsignedShort(byte[] array, int offset) {
-        return Short.toUnsignedInt((short) SHORT.get(array, offset));
+        return Short.toUnsignedInt(getShort(array, offset));
     }
 
     /**
@@ -129,7 +124,10 @@ public final class ByteArrayLittleEndian {
      * @see #setInt(byte[], int, int)
      */
     public static int getInt(byte[] array, int offset) {
-        return (int) INT.get(array, offset);
+        return ((array[offset    ] & 0xff)      )
+             | ((array[offset + 1] & 0xff) <<  8)
+             | ((array[offset + 2] & 0xff) << 16)
+             | ((array[offset + 3] & 0xff) << 24);
     }
 
     /**
@@ -149,27 +147,7 @@ public final class ByteArrayLittleEndian {
     public static float getFloat(byte[] array, int offset) {
         // Using Float.intBitsToFloat collapses NaN values to a single
         // "canonical" NaN value
-        return Float.intBitsToFloat((int) INT.get(array, offset));
-    }
-
-    /**
-     * {@return a {@code float} from the provided {@code array} at the given {@code offset}
-     * using little endian order}.
-     * <p>
-     * Variants of {@linkplain Float#NaN } values are silently read according
-     * to their bit patterns.
-     * <p>
-     * There are no access alignment requirements.
-     *
-     * @param array  to get a value from.
-     * @param offset where extraction in the array should begin
-     * @throws IndexOutOfBoundsException if the provided {@code offset} is outside
-     *                                   the range [0, array.length - 4]
-     * @see #setFloatRaw(byte[], int, float)
-     */
-    public static float getFloatRaw(byte[] array, int offset) {
-        // Just gets the bits as they are
-        return (float) FLOAT.get(array, offset);
+        return Float.intBitsToFloat(getInt(array, offset));
     }
 
     /**
@@ -185,7 +163,14 @@ public final class ByteArrayLittleEndian {
      * @see #setLong(byte[], int, long)
      */
     public static long getLong(byte[] array, int offset) {
-        return (long) LONG.get(array, offset);
+        return (((long) array[offset    ] & 0xff)      )
+             | (((long) array[offset + 1] & 0xff) <<  8)
+             | (((long) array[offset + 2] & 0xff) << 16)
+             | (((long) array[offset + 3] & 0xff) << 24)
+             | (((long) array[offset + 4] & 0xff) << 32)
+             | (((long) array[offset + 5] & 0xff) << 40)
+             | (((long) array[offset + 6] & 0xff) << 48)
+             | (((long) array[offset + 7] & 0xff) << 56);
     }
 
     /**
@@ -205,27 +190,7 @@ public final class ByteArrayLittleEndian {
     public static double getDouble(byte[] array, int offset) {
         // Using Double.longBitsToDouble collapses NaN values to a single
         // "canonical" NaN value
-        return Double.longBitsToDouble((long) LONG.get(array, offset));
-    }
-
-    /**
-     * {@return a {@code double} from the provided {@code array} at the given {@code offset}
-     * using little endian order}.
-     * <p>
-     * Variants of {@linkplain Double#NaN } values are silently read according to
-     * their bit patterns.
-     * <p>
-     * There are no access alignment requirements.
-     *
-     * @param array  to get a value from.
-     * @param offset where extraction in the array should begin
-     * @throws IndexOutOfBoundsException if the provided {@code offset} is outside
-     *                                   the range [0, array.length - 8]
-     * @see #setDoubleRaw(byte[], int, double)
-     */
-    public static double getDoubleRaw(byte[] array, int offset) {
-        // Just gets the bits as they are
-        return (double) DOUBLE.get(array, offset);
+        return Double.longBitsToDouble(getLong(array, offset));
     }
 
     /*
@@ -262,7 +227,8 @@ public final class ByteArrayLittleEndian {
      * @see #getChar(byte[], int)
      */
     public static void setChar(byte[] array, int offset, char value) {
-        CHAR.set(array, offset, value);
+        array[offset]     = (byte)  value;
+        array[offset + 1] = (byte) (value >> 8);
     }
 
     /**
@@ -279,7 +245,8 @@ public final class ByteArrayLittleEndian {
      * @see #getShort(byte[], int)
      */
     public static void setShort(byte[] array, int offset, short value) {
-        SHORT.set(array, offset, value);
+        array[offset]     = (byte)  value;
+        array[offset + 1] = (byte) (value >> 8);
     }
 
     /**
@@ -296,7 +263,8 @@ public final class ByteArrayLittleEndian {
      * @see #getUnsignedShort(byte[], int)
      */
     public static void setUnsignedShort(byte[] array, int offset, int value) {
-        SHORT.set(array, offset, (short) (char) value);
+        array[offset]     = (byte) (value & 0xff);
+        array[offset + 1] = (byte) (value >> 8);
     }
 
     /**
@@ -313,7 +281,10 @@ public final class ByteArrayLittleEndian {
      * @see #getInt(byte[], int)
      */
     public static void setInt(byte[] array, int offset, int value) {
-        INT.set(array, offset, value);
+        array[offset]     = (byte)  value;
+        array[offset + 1] = (byte) (value >> 8);
+        array[offset + 2] = (byte) (value >> 16);
+        array[offset + 3] = (byte) (value >> 24);
     }
 
     /**
@@ -334,28 +305,7 @@ public final class ByteArrayLittleEndian {
     public static void setFloat(byte[] array, int offset, float value) {
         // Using Float.floatToIntBits collapses NaN values to a single
         // "canonical" NaN value
-        INT.set(array, offset, Float.floatToIntBits(value));
-    }
-
-    /**
-     * Sets (writes) the provided {@code value} using little endian order into
-     * the provided {@code array} beginning at the given {@code offset}.
-     * <p>
-     * Variants of {@linkplain Float#NaN } values are silently written according to
-     * their bit patterns.
-     * <p>
-     * There are no access alignment requirements.
-     *
-     * @param array  to set (write) a value into
-     * @param offset where setting (writing) in the array should begin
-     * @param value  value to set in the array
-     * @throws IndexOutOfBoundsException if the provided {@code offset} is outside
-     *                                   the range [0, array.length - 2]
-     * @see #getFloatRaw(byte[], int)
-     */
-    public static void setFloatRaw(byte[] array, int offset, float value) {
-        // Just sets the bits as they are
-        FLOAT.set(array, offset, value);
+        setInt(array, offset, Float.floatToIntBits(value));
     }
 
     /**
@@ -372,7 +322,14 @@ public final class ByteArrayLittleEndian {
      * @see #getLong(byte[], int)
      */
     public static void setLong(byte[] array, int offset, long value) {
-        LONG.set(array, offset, value);
+        array[offset]     = (byte)  value;
+        array[offset + 1] = (byte) (value >> 8);
+        array[offset + 2] = (byte) (value >> 16);
+        array[offset + 3] = (byte) (value >> 24);
+        array[offset + 4] = (byte) (value >> 32);
+        array[offset + 5] = (byte) (value >> 40);
+        array[offset + 6] = (byte) (value >> 48);
+        array[offset + 7] = (byte) (value >> 56);
     }
 
     /**
@@ -393,32 +350,6 @@ public final class ByteArrayLittleEndian {
     public static void setDouble(byte[] array, int offset, double value) {
         // Using Double.doubleToLongBits collapses NaN values to a single
         // "canonical" NaN value
-        LONG.set(array, offset, Double.doubleToLongBits(value));
+        setLong(array, offset, Double.doubleToLongBits(value));
     }
-
-    /**
-     * Sets (writes) the provided {@code value} using little endian order into
-     * the provided {@code array} beginning at the given {@code offset}.
-     * <p>
-     * Variants of {@linkplain Double#NaN } values are silently written according to
-     * their bit patterns.
-     * <p>
-     * There are no access alignment requirements.
-     *
-     * @param array  to set (write) a value into
-     * @param offset where setting (writing) in the array should begin
-     * @param value  value to set in the array
-     * @throws IndexOutOfBoundsException if the provided {@code offset} is outside
-     *                                   the range [0, array.length - 2]
-     * @see #getDoubleRaw(byte[], int)
-     */
-    public static void setDoubleRaw(byte[] array, int offset, double value) {
-        // Just sets the bits as they are
-        DOUBLE.set(array, offset, value);
-    }
-
-    private static VarHandle createLittleEndian(Class<?> viewArrayClass) {
-        return MethodHandles.byteArrayViewVarHandle(viewArrayClass, ByteOrder.LITTLE_ENDIAN);
-    }
-
 }
