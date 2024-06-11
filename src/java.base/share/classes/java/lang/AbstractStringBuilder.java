@@ -27,6 +27,7 @@ package java.lang;
 
 import jdk.internal.math.DoubleToDecimal;
 import jdk.internal.math.FloatToDecimal;
+import jdk.internal.misc.Unsafe;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
@@ -61,6 +62,81 @@ import static java.lang.String.checkOffset;
  */
 abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
     permits StringBuilder, StringBuffer {
+    static final Unsafe UNSAFE = Unsafe.getUnsafe();
+
+    static final int NULL_LATIN1;
+    static final int TRUE_LATIN1;
+    static final int FALS_LATIN1;
+
+    static final long NULL_UTF16;
+    static final long TRUE_UTF16;
+    static final long FALS_UTF16;
+
+    static {
+        byte[] bytes4 = new byte[4];
+        byte[] bytes8 = new byte[8];
+
+        bytes4[0] = 'n';
+        bytes4[1] = 'u';
+        bytes4[2] = 'l';
+        bytes4[3] = 'l';
+        NULL_LATIN1 = getInt(bytes4, 0);
+        StringUTF16.inflate(bytes4, 0, bytes8, 0, 4);
+        NULL_UTF16 = getLong(bytes8, 0);
+
+        bytes4[0] = 't';
+        bytes4[1] = 'r';
+        bytes4[2] = 'u';
+        bytes4[3] = 'e';
+        TRUE_LATIN1 = getInt(bytes4, 0);
+        StringUTF16.inflate(bytes4, 0, bytes8, 0, 4);
+        TRUE_UTF16 = getLong(bytes8, 0);
+
+        bytes4[0] = 'f';
+        bytes4[1] = 'a';
+        bytes4[2] = 'l';
+        bytes4[3] = 's';
+        FALS_LATIN1 = getInt(bytes4, 0);
+        StringUTF16.inflate(bytes4, 0, bytes8, 0, 4);
+        FALS_UTF16 = getLong(bytes8, 0);
+    }
+
+    private static void setLong(byte[] array, int offset, long value) {
+        array[offset]     = (byte) (value      );
+        array[offset + 1] = (byte) (value >>  8);
+        array[offset + 2] = (byte) (value >> 16);
+        array[offset + 3] = (byte) (value >> 24);
+        array[offset + 4] = (byte) (value >> 32);
+        array[offset + 5] = (byte) (value >> 40);
+        array[offset + 6] = (byte) (value >> 48);
+        array[offset + 7] = (byte) (value >> 56);
+    }
+
+    private static long getLong(byte[] array, int offset) {
+        return ((long) array[offset    ] & 0xff)
+            | (((long) array[offset + 1] & 0xff) <<  8)
+            | (((long) array[offset + 2] & 0xff) << 16)
+            | (((long) array[offset + 3] & 0xff) << 24)
+            | (((long) array[offset + 4] & 0xff) << 32)
+            | (((long) array[offset + 5] & 0xff) << 40)
+            | (((long) array[offset + 6] & 0xff) << 48)
+            | (((long) array[offset + 7] & 0xff) << 56);
+    }
+
+    private static void setInt(byte[] array, int offset, int value) {
+        array[offset    ] = (byte) (value      );
+        array[offset + 1] = (byte) (value >>  8);
+        array[offset + 2] = (byte) (value >> 16);
+        array[offset + 3] = (byte) (value >> 24);
+    }
+
+    public static int getInt(byte[] array, int offset) {
+        return (array[offset    ] & 0xff)
+            | ((array[offset + 1] & 0xff) << 8)
+            | ((array[offset + 2] & 0xff) << 16)
+            | ((array[offset + 3] & 0xff) << 24);
+    }
+
     /**
      * The value is used for character storage.
      */
@@ -635,18 +711,18 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
     }
 
     private AbstractStringBuilder appendNull() {
-        ensureCapacityInternal(count + 4);
         int count = this.count;
+        ensureCapacityInternal(count + 4);
         byte[] val = this.value;
         if (isLatin1()) {
-            val[count++] = 'n';
-            val[count++] = 'u';
-            val[count++] = 'l';
-            val[count++] = 'l';
+            val[count    ] = 'n';
+            val[count + 1] = 'u';
+            val[count + 2] = 'l';
+            val[count + 3] = 'l';
         } else {
-            count = StringUTF16.putCharsAt(val, count, 'n', 'u', 'l', 'l');
+            setLong(val, count << 1, NULL_UTF16);
         }
-        this.count = count;
+        this.count = count + 4;
         return this;
     }
 
@@ -766,30 +842,27 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(boolean b) {
-        ensureCapacityInternal(count + (b ? 4 : 5));
         int count = this.count;
+        int spaceNeeded = count + (b ? 4 : 5);
+        ensureCapacityInternal(spaceNeeded);
         byte[] val = this.value;
         if (isLatin1()) {
-            if (b) {
-                val[count++] = 't';
-                val[count++] = 'r';
-                val[count++] = 'u';
-                val[count++] = 'e';
-            } else {
-                val[count++] = 'f';
-                val[count++] = 'a';
-                val[count++] = 'l';
-                val[count++] = 's';
-                val[count++] = 'e';
+            setInt(val, count, b ? TRUE_LATIN1 : FALS_LATIN1);
+            if (!b) {
+                val[count + 4] = 'e';
             }
         } else {
-            if (b) {
-                count = StringUTF16.putCharsAt(val, count, 't', 'r', 'u', 'e');
-            } else {
-                count = StringUTF16.putCharsAt(val, count, 'f', 'a', 'l', 's', 'e');
+            setLong(val, count << 1, b ? TRUE_UTF16 : FALS_UTF16);
+            if (!b) {
+                StringUTF16.putChar(val, count + 4, 'e');
             }
+//            if (b) {
+//                StringUTF16.putCharsAt(val, count, 't', 'r', 'u', 'e');
+//            } else {
+//                StringUTF16.putCharsAt(val, count, 'f', 'a', 'l', 's', 'e');
+//            }
         }
-        this.count = count;
+        this.count = spaceNeeded;
         return this;
     }
 
