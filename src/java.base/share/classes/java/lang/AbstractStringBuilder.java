@@ -764,25 +764,22 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      */
     public AbstractStringBuilder append(boolean b) {
         int count = this.count;
-        if (b) {
-            ensureCapacityInternal(count + 4);
-            byte[] val = this.value;
-            if (isLatin1()) {
+        ensureCapacityInternal(count + (b ? 4 : 5));
+        byte[] val = this.value;
+        if (isLatin1()) {
+            if (b) {
                 StringLatin1.putCharsAt(val, count, 't', 'r', 'u', 'e');
             } else {
-                StringUTF16.putCharsAt(val, count, 't', 'r', 'u', 'e');
-            }
-            this.count = count + 4;
-        } else {
-            ensureCapacityInternal(count + 5);
-            byte[] val = this.value;
-            if (isLatin1()) {
                 StringLatin1.putCharsAt(val, count, 'f', 'a', 'l', 's', 'e');
+            }
+        } else {
+            if (b) {
+                StringUTF16.putCharsAt(val, count, 't', 'r', 'u', 'e');
             } else {
                 StringUTF16.putCharsAt(val, count, 'f', 'a', 'l', 's', 'e');
             }
-            this.count = count + 5;
         }
+        this.count = count + (b ? 4 : 5);
         return this;
     }
 
