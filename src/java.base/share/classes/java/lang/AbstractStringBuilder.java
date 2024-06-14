@@ -635,8 +635,8 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
     }
 
     private AbstractStringBuilder appendNull() {
-        int count = this.count;
         ensureCapacityInternal(count + 4);
+        int count = this.count;
         byte[] val = this.value;
         if (isLatin1()) {
             StringLatin1.putCharsAt(val, count, 'n', 'u', 'l', 'l');
