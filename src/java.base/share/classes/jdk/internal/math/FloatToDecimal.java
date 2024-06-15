@@ -36,18 +36,44 @@ import static jdk.internal.math.MathUtils.*;
 /**
  * This class exposes a method to render a {@code float} as a string.
  */
-public final class FloatToDecimal extends ToDecimal {
+public abstract class FloatToDecimal extends ToDecimal {
+    private FloatToDecimal() {}
+
     /**
      * Use LATIN1 encoding to process the input byte[] str
      *
      */
-    public static final FloatToDecimal LATIN1 = new FloatToDecimal(ToDecimal.LATIN1);
+    public static final FloatToDecimal LATIN1 = new FloatToDecimal() {
+        final void putChar(byte[] str, int index, int c) {
+            str[index] = (byte) c;
+        }
+
+        final char charAt(byte[] str, int index) {
+            return (char) str[index];
+        }
+
+        final int length(byte[] str) {
+            return str.length;
+        }
+    };
 
     /**
      * Use UTF16 encoding to process the input byte[] str
      *
      */
-    public static final FloatToDecimal UTF16  = new FloatToDecimal(ToDecimal.UTF16);
+    public static final FloatToDecimal UTF16  = new FloatToDecimal() {
+        final void putChar(byte[] str, int index, int c) {
+            JLA.putCharUTF16(str, index, (char) c);
+        }
+
+        final char charAt(byte[] str, int index) {
+            return JLA.getUTF16Char(str, index);
+        }
+
+        final int length(byte[] str) {
+            return str.length >> 1;
+        }
+    };
 
     /*
      * For full details about this code see the following references:
@@ -113,10 +139,6 @@ public final class FloatToDecimal extends ToDecimal {
      */
     public static final int MAX_CHARS = H + 6;
 
-    private FloatToDecimal(byte coder) {
-        super(coder);
-    }
-
     /**
      * Returns a string representation of the {@code float}
      * argument. All characters mentioned below are ASCII characters.
@@ -146,7 +168,7 @@ public final class FloatToDecimal extends ToDecimal {
      * @param v the {@code float} whose rendering is into str.
      * @throws IOException If an I/O error occurs
      */
-    public int putDecimal(byte[] str, int index, float v) {
+    public final int putDecimal(byte[] str, int index, float v) {
         assert index >= 0 && index + MAX_CHARS <= length(str) : "Trusted caller missed bounds check";
 
         int pair = toDecimal(str, index, v);

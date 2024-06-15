@@ -31,8 +31,8 @@ import jdk.internal.access.SharedSecrets;
 
 import static java.lang.Math.multiplyHigh;
 
-public sealed class ToDecimal permits DoubleToDecimal, FloatToDecimal{
-    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+abstract class ToDecimal {
+    protected static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
     /* Used for left-to-tight digit extraction */
     static final int MASK_28 = (1 << 28) - 1;
@@ -47,35 +47,15 @@ public sealed class ToDecimal permits DoubleToDecimal, FloatToDecimal{
     static final byte LATIN1 = 0;
     static final byte UTF16  = 1;
 
-    /**
-     * The identifier of the encoding used to encode the bytes. The supported values in this implementation are
-     *
-     * LATIN1
-     * UTF16
-     *
-     */
-    private final byte coder;
+    abstract void putChar(byte[] str, int index, int c);
 
-    public ToDecimal(byte coder) {
-        this.coder = coder;
-    }
+    abstract char charAt(byte[] str, int index);
 
-    final void putChar(byte[] str, int index, int c) {
-        if (coder == LATIN1) {
-            str[index] = (byte) c;
-        } else {
-            JLA.putCharUTF16(str, index, (char) c);
-        }
-    }
+    abstract int length(byte[] str);
 
     final void putCharsAt(byte[] str, int index, int c1, int c2) {
-        if (coder == LATIN1) {
-            str[index    ] = (byte) c1;
-            str[index + 1] = (byte) c2;
-        } else {
-            JLA.putCharUTF16(str, index    , c1);
-            JLA.putCharUTF16(str, index + 1, c2);
-        }
+        putChar(str, index    , c1);
+        putChar(str, index + 1, c2);
     }
 
     final void putDigit(byte[] str, int index, int d) {
@@ -87,27 +67,10 @@ public sealed class ToDecimal permits DoubleToDecimal, FloatToDecimal{
          * Left-to-right digits extraction:
          * algorithm 1 in [3], with b = 10, k = 8, n = 28.
          */
-        if (coder == LATIN1) {
-            put8DigitsLatin1(str, index, m);
-        } else {
-            put8DigitsUTF16(str, index, m);
-        }
-    }
-
-    private static void put8DigitsLatin1(byte[] str, int index, int m) {
         int y = y(m);
         for (int i = 0; i < 8; ++i) {
             int t = 10 * y;
-            str[index + i] = (byte) ('0' + (t >>> 28));
-            y = t & MASK_28;
-        }
-    }
-
-    private static void put8DigitsUTF16(byte[] str, int index, int m) {
-        int y = y(m);
-        for (int i = 0; i < 8; ++i) {
-            int t = 10 * y;
-            JLA.putCharUTF16(str, index + i, '0' + (t >>> 28));
+            putChar(str, index + i, '0' + (t >>> 28));
             y = t & MASK_28;
         }
     }
@@ -127,22 +90,12 @@ public sealed class ToDecimal permits DoubleToDecimal, FloatToDecimal{
     }
 
     final int removeTrailingZeroes(byte[] str, int index) {
-        if (coder == LATIN1) {
-            while (str[index - 1] == '0') {
-                --index;
-            }
-            /* ... but do not remove the one directly to the right of '.' */
-            if (str[index - 1] == '.') {
-                ++index;
-            }
-        } else {
-            while (JLA.getUTF16Char(str, index - 1) == '0') {
-                --index;
-            }
-            /* ... but do not remove the one directly to the right of '.' */
-            if (JLA.getUTF16Char(str, index - 1) == '.') {
-                ++index;
-            }
+        while (charAt(str, index - 1) == '0') {
+            --index;
+        }
+        /* ... but do not remove the one directly to the right of '.' */
+        if (charAt(str, index - 1) == '.') {
+            ++index;
         }
         return index;
     }
@@ -150,20 +103,10 @@ public sealed class ToDecimal permits DoubleToDecimal, FloatToDecimal{
     final int putSpecial(byte[] str, int index, int type) {
         String s = special(type);
         int length = s.length();
-        if (coder == LATIN1) {
-            for (int i = 0; i < length; ++i) {
-                str[index + i] = (byte) s.charAt(i);
-            }
-        } else {
-            for (int i = 0; i < length; ++i) {
-                putChar(str, index + i, s.charAt(i));
-            }
+        for (int i = 0; i < length; ++i) {
+            putChar(str, index + i, s.charAt(i));
         }
         return index + length;
-    }
-
-    int length(byte[] str) {
-        return str.length >> coder;
     }
 
     /* Using the deprecated constructor enhances performance */

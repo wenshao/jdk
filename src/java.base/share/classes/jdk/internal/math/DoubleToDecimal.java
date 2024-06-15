@@ -36,18 +36,44 @@ import static jdk.internal.math.MathUtils.*;
 /**
  * This class exposes a method to render a {@code double} as a string.
  */
-public final class DoubleToDecimal extends ToDecimal {
+public abstract class DoubleToDecimal extends ToDecimal {
+    private DoubleToDecimal() {}
+
     /**
      * Use LATIN1 encoding to process the input byte[] str
      *
      */
-    public static final DoubleToDecimal LATIN1 = new DoubleToDecimal(ToDecimal.LATIN1);
+    public static final DoubleToDecimal LATIN1 = new DoubleToDecimal()  {
+        final void putChar(byte[] str, int index, int c) {
+            str[index] = (byte) c;
+        }
+
+        final char charAt(byte[] str, int index) {
+            return (char) str[index];
+        }
+
+        final int length(byte[] str) {
+            return str.length;
+        }
+    };
 
     /**
      * Use UTF16 encoding to process the input byte[] str
      *
      */
-    public static final DoubleToDecimal UTF16  = new DoubleToDecimal(ToDecimal.UTF16);
+    public static final DoubleToDecimal UTF16  = new DoubleToDecimal() {
+        final void putChar(byte[] str, int index, int c) {
+            JLA.putCharUTF16(str, index, (char) c);
+        }
+
+        final char charAt(byte[] str, int index) {
+            return JLA.getUTF16Char(str, index);
+        }
+
+        final int length(byte[] str) {
+            return str.length >> 1;
+        }
+    };
 
     /*
      * For full details about this code see the following references:
@@ -113,10 +139,6 @@ public final class DoubleToDecimal extends ToDecimal {
      */
     public static final int MAX_CHARS = H + 7;
 
-    private DoubleToDecimal(byte coder) {
-        super(coder);
-    }
-
     /**
      * Returns a string representation of the {@code double}
      * argument. All characters mentioned below are ASCII characters.
@@ -168,7 +190,7 @@ public final class DoubleToDecimal extends ToDecimal {
      * @param v the {@code double} whose rendering is into str.
      * @throws IOException If an I/O error occurs
      */
-    public int putDecimal(byte[] str, int index, double v) {
+    public final int putDecimal(byte[] str, int index, double v) {
         assert index >= 0 && index + MAX_CHARS <= length(str) : "Trusted caller missed bounds check";
 
         int pair = toDecimal(str, index, v, null);
