@@ -87,6 +87,16 @@ public class StringFormat {
     }
 
     @Benchmark
+    public String lineFormat() {
+        return "0123456789 %n".formatted(i);
+    }
+
+    @Benchmark
+    public String liineFormatUtf16() {
+        return "\u3007\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d %n".formatted(i);
+    }
+
+    @Benchmark
     public String intFormat() {
         return "0123456789 %d".formatted(i);
     }
