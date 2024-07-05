@@ -2929,13 +2929,10 @@ public final class Formatter implements Closeable, Flushable {
         FormatSpecifier formatSpecifier;
         final String s;
         final int max;
-        final char first;
-        final int start;
+        char first;
+        int start;
         int off;
         char c;
-        int argSize;
-        int flagSize;
-        int widthSize;
 
         FormatSpecifierParser(char first, int start, String s, int max) {
             this.first = first;
@@ -2965,28 +2962,34 @@ public final class Formatter implements Closeable, Flushable {
          * @return the length of the format specifier. If no valid format specifier is found, 0 is returned.
          */
         int parse() {
-            int precisionSize = 0;
+            // %[argument_index$][flags][width][.precision][t]conversion
+            // %(\d+\$)?([-#+ 0,(\<]*)?(\d+)?(\.\d+)?([tT])?([a-zA-Z%])
+            int precision = -1;
 
-            // (\d+\$)?
-            parseArgument();
-
-            // ([-#+ 0,(\<]*)?
-            parseFlag();
-
-            // (\d+)?
-            parseWidth();
+            int index = parseArgument();
+            int flags = parseFlag();
+            if (Flags.contains(flags, Flags.PREVIOUS)) {
+                index = -1;
+            }
+            int width = parseWidth();
 
             if (c == '.') {
                 // (\.\d+)?
-                precisionSize = parsePrecision();
-                if (precisionSize == -1) {
+                precision = parsePrecision();
+                if (precision == -1) {
                     return 0;
                 }
             }
 
             // ([tT])?([a-zA-Z%])
             char t = '\0', conversion = '\0';
+            boolean dt = false;
             if ((c == 't' || c == 'T') && off + 1 < max) {
+                dt = true;
+                if (c == 'T') {
+                    flags = Flags.add(flags, Flags.UPPERCASE);
+                }
+
                 char c1 = s.charAt(off + 1);
                 if (isConversion(c1)) {
                     t = c;
@@ -2996,61 +2999,109 @@ public final class Formatter implements Closeable, Flushable {
             } else if (isConversion(c)) {
                 conversion = c;
                 ++off;
-            } else {
-                return 0;
             }
 
-            if (argSize + flagSize + widthSize + precisionSize + t + conversion != 0) {
+            if (conversion != '\0') {
                 formatSpecifier
-                        = new FormatSpecifier(s, start, argSize, flagSize, widthSize, precisionSize, t, conversion);
+                        = new FormatSpecifier(index, flags, width, precision, dt, conversion);
                 return off - start;
             }
+
             return 0;
         }
 
-        private void parseArgument() {
+        private int parseArgument() {
             // (\d+\$)?
+            int index = 0;
             int i = off;
-            for (; i < max && isDigit(c = s.charAt(i)); ++i);  // empty body
-            if (i == off || c != '$') {
-                c = first;
-                return;
+            for (; i < max && isDigit(c = s.charAt(i)); ++i){
+                index = index * 10 + c - '0';;
             }
 
-            i++; // skip '$'
+            int digits = off - i;
+            if (digits == 0 || c != '$') {
+                c = first;
+                return 0;
+            }
+
+            boolean overflow = digits > 10 || index < 0;
+            if (overflow || index == 0) {
+                throw new IllegalFormatArgumentIndexException(index);
+            }
+
+            ++i;
             if (i < max) {
                 c = s.charAt(i);
             }
 
-            argSize = i - off;
             off = i;
+            return index;
         }
 
-        private void parseFlag() {
+        private int parseFlag() {
             // ([-#+ 0,(\<]*)?
+            int flags = Flags.NONE;
             int i = off;
-            for (; i < max && Flags.isFlag(c = s.charAt(i)); ++i);  // empty body
-            flagSize = i - off;
+            for (; i < max; ++i) {
+                c = s.charAt(i);
+
+                int flag = Flags.parse(c);
+                if (flag == Flags.NONE) {
+                    break;
+                }
+                if (Flags.contains(flags, flag)) {
+                    throw Flags.duplicate(flag);
+                }
+                flags |= flag;
+            }
             off = i;
+            return flags;
         }
 
-        private void parseWidth() {
+        private int parseWidth() {
             // (\d+)?
             int i = off;
-            for (; i < max && isDigit(c = s.charAt(i)); ++i);  // empty body
-            widthSize = i - off;
+            int width = 0;
+            for (; i < max && isDigit(c = s.charAt(i)); ++i) {
+                width = width * 10 + c - '0';
+            }
+            int digits = i - off;
+            if (digits == 0) {
+                return -1;
+            }
+
+            boolean overflow = digits > 10 || width < 0;
+            if (overflow || width == 0) {
+                int errorWidth = width == 0 ? 0 : Integer.MIN_VALUE;
+                throw new IllegalFormatWidthException(errorWidth);
+            }
             off = i;
+            return width;
         }
 
         private int parsePrecision() {
+            int precision = 0;
             int i = ++off;
-            for (; i < max && isDigit(c = s.charAt(i)); ++i);  // empty body
-            if (i != off) {
-                int size = i - off + 1;
-                off = i;
-                return size;
+            for (; i < max && isDigit(c = s.charAt(i)); ++i) {
+                precision = precision * 10 + c - '0';
             }
-            return -1;
+
+            int digits = i - off;
+            if (digits == 0) {
+                return -1;
+            }
+
+            boolean overflow = digits > 10 || precision < 0;
+            if (overflow) {
+                throw new IllegalFormatPrecisionException(Integer.MIN_VALUE);
+            }
+
+            off = i;
+            return precision;
+        }
+
+        private char next(int off) {
+            return off < s.length() ? s.charAt(off) : '\0';
         }
     }
 
@@ -3425,41 +3476,28 @@ public final class Formatter implements Closeable, Flushable {
             }
         }
 
-        FormatSpecifier(
-                String s,
-                int i,
-                int argSize,
-                int flagSize,
-                int widthSize,
-                int precisionSize,
-                char t,
-                char conversion
-        ) {
-            int argEnd = i + argSize;
-            int flagEnd = argEnd + flagSize;
-            int widthEnd = flagEnd + widthSize;
-            int precisionEnd = widthEnd + precisionSize;
+        FormatSpecifier(int index, int flags, int width, int precision, boolean dt, char conv) {
+            this.index = index;
+            this.flags = flags;
+            this.width = width;
+            this.precision = precision;
+            this.dt = dt;
+            conversion(conv);
 
-            if (argSize > 0) {
-                index(s, i, argEnd);
-            }
-            if (flagSize > 0) {
-                flags(s, argEnd, flagEnd);
-            }
-            if (widthSize > 0) {
-                width(s, flagEnd, widthEnd);
-            }
-            if (precisionSize > 0) {
-                precision(s, widthEnd, precisionEnd);
-            }
-            if (t != '\0') {
-                dt = true;
-                if (t == 'T') {
-                    flags = Flags.add(flags, Flags.UPPERCASE);
-                }
-            }
-            conversion(conversion);
-            check();
+            if (dt)
+                checkDateTime();
+            else if (Conversion.isGeneral(c))
+                checkGeneral();
+            else if (Conversion.isCharacter(c))
+                checkCharacter();
+            else if (Conversion.isInteger(c))
+                checkInteger();
+            else if (Conversion.isFloat(c))
+                checkFloat();
+            else if (Conversion.isText(c))
+                checkText();
+            else
+                throw unknownFormatConversion(c);
         }
 
         private void check() {
@@ -5172,7 +5210,7 @@ public final class Formatter implements Closeable, Flushable {
                 char c = s.charAt(i);
                 int v = parse(c);
                 if (contains(f, v))
-                    throw new DuplicateFormatFlagsException(toString(v));
+                    throw Flags.duplicate(v);
                 f = add(f, v);
             }
             return f;
@@ -5189,7 +5227,7 @@ public final class Formatter implements Closeable, Flushable {
                 case ',' -> GROUP;
                 case '(' -> PARENTHESES;
                 case '<' -> PREVIOUS;
-                default -> throw new UnknownFormatFlagsException(String.valueOf(c));
+                default -> NONE;
             };
         }
 
@@ -5213,6 +5251,10 @@ public final class Formatter implements Closeable, Flushable {
             if (contains(f, PARENTHESES))   sb.append('(');
             if (contains(f, PREVIOUS))      sb.append('<');
             return sb.toString();
+        }
+
+        private static DuplicateFormatFlagsException duplicate(int flag) {
+            return new DuplicateFormatFlagsException(toString(flag));
         }
     }
 
