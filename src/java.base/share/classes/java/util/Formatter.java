@@ -3670,9 +3670,7 @@ public final class Formatter implements Closeable, Flushable {
              if (padRight) {
                  a.append(cs);
              }
-             for (int i = 0; i < sp; i++) {
-                 a.append(' ');
-             }
+             padding(a, sp);
              if (!padRight) {
                  a.append(cs);
              }
@@ -3885,7 +3883,7 @@ public final class Formatter implements Closeable, Flushable {
         }
 
         // neg := val < 0
-        private StringBuilder leadingSign(StringBuilder sb, boolean neg) {
+        private void leadingSign(StringBuilder sb, boolean neg) {
             if (!neg) {
                 if (Flags.contains(flags, Flags.PLUS)) {
                     sb.append('+');
@@ -3893,19 +3891,15 @@ public final class Formatter implements Closeable, Flushable {
                     sb.append(' ');
                 }
             } else {
-                if (Flags.contains(flags, Flags.PARENTHESES))
-                    sb.append('(');
-                else
-                    sb.append('-');
+                sb.append(
+                        Flags.contains(flags, Flags.PARENTHESES) ? '(' : '-');
             }
-            return sb;
         }
 
         // neg := val < 0
-        private StringBuilder trailingSign(StringBuilder sb, boolean neg) {
+        private void trailingSign(StringBuilder sb, boolean neg) {
             if (neg && Flags.contains(flags, Flags.PARENTHESES))
                 sb.append(')');
-            return sb;
         }
 
         private void print(Formatter fmt, BigInteger value, Locale l) throws IOException {
@@ -4282,60 +4276,81 @@ public final class Formatter implements Closeable, Flushable {
             throws IOException
         {
             if (c == Conversion.SCIENTIFIC) {
-                // Create a new BigDecimal with the desired precision.
-                int prec = (precision == -1 ? 6 : precision);
-                int scale = value.scale();
-                int origPrec = value.precision();
-                int nzeros = 0;
-                int compPrec;
+                printScientific(fmt, sb, value, l, flags, c, precision, neg);
+            } else if (c == Conversion.DECIMAL_FLOAT) {
+                printDecimalFloat(fmt, sb, value, l, flags, c, precision, neg);
+            } else if (c == Conversion.GENERAL) {
+                printGeneral(fmt, sb, value, l, flags, c, precision, neg);
+            } else if (c == Conversion.HEXADECIMAL_FLOAT) {
+                // This conversion isn't supported.  The error should be
+                // reported earlier.
+                assert false;
+            }
+        }
 
-                if (prec > origPrec - 1) {
-                    compPrec = origPrec;
-                    nzeros = prec - (origPrec - 1);
-                } else {
-                    compPrec = prec + 1;
-                }
+        private void printScientific(Formatter fmt, StringBuilder sb, BigDecimal value, Locale l,
+                           int flags, char c, int precision, boolean neg)
+            throws IOException
+        {
+            // Create a new BigDecimal with the desired precision.
+            int prec = (precision == -1 ? 6 : precision);
+            int scale = value.scale();
+            int origPrec = value.precision();
+            int nzeros = 0;
+            int compPrec;
 
-                MathContext mc = new MathContext(compPrec);
-                BigDecimal v
+            if (prec > origPrec - 1) {
+                compPrec = origPrec;
+                nzeros = prec - (origPrec - 1);
+            } else {
+                compPrec = prec + 1;
+            }
+
+            MathContext mc = new MathContext(compPrec);
+            BigDecimal v
                     = new BigDecimal(value.unscaledValue(), scale, mc);
 
-                BigDecimalLayout bdl
+            BigDecimalLayout bdl
                     = new BigDecimalLayout(v.unscaledValue(), v.scale(),
-                                           BigDecimalLayoutForm.SCIENTIFIC);
+                    BigDecimalLayoutForm.SCIENTIFIC);
 
-                StringBuilder mant = bdl.mantissa();
+            StringBuilder mant = bdl.mantissa();
 
-                // Add a decimal point if necessary.  The mantissa may not
-                // contain a decimal point if the scale is zero (the internal
-                // representation has no fractional part) or the original
-                // precision is one. Append a decimal point if '#' is set or if
-                // we require zero padding to get to the requested precision.
-                if ((origPrec == 1 || !bdl.hasDot())
-                        && (nzeros > 0 || (Flags.contains(flags, Flags.ALTERNATE)))) {
-                    mant.append('.');
-                }
+            // Add a decimal point if necessary.  The mantissa may not
+            // contain a decimal point if the scale is zero (the internal
+            // representation has no fractional part) or the original
+            // precision is one. Append a decimal point if '#' is set or if
+            // we require zero padding to get to the requested precision.
+            if ((origPrec == 1 || !bdl.hasDot())
+                    && (nzeros > 0 || (Flags.contains(flags, Flags.ALTERNATE)))) {
+                mant.append('.');
+            }
 
-                // Add trailing zeros in the case precision is greater than
-                // the number of available digits after the decimal separator.
-                trailingZeros(mant, nzeros);
+            // Add trailing zeros in the case precision is greater than
+            // the number of available digits after the decimal separator.
+            trailingZeros(mant, nzeros);
 
-                StringBuilder exp = bdl.exponent();
-                int newW = width;
-                if (width != -1) {
-                    newW = adjustWidth(width - exp.length() - 1, flags, neg);
-                }
-                localizedMagnitude(fmt, sb, mant, 0, flags, newW, l);
+            StringBuilder exp = bdl.exponent();
+            int newW = width;
+            if (width != -1) {
+                newW = adjustWidth(width - exp.length() - 1, flags, neg);
+            }
+            localizedMagnitude(fmt, sb, mant, 0, flags, newW, l);
 
-                sb.append(Flags.contains(flags, Flags.UPPERCASE) ? 'E' : 'e');
+            sb.append(Flags.contains(flags, Flags.UPPERCASE) ? 'E' : 'e');
 
-                int adaptedFlags = Flags.remove(flags, Flags.GROUP);
-                char sign = exp.charAt(0);
-                assert(sign == '+' || sign == '-');
-                sb.append(sign);
+            int adaptedFlags = Flags.remove(flags, Flags.GROUP);
+            char sign = exp.charAt(0);
+            assert(sign == '+' || sign == '-');
+            sb.append(sign);
 
-                sb.append(localizedMagnitude(fmt, null, exp, 1, adaptedFlags, -1, l));
-            } else if (c == Conversion.DECIMAL_FLOAT) {
+            sb.append(localizedMagnitude(fmt, null, exp, 1, adaptedFlags, -1, l));
+        }
+
+        private void printDecimalFloat(Formatter fmt, StringBuilder sb, BigDecimal value, Locale l,
+                           int flags, char c, int precision, boolean neg)
+            throws IOException
+            {
                 // Create a new BigDecimal with the desired precision.
                 int prec = (precision == -1 ? 6 : precision);
                 int scale = value.scale();
@@ -4349,14 +4364,14 @@ public final class Formatter implements Closeable, Flushable {
                     } else {
                         compPrec -= (scale - prec);
                         value = new BigDecimal(value.unscaledValue(),
-                                               scale,
-                                               new MathContext(compPrec));
+                                scale,
+                                new MathContext(compPrec));
                     }
                 }
                 BigDecimalLayout bdl = new BigDecimalLayout(
-                                           value.unscaledValue(),
-                                           value.scale(),
-                                           BigDecimalLayoutForm.DECIMAL_FLOAT);
+                        value.unscaledValue(),
+                        value.scale(),
+                        BigDecimalLayoutForm.DECIMAL_FLOAT);
 
                 StringBuilder mant = bdl.mantissa();
                 int nzeros = (bdl.scale() < prec ? prec - bdl.scale() : 0);
@@ -4376,42 +4391,42 @@ public final class Formatter implements Closeable, Flushable {
                 trailingZeros(mant, nzeros);
 
                 localizedMagnitude(fmt, sb, mant, 0, flags, adjustWidth(width, flags, neg), l);
-            } else if (c == Conversion.GENERAL) {
-                int prec = precision;
-                if (precision == -1)
-                    prec = 6;
-                else if (precision == 0)
-                    prec = 1;
+        }
 
-                value = value.round(new MathContext(prec));
-                if ((value.equals(BigDecimal.ZERO))
+        private void printGeneral(Formatter fmt, StringBuilder sb, BigDecimal value, Locale l,
+                           int flags, char c, int precision, boolean neg)
+            throws IOException
+        {
+            int prec = precision;
+            if (precision == -1)
+                prec = 6;
+            else if (precision == 0)
+                prec = 1;
+
+            value = value.round(new MathContext(prec));
+            if ((value.equals(BigDecimal.ZERO))
                     || ((value.compareTo(BigDecimal.valueOf(1, 4)) != -1)
-                        && (value.compareTo(BigDecimal.valueOf(1, -prec)) == -1))) {
+                    && (value.compareTo(BigDecimal.valueOf(1, -prec)) == -1))) {
 
-                    int e = - value.scale()
+                int e = - value.scale()
                         + (value.unscaledValue().toString().length() - 1);
 
-                    // xxx.yyy
-                    //   g precision (# sig digits) = #x + #y
-                    //   f precision = #y
-                    //   exponent = #x - 1
-                    // => f precision = g precision - exponent - 1
-                    // 0.000zzz
-                    //   g precision (# sig digits) = #z
-                    //   f precision = #0 (after '.') + #z
-                    //   exponent = - #0 (after '.') - 1
-                    // => f precision = g precision - exponent - 1
-                    prec = prec - e - 1;
+                // xxx.yyy
+                //   g precision (# sig digits) = #x + #y
+                //   f precision = #y
+                //   exponent = #x - 1
+                // => f precision = g precision - exponent - 1
+                // 0.000zzz
+                //   g precision (# sig digits) = #z
+                //   f precision = #0 (after '.') + #z
+                //   exponent = - #0 (after '.') - 1
+                // => f precision = g precision - exponent - 1
+                prec = prec - e - 1;
 
-                    print(fmt, sb, value, l, flags, Conversion.DECIMAL_FLOAT, prec,
-                          neg);
-                } else {
-                    print(fmt, sb, value, l, flags, Conversion.SCIENTIFIC, prec - 1, neg);
-                }
-            } else if (c == Conversion.HEXADECIMAL_FLOAT) {
-                // This conversion isn't supported.  The error should be
-                // reported earlier.
-                assert false;
+                print(fmt, sb, value, l, flags, Conversion.DECIMAL_FLOAT, prec,
+                        neg);
+            } else {
+                print(fmt, sb, value, l, flags, Conversion.SCIENTIFIC, prec - 1, neg);
             }
         }
 
@@ -4422,7 +4437,25 @@ public final class Formatter implements Closeable, Flushable {
             private int scale;
 
             public BigDecimalLayout(BigInteger intVal, int scale, BigDecimalLayoutForm form) {
-                layout(intVal, scale, form);
+                String coeff = intVal.toString();
+                this.scale = scale;
+
+                // Construct a buffer, with sufficient capacity for all cases.
+                // If E-notation is needed, length will be: +1 if negative, +1
+                // if '.' needed, +2 for "E+", + up to 10 for adjusted
+                // exponent.  Otherwise it could have +1 if negative, plus
+                // leading "0.00000"
+                int len = coeff.length();
+                mant = new StringBuilder(len + 14);
+
+                if (scale == 0) {
+                    layoutScaleZero(form, coeff, len);
+                } else if (form == BigDecimalLayoutForm.DECIMAL_FLOAT) {
+                    layoutDecimalFloat(intVal, scale, coeff, len);
+                } else {
+                    // x.xxx form
+                    layout(coeff, scale, len);
+                }
             }
 
             public boolean hasDot() {
@@ -4443,102 +4476,92 @@ public final class Formatter implements Closeable, Flushable {
                 return exp;
             }
 
-            private void layout(BigInteger intVal, int scale, BigDecimalLayoutForm form) {
-                String coeff = intVal.toString();
-                this.scale = scale;
-
-                // Construct a buffer, with sufficient capacity for all cases.
-                // If E-notation is needed, length will be: +1 if negative, +1
-                // if '.' needed, +2 for "E+", + up to 10 for adjusted
-                // exponent.  Otherwise it could have +1 if negative, plus
-                // leading "0.00000"
-                int len = coeff.length();
-                mant = new StringBuilder(len + 14);
-
-                if (scale == 0) {
-                    if (len > 1) {
-                        mant.append(coeff.charAt(0));
-                        if (form == BigDecimalLayoutForm.SCIENTIFIC) {
-                            mant.append('.');
-                            dot = true;
-                            mant.append(coeff, 1, len);
-                            exp = new StringBuilder("+");
-                            if (len < 10) {
-                                exp.append('0').append(len - 1);
-                            } else {
-                                exp.append(len - 1);
-                            }
-                        } else {
-                            mant.append(coeff, 1, len);
-                        }
-                    } else {
-                        mant.append(coeff);
-                        if (form == BigDecimalLayoutForm.SCIENTIFIC) {
-                            exp = new StringBuilder("+00");
-                        }
-                    }
-                } else if (form == BigDecimalLayoutForm.DECIMAL_FLOAT) {
-                    // count of padding zeros
-
-                    if (scale >= len) {
-                        // 0.xxx form
-                        mant.append("0.");
-                        dot = true;
-                        trailingZeros(mant, scale - len);
-                        mant.append(coeff);
-                    } else {
-                        if (scale > 0) {
-                            // xx.xx form
-                            int pad = len - scale;
-                            mant.append(coeff, 0, pad);
-                            mant.append('.');
-                            dot = true;
-                            mant.append(coeff, pad, len);
-                        } else { // scale < 0
-                            // xx form
-                            mant.append(coeff, 0, len);
-                            if (intVal.signum() != 0) {
-                                trailingZeros(mant, -scale);
-                            }
-                            this.scale = 0;
-                        }
-                    }
-                } else {
-                    // x.xxx form
+            private void layoutScaleZero(BigDecimalLayoutForm form, String coeff, int len) {
+                if (len > 1) {
                     mant.append(coeff.charAt(0));
-                    if (len > 1) {
+                    if (form == BigDecimalLayoutForm.SCIENTIFIC) {
                         mant.append('.');
                         dot = true;
                         mant.append(coeff, 1, len);
-                    }
-                    exp = new StringBuilder();
-                    long adjusted = -(long) scale + (len - 1);
-                    if (adjusted != 0) {
-                        long abs = Math.abs(adjusted);
-                        // require sign
-                        exp.append(adjusted < 0 ? '-' : '+');
-                        if (abs < 10) {
-                            exp.append('0');
+                        exp = new StringBuilder("+");
+                        if (len < 10) {
+                            exp.append('0').append(len - 1);
+                        } else {
+                            exp.append(len - 1);
                         }
-                        exp.append(abs);
                     } else {
-                        exp.append("+00");
+                        mant.append(coeff, 1, len);
                     }
+                } else {
+                    mant.append(coeff);
+                    if (form == BigDecimalLayoutForm.SCIENTIFIC) {
+                        exp = new StringBuilder("+00");
+                    }
+                }
+            }
+
+            private void layoutDecimalFloat(BigInteger intVal, int scale, String coeff, int len) {
+                // count of padding zeros
+                StringBuilder mant = this.mant;
+                if (scale >= len) {
+                    // 0.xxx form
+                    mant.append("0.");
+                    dot = true;
+                    trailingZeros(mant, scale - len);
+                    mant.append(coeff);
+                } else {
+                    if (scale > 0) {
+                        // xx.xx form
+                        int pad = len - scale;
+                        mant.append(coeff, 0, pad);
+                        mant.append('.');
+                        dot = true;
+                        mant.append(coeff, pad, len);
+                    } else { // scale < 0
+                        // xx form
+                        mant.append(coeff, 0, len);
+                        if (intVal.signum() != 0) {
+                            trailingZeros(mant, -scale);
+                        }
+                        this.scale = 0;
+                    }
+                }
+            }
+
+            private void layout(String coeff, int scale, int len) {
+                // x.xxx form
+                mant.append(coeff.charAt(0));
+                if (len > 1) {
+                    mant.append('.');
+                    dot = true;
+                    mant.append(coeff, 1, len);
+                }
+                exp = new StringBuilder();
+                long adjusted = -(long) scale + (len - 1);
+                if (adjusted != 0) {
+                    long abs = Math.abs(adjusted);
+                    // require sign
+                    exp.append(adjusted < 0 ? '-' : '+');
+                    if (abs < 10) {
+                        exp.append('0');
+                    }
+                    exp.append(abs);
+                } else {
+                    exp.append("+00");
                 }
             }
         }
 
         private int adjustWidth(int width, int flags, boolean neg) {
-            int newW = width;
-            if (newW != -1 && neg && Flags.contains(flags, Flags.PARENTHESES))
-                newW--;
-            return newW;
+            if (width != -1 && neg && Flags.contains(flags, Flags.PARENTHESES))
+                width--;
+            return width;
         }
 
         // Add trailing zeros
         private void trailingZeros(StringBuilder sb, int nzeros) {
-            for (int i = 0; i < nzeros; i++) {
-                sb.append('0');
+            if (nzeros > 0) {
+                sb.repeat('0', nzeros);
             }
         }
 
@@ -4547,11 +4570,11 @@ public final class Formatter implements Closeable, Flushable {
             print(fmt, sb, t, c, l);
 
             // justify based on width
-            if (Flags.contains(flags, Flags.UPPERCASE)) {
-                appendJustified(fmt.a, toUpperCaseWithLocale(sb.toString(), l));
-            } else {
-                appendJustified(fmt.a, sb);
-            }
+            appendJustified(
+                    fmt.a,
+                    Flags.contains(flags, Flags.UPPERCASE)
+                            ? toUpperCaseWithLocale(sb.toString(), l)
+                            : sb);
         }
 
         private Appendable print(Formatter fmt, StringBuilder sb, Calendar t, char c, Locale l)
@@ -5033,24 +5056,7 @@ public final class Formatter implements Closeable, Flushable {
                 if (l == null || l.equals(Locale.US)) {
                     grpSize = 3;
                 } else {
-                    DecimalFormat df = null;
-                    NumberFormat nf = NumberFormat.getNumberInstance(l);
-                    if (nf instanceof DecimalFormat) {
-                        df = (DecimalFormat) nf;
-                    } else {
-
-                        // Use DecimalFormat constructor to obtain the instance,
-                        // in case NumberFormat.getNumberInstance(l)
-                        // returns instance other than DecimalFormat
-                        LocaleProviderAdapter adapter = LocaleProviderAdapter
-                                .getAdapter(NumberFormatProvider.class, l);
-                        if (!(adapter instanceof ResourceBundleBasedAdapter)) {
-                            adapter = LocaleProviderAdapter.getResourceBundleBased();
-                        }
-                        String[] all = adapter.getLocaleResources(l)
-                                .getNumberPatterns();
-                        df = new DecimalFormat(all[0], getDecimalFormatSymbols(l));
-                    }
+                    DecimalFormat df = getDecimalFormat(l);
                     grpSize = df.getGroupingSize();
                     // Some locales do not use grouping (the number
                     // pattern for these locales does not contain group, e.g.
@@ -5086,6 +5092,28 @@ public final class Formatter implements Closeable, Flushable {
             }
 
             return sb;
+        }
+
+        private static DecimalFormat getDecimalFormat(Locale l) {
+            DecimalFormat df;
+            NumberFormat nf = NumberFormat.getNumberInstance(l);
+            if (nf instanceof DecimalFormat) {
+                df = (DecimalFormat) nf;
+            } else {
+
+                // Use DecimalFormat constructor to obtain the instance,
+                // in case NumberFormat.getNumberInstance(l)
+                // returns instance other than DecimalFormat
+                LocaleProviderAdapter adapter = LocaleProviderAdapter
+                        .getAdapter(NumberFormatProvider.class, l);
+                if (!(adapter instanceof ResourceBundleBasedAdapter)) {
+                    adapter = LocaleProviderAdapter.getResourceBundleBased();
+                }
+                String[] all = adapter.getLocaleResources(l)
+                        .getNumberPatterns();
+                df = new DecimalFormat(all[0], getDecimalFormatSymbols(l));
+            }
+            return df;
         }
 
         // Specialized localization of exponents, where the source value can only
