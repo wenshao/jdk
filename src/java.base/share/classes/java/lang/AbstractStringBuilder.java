@@ -561,7 +561,7 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(Object obj) {
-        return append(String.valueOf(obj));
+        return append(obj == null ? null: obj.toString());
     }
 
     /**
