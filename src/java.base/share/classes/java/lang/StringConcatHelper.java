@@ -371,6 +371,66 @@ final class StringConcatHelper {
         return doConcat(s1, s2);
     }
 
+    @ForceInline
+    static String simpleConcat(Object obj, int i) {
+        String str = stringOf(obj);
+        byte coder = str.coder();
+        int strlen = str.length() + Integer.stringSize(i);
+        byte[] buf = newArray(strlen << coder);
+        str.getBytes(buf, 0, coder);
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(i, strlen, buf);
+        } else {
+            StringUTF16.getChars(i, strlen, buf);
+        }
+        return new String(buf, coder);
+    }
+
+    @ForceInline
+    static String simpleConcat(Object obj, long i) {
+        String str = stringOf(obj);
+        byte coder = str.coder();
+        int strlen = str.length() + Long.stringSize(i);
+        byte[] buf = newArray(strlen << coder);
+        str.getBytes(buf, 0, coder);
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(i, strlen, buf);
+        } else {
+            StringUTF16.getChars(i, strlen, buf);
+        }
+        return new String(buf, coder);
+    }
+
+    @ForceInline
+    static String simpleConcat(int i, Object obj) {
+        String str = stringOf(obj);
+        byte coder = str.coder();
+        int iSize = Integer.stringSize(i);
+        byte[] buf = newArray((str.length() + iSize) << coder);
+        str.getBytes(buf, iSize, coder);
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(i, iSize, buf);
+        } else {
+            StringUTF16.getChars(i, iSize, buf);
+        }
+        return new String(buf, coder);
+    }
+
+    @ForceInline
+    static String simpleConcat(long i, Object obj) {
+        String str = stringOf(obj);
+        byte coder = str.coder();
+        int iSize = Long.stringSize(i);
+        byte[] buf = newArray((str.length() + iSize) << coder);
+        str.getBytes(buf, iSize, coder);
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(i, iSize, buf);
+        } else {
+            StringUTF16.getChars(i, iSize, buf);
+        }
+        return new String(buf, coder);
+    }
+
     /**
      * Perform a simple concatenation between two non-empty strings.
      *
