@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2018, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Alibaba Group Holding Limited. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,6 +49,8 @@ public class StringConcat {
 
     @Param("4711")
     public int intValue;
+    public Integer integerValue;
+    public float floatValue = 156456.36435637F + intValue;
 
     public String stringValue = String.valueOf(intValue);
 
@@ -62,6 +65,16 @@ public class StringConcat {
     @Benchmark
     public String concatConstInt() {
         return "string" + intValue;
+    }
+
+    @Benchmark
+    public String concatConstInteger() {
+        return "string" + integerValue;
+    }
+
+    @Benchmark
+    public String concatConstFloat() {
+        return "string" + floatValue;
     }
 
     @Benchmark
@@ -92,6 +105,26 @@ public class StringConcat {
     @Benchmark
     public String concatMethodConstString() {
         return "string".concat(stringValue);
+    }
+
+    @Benchmark
+    public String concatConstIntString() {
+        return "string" + intValue + stringValue;
+    }
+
+    @Benchmark
+    public String concatConstIntegerString() {
+        return "string" + integerValue + stringValue;
+    }
+
+    @Benchmark
+    public String concatConstFloatString() {
+        return "string" + floatValue + stringValue;
+    }
+
+    @Benchmark
+    public String concatConstBooleanString() {
+        return "string" + boolValue + stringValue;
     }
 
     @Benchmark

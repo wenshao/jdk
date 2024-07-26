@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Alibaba Group Holding Limited. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +28,7 @@ import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
@@ -44,13 +46,26 @@ import java.util.concurrent.TimeUnit;
 public class StringConcatStartup {
 
     public static void main(String... args) {
-        String[] selection = new String[] { "StringLarge", "MixedSmall", "StringSingle", "MixedLarge" };
+        String[] selection = {
+                "StringLarge",
+                "MixedSmall",
+                "StringSingle",
+                "MixedLarge"
+        };
         if (args.length > 0) {
             selection = args;
         }
         for (String select : selection) {
             switch (select) {
-                case "StringSingle" -> new StringSingle().run();
+                case "StringSingle" -> {
+                    new StringSingle().constInt();
+                    new StringSingle().constFloat();
+                    new StringSingle().constString();
+                    new StringSingle().const2String();
+                    new StringSingle().constIntString();
+                    new StringSingle().constFloatString();
+                    new StringSingle().constBooleanString();
+                }
                 case "MixedSmall" -> new MixedSmall().run();
                 case "StringLarge" -> new StringLarge().run();
                 case "MixedLarge" -> new MixedLarge().run();
@@ -64,14 +79,57 @@ public class StringConcatStartup {
     @Fork(value = 40, warmups = 2)
     public static class StringSingle {
 
-        public String s = "foo";
+        @Param("4711")
+        public int intValue;
+        public Integer integerValue;
+        public float floatValue = 156456.36435637F + intValue;
+        public String stringValue = String.valueOf(intValue);
+        public boolean boolValue = true;
 
         @Benchmark
-        public String run() {
-            return "" + s;
+        public String constInt() {
+            return "string" + intValue;
+        }
+
+        @Benchmark
+        public String constInteger() {
+            return "string" + integerValue;
+        }
+
+        @Benchmark
+        public String constFloat() {
+            return "string" + floatValue;
+        }
+
+        @Benchmark
+        public String constString() {
+            return "string" + stringValue;
+        }
+
+        public String const2String() {
+            return "string" + stringValue + stringValue;
+        }
+
+        @Benchmark
+        public String constIntString() {
+            return "string" + intValue + stringValue;
+        }
+
+        @Benchmark
+        public String constIntegerString() {
+            return "string" + integerValue + stringValue;
+        }
+
+        @Benchmark
+        public String constFloatString() {
+            return "string" + floatValue + stringValue;
+        }
+
+        @Benchmark
+        public String constBooleanString() {
+            return "string" + boolValue + stringValue;
         }
     }
-
 
     @BenchmarkMode(Mode.SingleShotTime)
     @OutputTimeUnit(TimeUnit.MILLISECONDS)
