@@ -50,6 +50,7 @@ public class StringConcatStartup {
                 "StringLarge",
                 "MixedSmall",
                 "StringSingle",
+                "StringThree",
                 "MixedLarge"
         };
         if (args.length > 0) {
@@ -66,6 +67,10 @@ public class StringConcatStartup {
                     new StringSingle().constFloatString();
                     new StringSingle().constBooleanString();
                 }
+                case "StringThree" -> {
+                    new StringThree().stringIntString();
+                    new StringThree().stringIntegerString();
+                }
                 case "MixedSmall" -> new MixedSmall().run();
                 case "StringLarge" -> new StringLarge().run();
                 case "MixedLarge" -> new MixedLarge().run();
@@ -81,7 +86,7 @@ public class StringConcatStartup {
 
         @Param("4711")
         public int intValue;
-        public Integer integerValue;
+        public Integer integerValue = intValue;
         public float floatValue = 156456.36435637F + intValue;
         public String stringValue = String.valueOf(intValue);
         public boolean boolValue = true;
@@ -128,6 +133,28 @@ public class StringConcatStartup {
         @Benchmark
         public String constBooleanString() {
             return "string" + boolValue + stringValue;
+        }
+    }
+
+    @BenchmarkMode(Mode.SingleShotTime)
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    @State(Scope.Thread)
+    @Fork(value = 40, warmups = 2)
+    public static class StringThree {
+
+        @Param("4711")
+        public int intValue;
+        public Integer integerValue = intValue;
+        public String stringValue = String.valueOf(intValue);
+
+        @Benchmark
+        public String stringIntString() {
+            return stringValue + intValue + stringValue;
+        }
+
+        @Benchmark
+        public String stringIntegerString() {
+            return stringValue + integerValue + stringValue;
         }
     }
 

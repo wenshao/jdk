@@ -49,17 +49,12 @@ public class StringConcat {
 
     @Param("4711")
     public int intValue;
-    public Integer integerValue;
+    public Integer integerValue = intValue;
     public float floatValue = 156456.36435637F + intValue;
-
     public String stringValue = String.valueOf(intValue);
-
     public Object objectValue = Long.valueOf(intValue);
-
     public boolean boolValue = true;
-
     public byte byteValue = (byte)-128;
-
     public String emptyString = "";
 
     @Benchmark
@@ -145,6 +140,21 @@ public class StringConcat {
         String s3 = stringValue + stringValue + "string" + stringValue + "string" + stringValue + "string";
         String s4 = "string" + stringValue + "string" + stringValue + "string" + stringValue + "string" + stringValue + "string";
         return s1 + s2 + s3 + s4;
+    }
+
+    @Benchmark
+    public String concat3String() {
+        return stringValue + stringValue + stringValue;
+    }
+
+    @Benchmark
+    public String concatStringIntString() {
+        return stringValue + intValue + stringValue;
+    }
+
+    @Benchmark
+    public String concatStringIntegerString() {
+        return stringValue + integerValue + stringValue;
     }
 
     @Benchmark
