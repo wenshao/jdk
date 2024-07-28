@@ -90,6 +90,17 @@ public class StringConcatStartup {
         public float floatValue = 156456.36435637F + intValue;
         public String stringValue = String.valueOf(intValue);
         public boolean boolValue = true;
+        public Boolean booleanValue = Boolean.TRUE;
+
+        @Benchmark
+        public String constBool() {
+            return "string" + boolValue;
+        }
+
+        @Benchmark
+        public String constBoolean() {
+            return "string" + booleanValue;
+        }
 
         @Benchmark
         public String constInt() {
@@ -131,8 +142,13 @@ public class StringConcatStartup {
         }
 
         @Benchmark
-        public String constBooleanString() {
+        public String constBoolString() {
             return "string" + boolValue + stringValue;
+        }
+
+        @Benchmark
+        public String constBooleanString() {
+            return "string" + booleanValue + stringValue;
         }
     }
 
