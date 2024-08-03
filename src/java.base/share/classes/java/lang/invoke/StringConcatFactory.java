@@ -383,7 +383,7 @@ public final class StringConcatFactory {
             }
 
             if (mh == null) {
-                mh = SimpleStringBuilderStrategy.generate(lookup, concatType, constantStrings);
+                mh = SimpleStringBuilderStrategy.generate(lookup, concatType, recipe, constantStrings);
             }
             mh = mh.viewAsType(concatType, true);
 
@@ -1094,11 +1094,11 @@ public final class StringConcatFactory {
         static final MethodTypeDesc APPEND_char    = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_char, CD_String);
         static final MethodTypeDesc APPEND_String  = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_String, CD_String);
 
-        static final ReferencedKeyMap<MethodType, SoftReference<MethodHandle>> CACHE =
+        static final ReferencedKeyMap<CacheKey, SoftReference<MethodHandle>> CACHE =
                 ReferencedKeyMap.create(true, true,
                         new Supplier<>() {
                             @Override
-                            public Map<ReferenceKey<MethodType>, SoftReference<MethodHandle>> get() {
+                            public Map<ReferenceKey<CacheKey>, SoftReference<MethodHandle>> get() {
                                 return new ConcurrentHashMap<>(64);
                             }
                         });
@@ -1107,7 +1107,9 @@ public final class StringConcatFactory {
             // no instantiation
         }
 
-        private static MethodHandle generate(Lookup lookup, MethodType args, String[] constants) throws Exception {
+        private record CacheKey(MethodType args, String recipe) {}
+
+        private static MethodHandle generate(Lookup lookup, MethodType args, String recipe, String[] constants) throws Exception {
             lookup = MethodHandles.Lookup.IMPL_LOOKUP;
             String className = "java.lang.String$$StringConcat";
             MethodType erasedArgs = args.erase().changeReturnType(String.class);
@@ -1120,17 +1122,13 @@ public final class StringConcatFactory {
                     erasedArgs = erasedArgs.changeParameterType(i, int.class);
                 }
             }
-            erasedArgs = erasedArgs.insertParameterTypes(0, String[].class);
             final MethodType concatArgs = erasedArgs;
-            SoftReference<MethodHandle> weakHandle = CACHE.get(concatArgs);
+            CacheKey cacheKey = new CacheKey(concatArgs, recipe);
+            SoftReference<MethodHandle> weakHandle = CACHE.get(cacheKey);
             if (weakHandle != null) {
                 var handle = weakHandle.get();
                 if (handle != null) {
-                    try {
-                        return MethodHandles.insertArguments(handle, 0, (Object) constants);
-                    } catch (Throwable e) {
-                        throw new StringConcatException("Exception while utilizing the hidden class", e);
-                    }
+                    return handle;
                 }
             }
             ClassDesc concatClass = ConstantUtils.binaryNameToDesc(className);
@@ -1143,15 +1141,15 @@ public final class StringConcatFactory {
                                 .withMethodBody(METHOD_NAME,
                                         ConstantUtils.methodTypeDesc(concatArgs),
                                         ClassFile.ACC_STATIC | ClassFile.ACC_PRIVATE,
-                                        generateConcatMethod(concatClass, concatArgs));
+                                        generateConcatMethod(concatClass, concatArgs, constants));
                     }});
             try {
                 var hiddenClass = lookup.makeHiddenClassDefiner(className, classBytes, Set.of(), DUMPER)
                         .defineClass(true, null);
 
                 MethodHandle handle = lookup.findStatic(hiddenClass, METHOD_NAME, concatArgs);
-                CACHE.put(concatArgs, new SoftReference<>(handle));
-                return MethodHandles.insertArguments(handle, 0, (Object) constants);
+                CACHE.put(cacheKey, new SoftReference<>(handle));
+                return handle;
             } catch (Throwable e) {
                 throw new StringConcatException("Exception while spinning the class", e);
             }
@@ -1216,24 +1214,23 @@ public final class StringConcatFactory {
          * }
          * </pre></blockquote>
          */
-        private static Consumer<CodeBuilder> generateConcatMethod(ClassDesc concatClass, MethodType args) {
+        private static Consumer<CodeBuilder> generateConcatMethod(ClassDesc concatClass, MethodType args, String[] constants) {
             return new Consumer<CodeBuilder>() {
                 @Override
                 public void accept(CodeBuilder cb) {
                     int paramCount = args.parameterCount();
 
                     // Compute parameter variable slots
-                    int constantsSlot = 0,
-                        nextSlot      = 1;
+                    int nextSlot      = 0;
                     int[] paramSlots  = new int[paramCount],
                           sizeSlots   = new int[paramCount],
                           stringSlots = new int[paramCount];
-                    for (int i = 1; i < paramCount; i++) {
+                    for (int i = 0; i < paramCount; i++) {
                         paramSlots[i] = nextSlot;
                         nextSlot     += TypeKind.from(args.parameterType(i)).slotSize();
                     }
 
-                    for (int i = 1; i < paramCount; i++) {
+                    for (int i = 0; i < paramCount; i++) {
                         var cl = args.parameterType(i);
 
                         // If the type is int/long, use a local variable to save the size.
@@ -1248,55 +1245,22 @@ public final class StringConcatFactory {
                     int lengthSlot = nextSlot;
                     int coderSlot  = nextSlot + 1;
                     int bufSlot    = nextSlot + 2;
-                    int iSlot      = nextSlot + 3;
+
+                    int length = 0, coder = JLA.initStringCoder();
+                    for (var constant : constants) {
+                        coder |= JLA.stringCoder(constant);
+                        length += constant.length();
+                    }
 
                     /*
                      * Store init length and coder :
-                     *  int length         = this.length();
-                     *  int coder          = this.coder();
-                     *  String[] constants = this.constants;
                      */
-                    cb.iconst_0()
+                    cb.ldc(length)
                       .istore(lengthSlot)
-                      .iconst_0()
+                      .ldc(coder)
                       .istore(coderSlot);
 
-                    {
-                        Label L0 = cb.newLabel(), L1 = cb.newLabel();
-                        /*
-                         * for (int i = 0; i < constants.length; ++i) {
-                         *     var constant = constants[i];
-                         *     coder = constant.coder() | coder;
-                         *     length = constant.length() + length;
-                         * }
-                         */
-                        cb.iconst_0()
-                          .istore(iSlot)
-                          .labelBinding(L0)
-                          .iload(iSlot)
-                          .aload(constantsSlot)
-                          .arraylength()
-                          .if_icmpge(L1)
-                          .aload(constantsSlot)
-                          .iload(iSlot)
-                          .aaload()
-                          .dup()
-                          // coder = constant.coder() | coder;
-                          .invokevirtual(CD_String, "coder", MTD_byte)
-                          .iload(coderSlot)
-                          .ior()
-                          .istore(coderSlot)
-                          // length = constant.length() + length;
-                          .invokevirtual(CD_String, "length", MTD_int)
-                          .iload(lengthSlot)
-                          .iadd()
-                          .istore(lengthSlot)
-                          .iinc(iSlot, 1)
-                          .goto_(L0)
-                          .labelBinding(L1);
-                    }
-
-                    for (int i = 1; i < paramCount; i++) {
+                    for (int i = 0; i < paramCount; i++) {
                         var cl   = args.parameterType(i);
                         var kind = TypeKind.from(cl);
                         if (cl == int.class) {
@@ -1411,17 +1375,12 @@ public final class StringConcatFactory {
                     /*
                      * Append prefix and init length
                      *  constants[0].getBytes(buf, 0, coder);
-                     *  length = constants[0].length();
                      */
-                    cb.aload(constantsSlot)
-                       .ldc(0)
-                       .aaload()
-                       .dup()
+                    cb.loadConstant(constants[0])
                        .aload(bufSlot)
                        .ldc(0)
                        .iload(coderSlot)
-                       .invokevirtual(CD_String, "getBytes", MTD_GET_BYTES)
-                       .invokevirtual(CD_String, "length", MTD_int);
+                       .invokevirtual(CD_String, "getBytes", MTD_GET_BYTES);
 
                     /*
                      * if (
@@ -1429,7 +1388,8 @@ public final class StringConcatFactory {
                      *
                      * length = StringConcatHelper.append(length, coder, buf, argN, constants[N + 1]);
                      */
-                    for (int i = 1; i < paramCount; i++) {
+                    cb.ldc(constants[0].length());
+                    for (int i = 0; i < paramCount; i++) {
                         int paramSlot = paramSlots[i];
                         var cl        = args.parameterType(i);
                         var kind      = TypeKind.from(cl);
@@ -1456,13 +1416,10 @@ public final class StringConcatFactory {
                             cb.iload(sizeSlots[i]);
                         }
 
-                        // suffix
-                        cb.aload(constantsSlot)
-                           .ldc(i)
-                           .aaload()
+                        cb.loadConstant(constants[i + 1])
                            .invokestatic(CD_StringConcatHelper, "append", methodTypeDesc);
                     }
-                    cb.istore(lengthSlot);
+                    cb.pop();
 
                     // return new String(buf, coder);
                     cb.new_(CD_String)
