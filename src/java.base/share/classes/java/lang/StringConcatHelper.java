@@ -72,10 +72,9 @@ final class StringConcatHelper {
         @ForceInline
         private final String concat(boolean value) {
             int length = this.length + stringSize(value);
-            String suffix = constants[1];
-            length -= suffix.length();
-            byte[] buf = newArrayWithSuffix(suffix, length, coder);
-            prepend(length, coder, buf, value, constants[0]);
+            String prefix = constants[0];
+            byte[] buf = newArrayWithPrefix(prefix, length, coder);
+            append(prefix.length(), coder, buf, value, constants[1]);
             return new String(buf, coder);
         }
 
@@ -83,30 +82,29 @@ final class StringConcatHelper {
         private final String concat(char value) {
             int length = this.length + 1;
             byte coder = (byte) (this.coder | stringCoder(value));
-            String suffix = constants[1];
-            length -= suffix.length();
-            byte[] buf = newArrayWithSuffix(suffix, length, coder);
-            prepend(length, coder, buf, value, constants[0]);
+            String prefix = constants[0];
+            byte[] buf = newArrayWithPrefix(prefix, length, coder);
+            append(prefix.length(), coder, buf, value, constants[1]);
             return new String(buf, coder);
         }
 
         @ForceInline
         private final String concat(int value) {
-            int length = this.length + stringSize(value);
-            String suffix = constants[1];
-            length -= suffix.length();
-            byte[] buf = newArrayWithSuffix(suffix, length, coder);
-            prepend(length, coder, buf, value, constants[0]);
+            int size = stringSize(value);
+            int length = this.length + size;
+            String prefix = constants[0];
+            byte[] buf = newArrayWithPrefix(prefix, length, coder);
+            append(prefix.length(), coder, buf, value, size, constants[1]);
             return new String(buf, coder);
         }
 
         @ForceInline
         private final String concat(long value) {
-            int length = this.length + stringSize(value);
-            String suffix = constants[1];
-            length -= suffix.length();
-            byte[] buf = newArrayWithSuffix(suffix, length, coder);
-            prepend(length, coder, buf, value, constants[0]);
+            int size = stringSize(value);
+            int length = this.length + size;
+            String prefix = constants[0];
+            byte[] buf = newArrayWithPrefix(prefix, length, coder);
+            append(prefix.length(), coder, buf, value, size, constants[1]);
             return new String(buf, coder);
         }
 
@@ -114,16 +112,6 @@ final class StringConcatHelper {
         private final String concat(Object value) {
             String str = stringOf(value);
             return concat0(stringOf(value));
-        }
-
-        @ForceInline
-        private final String concat(float value) {
-            return concat0(Float.toString(value));
-        }
-
-        @ForceInline
-        private final String concat(double value) {
-            return concat0(Double.toString(value));
         }
     }
 
@@ -583,12 +571,12 @@ final class StringConcatHelper {
      * @return the newly allocated byte array
      */
     @ForceInline
-    static byte[] newArrayWithSuffix(String suffix, int index, byte coder) {
-        byte[] buf = newArray((index + suffix.length()) << coder);
+    static byte[] newArrayWithPrefix(String prefix, int index, byte coder) {
+        byte[] buf = newArray(index << coder);
         if (coder == String.LATIN1) {
-            suffix.getBytes(buf, index, String.LATIN1);
+            prefix.getBytes(buf, 0, String.LATIN1);
         } else {
-            suffix.getBytes(buf, index, String.UTF16);
+            prefix.getBytes(buf, 0, String.UTF16);
         }
         return buf;
     }
@@ -603,149 +591,134 @@ final class StringConcatHelper {
     }
 
     /**
-     * Prepends constant and the stringly representation of value into buffer,
+     * append the stringly representation of value into buffer,
      * given the coder and final index. Index is measured in chars, not in bytes!
      *
      * @param index     final char index in the buffer
      * @param coder     coder of the buffer
-     * @param buf        buffer to append to
-     * @param value      boolean value to encode
-     * @param prefix     a constant to prepend before value
-     * @return           updated index
+     * @param buf       buffer to append to
+     * @param value     boolean value to encode
+     * @return          updated index
      */
-    static int prepend(int index, byte coder, byte[] buf, boolean value, String prefix) {
+    static int append(int index, byte coder, byte[] buf, boolean value, String suffix) {
         if (coder == String.LATIN1) {
             if (value) {
-                index -= 4;
                 buf[index] = 't';
                 buf[index + 1] = 'r';
                 buf[index + 2] = 'u';
                 buf[index + 3] = 'e';
+                index += 4;
             } else {
-                index -= 5;
                 buf[index] = 'f';
                 buf[index + 1] = 'a';
                 buf[index + 2] = 'l';
                 buf[index + 3] = 's';
                 buf[index + 4] = 'e';
+                index += 5;
             }
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.LATIN1);
         } else {
             if (value) {
-                index -= 4;
                 StringUTF16.putChar(buf, index, 't');
                 StringUTF16.putChar(buf, index + 1, 'r');
                 StringUTF16.putChar(buf, index + 2, 'u');
                 StringUTF16.putChar(buf, index + 3, 'e');
+                index += 4;
             } else {
-                index -= 5;
                 StringUTF16.putChar(buf, index, 'f');
                 StringUTF16.putChar(buf, index + 1, 'a');
                 StringUTF16.putChar(buf, index + 2, 'l');
                 StringUTF16.putChar(buf, index + 3, 's');
                 StringUTF16.putChar(buf, index + 4, 'e');
+                index += 5;
             }
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.UTF16);
         }
-        return index;
+        suffix.getBytes(buf, index, coder);
+        return index + suffix.length();
     }
 
     /**
-     * Prepends constant and the stringly representation of value into buffer,
+     * append the stringly representation of value into buffer,
      * given the coder and final index. Index is measured in chars, not in bytes!
      *
      * @param index     final char index in the buffer
      * @param coder     coder of the buffer
-     * @param buf        buffer to append to
-     * @param value      char value to encode
-     * @param prefix     a constant to prepend before value
-     * @return           updated index
+     * @param buf       buffer to append to
+     * @param value     char value to encode
+     * @return          updated index
      */
-    static int prepend(int index, byte coder, byte[] buf, char value, String prefix) {
+    static int append(int index, byte coder, byte[] buf, char value, String suffix) {
         if (coder == String.LATIN1) {
-            buf[--index] = (byte) (value & 0xFF);
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.LATIN1);
+            buf[index] = (byte) value;
         } else {
-            StringUTF16.putChar(buf, --index, value);
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.UTF16);
+            StringUTF16.putChar(buf, index, value);
         }
-        return index;
+        suffix.getBytes(buf, ++index, coder);
+        return index + suffix.length();
     }
 
     /**
-     * Prepends constant and the stringly representation of value into buffer,
+     * append the value into buffer,
      * given the coder and final index. Index is measured in chars, not in bytes!
      *
      * @param index     final char index in the buffer
      * @param coder     coder of the buffer
-     * @param buf        buffer to append to
-     * @param value      int value to encode
-     * @param prefix     a constant to prepend before value
-     * @return           updated index
+     * @param buf       buffer to append to
+     * @param value     String value
+     * @param size      stringSize of value
+     * @return          updated index
      */
-    static int prepend(int index, byte coder, byte[] buf, int value, String prefix) {
-        if (coder == String.LATIN1) {
-            index = StringLatin1.getChars(value, index, buf);
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.LATIN1);
-        } else {
-            index = StringUTF16.getChars(value, index, buf);
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.UTF16);
-        }
-        return index;
-    }
-
-    /**
-     * Prepends constant and the stringly representation of value into buffer,
-     * given the coder and final index. Index is measured in chars, not in bytes!
-     *
-     * @param index     final char index in the buffer
-     * @param coder     coder of the buffer
-     * @param buf        buffer to append to
-     * @param value      long value to encode
-     * @param prefix     a constant to prepend before value
-     * @return           updated index
-     */
-    static int prepend(int index, byte coder, byte[] buf, long value, String prefix) {
-        if (coder == String.LATIN1) {
-            index = StringLatin1.getChars(value, index, buf);
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.LATIN1);
-        } else {
-            index = StringUTF16.getChars(value, index, buf);
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.UTF16);
-        }
-        return index;
-    }
-
-    /**
-     * Prepends constant and the stringly representation of value into buffer,
-     * given the coder and final index. Index is measured in chars, not in bytes!
-     *
-     * @param index     final char index in the buffer
-     * @param coder     coder of the buffer
-     * @param buf        buffer to append to
-     * @param value      boolean value to encode
-     * @param prefix     a constant to prepend before value
-     * @return           updated index
-     */
-    static int prepend(int index, byte coder, byte[] buf, String value, String prefix) {
-        index -= value.length();
+    static int append(int index, byte coder, byte[] buf, String value, String suffix) {
         if (coder == String.LATIN1) {
             value.getBytes(buf, index, String.LATIN1);
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.LATIN1);
         } else {
             value.getBytes(buf, index, String.UTF16);
-            index -= prefix.length();
-            prefix.getBytes(buf, index, String.UTF16);
         }
-        return index;
+        index += value.length();
+        suffix.getBytes(buf, index, coder);
+        return index + suffix.length();
+    }
+
+    /**
+     * append the stringly representation of value into buffer,
+     * given the coder and final index. Index is measured in chars, not in bytes!
+     *
+     * @param index     final char index in the buffer
+     * @param coder     coder of the buffer
+     * @param buf       buffer to append to
+     * @param value     int value to encode
+     * @param size      stringSize of value
+     * @return          updated index
+     */
+    static int append(int index, byte coder, byte[] buf, int value, int size, String suffix) {
+        index += size;
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(value, index, buf);
+        } else {
+            StringUTF16.getChars(value, index, buf);
+        }
+        suffix.getBytes(buf, index, coder);
+        return index + suffix.length();
+    }
+
+    /**
+     * append the stringly representation of value into buffer,
+     * given the coder and final index. Index is measured in chars, not in bytes!
+     *
+     * @param index     final char index in the buffer
+     * @param coder     coder of the buffer
+     * @param buf       buffer to append to
+     * @param value     long value to encode
+     * @param size      stringSize of value
+     * @return          updated index
+     */
+    static int append(int index, byte coder, byte[] buf, long value, int size, String suffix) {
+        index += size;
+        if (coder == String.LATIN1) {
+            StringLatin1.getChars(value, index, buf);
+        } else {
+            StringUTF16.getChars(value, index, buf);
+        }
+        suffix.getBytes(buf, index, coder);
+        return index + suffix.length();
     }
 }

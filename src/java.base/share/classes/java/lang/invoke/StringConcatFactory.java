@@ -1095,11 +1095,11 @@ public final class StringConcatFactory {
         static final MethodTypeDesc MTD_NEW_ARRAY_SUFFIX = MethodTypeDesc.of(CD_Array_byte, CD_String, CD_int, CD_byte);
         static final MethodTypeDesc MTD_STRING_INIT      = MethodTypeDesc.of(CD_void, CD_Array_byte, CD_byte);
 
-        static final MethodTypeDesc PREPEND_int     = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_int, CD_String);
-        static final MethodTypeDesc PREPEND_long    = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_long, CD_String);
-        static final MethodTypeDesc PREPEND_boolean = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_boolean, CD_String);
-        static final MethodTypeDesc PREPEND_char    = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_char, CD_String);
-        static final MethodTypeDesc PREPEND_String  = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_String, CD_String);
+        static final MethodTypeDesc APPEND_int     = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_int, CD_int, CD_String);
+        static final MethodTypeDesc APPEND_long    = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_long, CD_int, CD_String);
+        static final MethodTypeDesc APPEND_boolean = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_boolean, CD_String);
+        static final MethodTypeDesc APPEND_char    = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_char, CD_String);
+        static final MethodTypeDesc APPEND_String  = MethodTypeDesc.of(CD_int, CD_int, CD_byte, CD_Array_byte, CD_String, CD_String);
 
         static final RuntimeVisibleAnnotationsAttribute FORCE_INLINE = RuntimeVisibleAnnotationsAttribute.of(Annotation.of(ClassDesc.ofDescriptor("Ljdk/internal/vm/annotation/ForceInline;")));
 
@@ -1161,24 +1161,27 @@ public final class StringConcatFactory {
          *
          * The following is an example of the generated target code:
          * <blockquote><pre>
-         *  int prepend(int length, byte coder, byte[] buff,  String[] constants
-         *      int arg0, long arg1, boolean arg2, char arg3, String arg5)
+         *  int append(int length, byte coder, byte[] buff,  String[] constants
+         *      int arg0, size0, long arg1, size1, boolean arg2, char arg3, String arg5)
          * </pre></blockquote>
          */
-        private static MethodType prependArgs(MethodType concatArgs) {
+        private static MethodType appendArgs(MethodType concatArgs) {
             int parameterCount = concatArgs.parameterCount();
-            var paramTypes = new Class<?>[parameterCount + 4];
-            paramTypes[0] = int.class;      // length
-            paramTypes[1] = byte.class;     // coder
-            paramTypes[2] = byte[].class;   // buff
-            paramTypes[3] = String[].class; // constants
+            List<Class<?>> paramTypes = new ArrayList<>(parameterCount + 4);
+            paramTypes.add(int.class); // lengthSloat
+            paramTypes.add(byte.class); // coder
+            paramTypes.add(byte[].class); // buf
+            paramTypes.add(String[].class); // constants
 
             for (int i = 0; i < parameterCount; i++) {
                 var cl = concatArgs.parameterType(i);
                 if (cl != String.class && needStringOf(cl)) {
                     cl = String.class;
                 }
-                paramTypes[i + 4] = cl;
+                paramTypes.add(cl);
+                if (cl == int.class || cl == long.class) {
+                    paramTypes.add(int.class); // valueSize
+                }
             }
             return MethodType.methodType(int.class, paramTypes);
         }
@@ -1216,6 +1219,9 @@ public final class StringConcatFactory {
                 if (needStringOf(cl)) {
                     cl = String.class;
                 }
+                if (cl == long.class) {
+                    cl = int.class; // use lcoalVariant Size
+                }
                 paramTypes[i + 1] = cl;
             }
             return MethodType.methodType(int.class, paramTypes);
@@ -1248,9 +1254,9 @@ public final class StringConcatFactory {
                     }
                 }
             }
-            MethodType lengthArgs  = lengthArgs(concatArgs),
-                       coderArgs   = coderArgs(concatArgs),
-                       prependArgs = prependArgs(concatArgs);
+            MethodType lengthArgs = lengthArgs(concatArgs),
+                       coderArgs  = coderArgs(concatArgs),
+                       appendArgs = appendArgs(concatArgs);
 
             byte[] classBytes = ClassFile.of().build(concatClass,
                     new Consumer<ClassBuilder>() {
@@ -1275,15 +1281,15 @@ public final class StringConcatFactory {
                                                 mb.withCode(generateLengthMethod(lengthArgs));
                                             }
                                         })
-                                .withMethod("prepend",
-                                        ConstantUtils.methodTypeDesc(prependArgs),
+                                .withMethod("append",
+                                        ConstantUtils.methodTypeDesc(appendArgs),
                                         ClassFile.ACC_STATIC | ClassFile.ACC_PRIVATE,
                                         new Consumer<MethodBuilder>() {
                                             public void accept(MethodBuilder mb) {
                                                 if (forceInline) {
                                                     mb.with(FORCE_INLINE);
                                                 }
-                                                mb.withCode(generatePrependMethod(concatArgs));
+                                                mb.withCode(generateAppendMethod(concatArgs));
                                             }
                                         })
                                 .withMethod(METHOD_NAME,
@@ -1294,7 +1300,7 @@ public final class StringConcatFactory {
                                                 if (forceInline) {
                                                     mb.with(FORCE_INLINE);
                                                 }
-                                                mb.withCode(generateConcatMethod(concatClass, concatArgs, lengthArgs, coderArgs, prependArgs));
+                                                mb.withCode(generateConcatMethod(concatClass, concatArgs, lengthArgs, coderArgs, appendArgs));
                                             }
                                         });
                             if (parameterMaybeUTF16(concatArgs)) {
@@ -1330,7 +1336,7 @@ public final class StringConcatFactory {
          * The following is an example of the generated target code:
          *
          * <blockquote><pre>
-         *  import static java.lang.StringConcatHelper.prepend;
+         *  import static java.lang.StringConcatHelper.append;
          *  import static java.lang.StringConcatHelper.newArrayWithSuffix;
          *
          *  class StringConcat extends java.lang.StringConcatHelper.StringConcatBase {
@@ -1346,6 +1352,10 @@ public final class StringConcatFactory {
          *      String concat(int arg0, long arg1, boolean arg2, char arg3, String arg4,
          *          float arg5, double arg6, Object arg7
          *      ) {
+         *          // int and long require  a local variable to store size
+         *          int size0 = stringSize(arg0);
+         *          int size1 = stringSize(arg1);
+         *
          *          // Types other than byte/short/int/long/boolean/String require a local variable to store
          *          String str4 = stringOf(arg4);
          *          String str5 = stringOf(arg5);
@@ -1372,16 +1382,16 @@ public final class StringConcatFactory {
          *          return coder | stringCoder(arg3) | str4.coder() | str5.coder() | str6.coder() | str7.coder();
          *      }
          *
-         *      static int prepend(int length, int coder, byte[] buf, String[] constants,
-         *                     int arg0, long arg1, boolean arg2, char arg3,
-         *                     String str4, String str6, String str6, String str7) {
-         *          // StringConcatHelper.prepend
-         *          return prepend(prepend(prepend(prepend(
-         *                  prepend(apppend(prepend(prepend(length,
-         *                       buf, str7, constant[7]), buf, str6, constant[6]),
-         *                       buf, str5, constant[5]), buf, str4, constant[4]),
-         *                       buf, arg3, constant[3]), buf, arg2, constant[2]),
-         *                       buf, arg1, constant[1]), buf, arg0, constant[0]);
+         *      static int append(int length, int coder, byte[] buf, String[] constants,
+         *                     int arg0, int size0, long arg1, int size1, boolean arg2, char arg3,
+         *                     String str4, String str5, String str6, String str6, String str7
+         *     ) {
+         *          return append(append(append(append(
+         *                  prepend(apppend(prepend(append(length,
+         *                       buf, arg0, size0, constant[0]), buf, arg1, size1, constant[1]),
+         *                       buf, arg2, constant[2]), buf, arg3, constant[3]),
+         *                       buf, str4, constant[4]), buf, str5, constant[5]),
+         *                       buf, str6, constant[6]), buf, str7, constant[7]);
          *      }
          *  }
          * </pre></blockquote>
@@ -1391,7 +1401,7 @@ public final class StringConcatFactory {
                 MethodType args,
                 MethodType lengthArgs,
                 MethodType coderArgs,
-                MethodType prependArgs
+                MethodType appendArgs
         ) {
             return new Consumer<CodeBuilder>() {
                 @Override
@@ -1401,6 +1411,7 @@ public final class StringConcatFactory {
                         thisSlot   = 0,
                         nextSlot   = 1;
                     int[] paramSlots  = new int[paramCount],
+                          sizeSlots   = new int[paramCount],
                           stringSlots = new int[paramCount];
                     for (int i = 0; i < paramCount; i++) {
                         paramSlots[i] = nextSlot;
@@ -1412,13 +1423,16 @@ public final class StringConcatFactory {
                         if (needStringOf(cl)) {
                             stringSlots[i] = nextSlot++;
                         }
+                        if (cl == int.class || cl == long.class) {
+                            sizeSlots[i] = nextSlot++;
+                        }
                     }
 
                     int lengthSlot    = nextSlot,
                         coderSlot     = nextSlot + 1,
                         bufSlot       = nextSlot + 2,
                         constantsSlot = nextSlot + 3,
-                        suffixSlot    = nextSlot + 4;
+                        prefixSlot    = nextSlot + 4;
 
                     /*
                      * Types other than int/long/char/boolean require local variables to store the result of stringOf.
@@ -1430,9 +1444,14 @@ public final class StringConcatFactory {
                      * str1 = stringOf(arg1);
                      * str0 = stringOf(arg0);
                      */
-                    for (int i = paramCount - 1; i >= 0; i--) {
+                    for (int i = 0; i < paramCount; i++) {
                         var cl = args.parameterType(i);
-                        if (needStringOf(cl)) {
+                        var kind = TypeKind.from(cl);
+                        if (cl == int.class || cl == long.class) {
+                            cb.loadLocal(kind, paramSlots[i])
+                              .invokestatic(CD_DecimalDigits, "stringSize", cl == int.class ? MTD_int_int : MTD_int_long)
+                              .istore(sizeSlots[i]);
+                        } else if (needStringOf(cl)) {
                             MethodTypeDesc methodTypeDesc;
                             if (cl == float.class) {
                                 methodTypeDesc = MTD_String_float;
@@ -1441,7 +1460,7 @@ public final class StringConcatFactory {
                             } else {
                                 methodTypeDesc = MTD_String_Object;
                             }
-                            cb.loadLocal(TypeKind.from(cl), paramSlots[i])
+                            cb.loadLocal(kind, paramSlots[i])
                               .invokestatic(CD_StringConcatHelper, "stringOf", methodTypeDesc)
                               .astore(stringSlots[i]);
                         }
@@ -1475,46 +1494,36 @@ public final class StringConcatFactory {
                     for (int i = 0; i < paramCount; i++) {
                         var cl        = args.parameterType(i);
                         int paramSlot = paramSlots[i];
-                        if (needStringOf(cl)) {
+                        if (cl == int.class || cl == long.class) {
+                            paramSlot = sizeSlots[i];
+                            cl = int.class;
+                        } else if (needStringOf(cl)) {
                             paramSlot = stringSlots[i];
                             cl = String.class;
                         }
                         cb.loadLocal(TypeKind.from(cl), paramSlot);
                     }
-                    cb.invokestatic(concatClass, "length", ConstantUtils.methodTypeDesc(lengthArgs));
+                    cb.invokestatic(concatClass, "length", ConstantUtils.methodTypeDesc(lengthArgs))
+                      .istore(lengthSlot);
 
                     /*
                      * String[] constants = this.constants;
-                     * suffix = constants[paranCount];
-                     * length -= suffix.length();
+                     * prefix = constants[0];
+                     * buf = StringConcatHelper.newArrayWithPrefix(prefix, length, coder)
+                     * append(prefix.length, coder, buf, constants, ar0, ar1, sizeN, ..., argN);
                      */
                     cb.aload(thisSlot)
                       .getfield(concatClass, "constants", CD_Array_String)
                       .dup()
                       .astore(constantsSlot)
-                      .ldc(paramCount)
+                      .ldc(0)
                       .aaload()
                       .dup()
-                      .astore(suffixSlot)
-                      .invokevirtual(CD_String, "length", MTD_int)
-                      .isub()
-                      .istore(lengthSlot);
-
-                    /*
-                     * Allocate buffer :
-                     *
-                     *  buf = newArrayWithSuffix(suffix, length, coder)
-                     */
-                    cb.aload(suffixSlot)
                       .iload(lengthSlot)
                       .iload(coderSlot)
-                      .invokestatic(CD_StringConcatHelper, "newArrayWithSuffix", MTD_NEW_ARRAY_SUFFIX)
-                      .astore(bufSlot);
-
-                    /*
-                     * prepend(length, coder, buf, constants, ar0, ar1, ..., argN);
-                     */
-                    cb.iload(lengthSlot)
+                      .invokestatic(CD_StringConcatHelper, "newArrayWithPrefix", MTD_NEW_ARRAY_SUFFIX)
+                      .astore(bufSlot)
+                      .invokevirtual(CD_String, "length", MTD_int) // append init length
                       .iload(coderSlot)
                       .aload(bufSlot)
                       .aload(constantsSlot);
@@ -1527,8 +1536,11 @@ public final class StringConcatFactory {
                             kind = TypeKind.from(String.class);
                         }
                         cb.loadLocal(kind, paramSlot);
+                        if (cl == int.class || cl == long.class) {
+                            cb.iload(sizeSlots[i]); // valueSize
+                        }
                     }
-                    cb.invokestatic(concatClass, "prepend", ConstantUtils.methodTypeDesc(prependArgs));
+                    cb.invokestatic(concatClass, "append", ConstantUtils.methodTypeDesc(appendArgs));
 
                     // return new String(buf, coder);
                     cb.new_(CD_String)
@@ -1570,12 +1582,10 @@ public final class StringConcatFactory {
                         MethodTypeDesc methodTypeDesc;
                         if (cl == char.class) {
                             cb.iconst_1();
+                        } else if (cl == int.class) {
+                            cb.iload(nextSlot); // valueSize
                         } else {
-                            if (cl == int.class) {
-                                methodTypeDesc = MTD_int_int;
-                            } else if (cl == long.class) {
-                                methodTypeDesc = MTD_int_long;
-                            } else if (cl == boolean.class) {
+                            if (cl == boolean.class) {
                                 methodTypeDesc = MTD_int_boolean;
                             } else {
                                 methodTypeDesc = MTD_int_String;
@@ -1639,71 +1649,70 @@ public final class StringConcatFactory {
          *
          * static int prepend(int length, int coder, byte[] buf, String[] constants,
          *                int arg0, long arg1, boolean arg2, char arg3,
-         *                String str4, String str6, String str6, String str7) {
+         *                String str4, String str5, String str6, String str6, String str7) {
          *
-         *     return prepend(prepend(prepend(prepend(
-         *             prepend(prepend(prepend(prepend(length,
-         *                  buf, str7, constant[7]), buf, str6, constant[6]),
-         *                  buf, str5, constant[5]), buf, str4, constant[4]),
-         *                  buf, arg3, constant[3]), buf, arg2, constant[2]),
-         *                  buf, arg1, constant[1]), buf, arg0, constant[0]);
+         *     return append(append(append(append(
+         *             append(append(append(append(length,
+         *                  buf, ar1, constant[0]), buf, arg2, constant[1]),
+         *                  buf, ar3, constant[2]), buf, ar4, constant[3]),
+         *                  buf, str4, constant[4]), buf, str5, constant[5]),
+         *                  buf, str6, constant[6]), buf, str7, constant[7]);
          * }
          * </pre></blockquote>
          */
-        private static Consumer<CodeBuilder> generatePrependMethod(MethodType args) {
+        private static Consumer<CodeBuilder> generateAppendMethod(MethodType concatArgs) {
             return new Consumer<CodeBuilder>() {
                 @Override
                 public void accept(CodeBuilder cb) {
                     // Compute parameter variable slots
-                    int paramCount    = args.parameterCount(),
+                    int paramCount    = concatArgs.parameterCount(),
                         lengthSlot    = 0,
                         coderSlot     = 1,
                         bufSlot       = 2,
                         constantsSlot = 3,
                         nextSlot      = 4;
-                    int[] paramSlots  = new int[paramCount];
-                    for (int i = 0; i < paramCount; i++) {
-                        paramSlots[i] = nextSlot;
-                        nextSlot     += (args.parameterType(i) == long.class ? 2 : 1);
-                    }
 
                     /*
-                     * // StringConcatHelper.prepend
-                     * return prepend(prepend(prepend(prepend(
-                     *         prepend(apppend(prepend(prepend(length,
-                     *              buf, str7, constant[7]), buf, str6, constant[6]),
-                     *              buf, str5, constant[5]), buf, arg4, constant[4]),
-                     *              buf, arg3, constant[3]), buf, arg2, constant[2]),
-                     *              buf, arg1, constant[1]), buf, arg0, constant[0]);
+                     * // StringConcatHelper.append
+                     * return append(append(append(append(
+                     *         append(apppend(append(append(length,
+                     *              buf, str7, constant[0]), buf, str6, constant[1]),
+                     *              buf, str5, constant[2]), buf, arg4, constant[3]),
+                     *              buf, arg3, constant[4]), buf, arg2, constant[5]),
+                     *              buf, arg1, constant[6]), buf, arg0, constant[7]);
                      */
                     cb.iload(lengthSlot);
-                    for (int i = paramCount - 1; i >= 0; i--) {
-                        int paramSlot = paramSlots[i];
-                        var cl        = args.parameterType(i);
-                        var kind      = TypeKind.from(cl);
+                    for (int i = 0; i < paramCount; i++) {
+                        var cl   = concatArgs.parameterType(i);
+                        var kind = TypeKind.from(cl);
 
-                        // There are only 5 types of parameters: int, long, boolean, char, String
                         MethodTypeDesc methodTypeDesc;
                         if (cl == int.class) {
-                            methodTypeDesc = PREPEND_int;
+                            methodTypeDesc = APPEND_int;
                         } else if (cl == long.class) {
-                            methodTypeDesc = PREPEND_long;
+                            methodTypeDesc = APPEND_long;
                         } else if (cl == boolean.class) {
-                            methodTypeDesc = PREPEND_boolean;
+                            methodTypeDesc = APPEND_boolean;
                         } else if (cl == char.class) {
-                            methodTypeDesc = PREPEND_char;
+                            methodTypeDesc = APPEND_char;
                         } else {
+                            cl = String.class;
                             kind = TypeKind.from(String.class);
-                            methodTypeDesc = PREPEND_String;
+                            methodTypeDesc = APPEND_String;
+                        }
+                        cb.iload(coderSlot)
+                                .aload(bufSlot)
+                                .loadLocal(kind, nextSlot);
+                        nextSlot += kind.slotSize();
+
+                        if (cl == int.class || cl == long.class) {
+                            cb.iload(nextSlot++); // valueSize
                         }
 
-                        cb.iload(coderSlot)
-                          .aload(bufSlot)
-                          .loadLocal(kind, paramSlot)
-                          .aload(constantsSlot)
-                          .ldc(i)
+                        cb.aload(constantsSlot)
+                          .ldc(i + 1)
                           .aaload()
-                          .invokestatic(CD_StringConcatHelper, "prepend", methodTypeDesc);
+                          .invokestatic(CD_StringConcatHelper, "append", methodTypeDesc);
                     }
                     cb.ireturn();
                 }
