@@ -448,6 +448,10 @@ public interface JavaLangAccess {
 
     Object stringConcat1(String[] constants);
 
+    byte stringCoder(String str);
+
+    byte initStringCoder();
+
     /**
      * Join strings
      */
