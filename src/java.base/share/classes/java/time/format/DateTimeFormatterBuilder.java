@@ -3810,18 +3810,14 @@ public final class DateTimeFormatterBuilder {
             }
             long inSec = inSecs;
             int inNano = NANO_OF_SECOND.checkValidIntValue(inNanos != null ? inNanos : 0);
-            if (fractionalDigits == 0) {
-                inNano = 0;
-            }
-            boolean printNanoInLocalDateTime = fractionalDigits == -2
-                    || (inNano == 0 && (fractionalDigits == 0 || fractionalDigits == -1));
+            // format mostly using LocalDateTime.toString
             if (inSec >= -SECONDS_0000_TO_1970) {
-                currentEra(buf, inSec, printNanoInLocalDateTime ? inNano : 0);
+                currentEra(buf, inSec, inNano);
             } else {
-                beforeCurrentEra(buf, inSec, printNanoInLocalDateTime ? inNano : 0);
+                beforeCurrentEra(buf, inSec, inNano);
             }
             // add fraction
-            if (!printNanoInLocalDateTime) {
+            if ((fractionalDigits < 0 && inNano > 0) || fractionalDigits > 0) {
                 buf.append('.');
                 int div = 100_000_000;
                 for (int i = 0; ((fractionalDigits == -1 && inNano > 0) ||
@@ -3841,12 +3837,12 @@ public final class DateTimeFormatterBuilder {
             long zeroSecs = inSec - SECONDS_PER_10000_YEARS + SECONDS_0000_TO_1970;
             long hi = Math.floorDiv(zeroSecs, SECONDS_PER_10000_YEARS) + 1;
             long lo = Math.floorMod(zeroSecs, SECONDS_PER_10000_YEARS);
-            LocalDateTime ldt = LocalDateTime.ofEpochSecond(lo - SECONDS_0000_TO_1970, inNano, ZoneOffset.UTC);
+            LocalDateTime ldt = LocalDateTime.ofEpochSecond(lo - SECONDS_0000_TO_1970, 0, ZoneOffset.UTC);
             if (hi > 0) {
                 buf.append('+').append(hi);
             }
             buf.append(ldt);
-            if (ldt.getSecond() == 0 && inNano == 0) {
+            if (ldt.getSecond() == 0) {
                 buf.append(":00");
             }
         }
@@ -3855,10 +3851,10 @@ public final class DateTimeFormatterBuilder {
             long zeroSecs = inSec + SECONDS_0000_TO_1970;
             long hi = zeroSecs / SECONDS_PER_10000_YEARS;
             long lo = zeroSecs % SECONDS_PER_10000_YEARS;
-            LocalDateTime ldt = LocalDateTime.ofEpochSecond(lo - SECONDS_0000_TO_1970, inNano, ZoneOffset.UTC);
+            LocalDateTime ldt = LocalDateTime.ofEpochSecond(lo - SECONDS_0000_TO_1970, 0, ZoneOffset.UTC);
             int pos = buf.length();
             buf.append(ldt);
-            if (ldt.getSecond() == 0 && inNano == 0) {
+            if (ldt.getSecond() == 0) {
                 buf.append(":00");
             }
             if (hi < 0) {
