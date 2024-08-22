@@ -74,6 +74,7 @@ class InvokerBytecodeGenerator {
     private static final ClassDesc CD_Object_array  = ReferenceClassDescImpl.ofValidated("[Ljava/lang/Object;");
     private static final ClassDesc CD_MethodHandle_array = ReferenceClassDescImpl.ofValidated("[Ljava/lang/invoke/MethodHandle;");
     private static final ClassDesc CD_MethodHandle_array2 = ReferenceClassDescImpl.ofValidated("[[Ljava/lang/invoke/MethodHandle;");
+    private static final ClassDesc CD_MemberName = ReferenceClassDescImpl.ofValidated("Ljava/lang/invoke/MemberName;");
 
     private static final MethodTypeDesc MTD_boolean_Object = MethodTypeDescImpl.ofValidated(CD_boolean, CD_Object);
     private static final MethodTypeDesc MTD_Object_int = MethodTypeDescImpl.ofValidated(CD_Object, CD_int);
@@ -125,7 +126,7 @@ class InvokerBytecodeGenerator {
             name = makeDumpableClassName(name);
         }
         this.name = name;
-        this.className = CLASS_PREFIX + name;
+        this.className = CLASS_PREFIX.concat(name);
         this.classDesc = ClassDesc.ofInternalName(className);
         this.lambdaForm = lambdaForm;
         this.invokerName = invokerName;
@@ -182,8 +183,8 @@ class InvokerBytecodeGenerator {
         }
         String sfx = ctr.toString();
         while (sfx.length() < 3)
-            sfx = "0" + sfx;
-        className += sfx;
+            sfx = "0".concat(sfx);
+        className = className.concat(sfx);
         return className;
     }
 
@@ -1672,6 +1673,7 @@ class InvokerBytecodeGenerator {
         return cls.isPrimitive() ? Wrapper.forPrimitiveType(cls).basicClassDescriptor()
              : cls == MethodHandle.class ? CD_MethodHandle
              : cls == DirectMethodHandle.class ? CD_DirectMethodHandle
+             : cls == MemberName.class ? CD_MemberName
              : cls == Object.class ? CD_Object
              : ReferenceClassDescImpl.ofValidated(cls.descriptorString());
     }

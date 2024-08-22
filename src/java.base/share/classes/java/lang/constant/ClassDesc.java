@@ -83,7 +83,7 @@ public sealed interface ClassDesc
      */
     static ClassDesc of(String name) {
         validateBinaryClassName(name);
-        return ClassDesc.ofDescriptor("L" + binaryToInternal(name) + ";");
+        return ClassDesc.ofDescriptor('L' + binaryToInternal(name) + ';');
     }
 
     /**
@@ -109,7 +109,7 @@ public sealed interface ClassDesc
      */
     static ClassDesc ofInternalName(String name) {
         validateInternalClassName(name);
-        return ClassDesc.ofDescriptor("L" + name + ";");
+        return ClassDesc.ofDescriptor('L' + name + ';');
     }
 
     /**
@@ -132,8 +132,8 @@ public sealed interface ClassDesc
             return of(className);
         }
         validateMemberName(className, false);
-        return ofDescriptor("L" + binaryToInternal(packageName) +
-                "/" + className + ";");
+        return ofDescriptor('L' + binaryToInternal(packageName) +
+                '/' + className + ';');
     }
 
     /**

@@ -66,7 +66,7 @@ public final class ConstantUtils {
      * @param binaryName a binary name
      */
     public static ClassDesc binaryNameToDesc(String binaryName) {
-        return ReferenceClassDescImpl.ofValidated("L" + binaryToInternal(binaryName) + ";");
+        return ReferenceClassDescImpl.ofValidated('L' + binaryToInternal(binaryName) + ';');
     }
 
     /**
