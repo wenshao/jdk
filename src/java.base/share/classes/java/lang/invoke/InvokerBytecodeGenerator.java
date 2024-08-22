@@ -181,11 +181,16 @@ class InvokerBytecodeGenerator {
             if (ctr == null)  ctr = 0;
             DUMP_CLASS_FILES_COUNTERS.put(className, ctr+1);
         }
-        String sfx = ctr.toString();
-        while (sfx.length() < 3)
-            sfx = "0".concat(sfx);
-        className = className.concat(sfx);
-        return className;
+
+        var buf = new StringBuilder(className.length() + 3).append(className);
+        int ctrVal = ctr;
+        if (ctrVal < 10) {
+            buf.repeat('0', 2);
+        } else if (ctrVal < 100) {
+            buf.append('0');
+        }
+        buf.append(ctrVal);
+        return buf.toString();
     }
 
     static class ClassData {
