@@ -70,7 +70,7 @@ public final class ConstantUtils {
      * @param binaryName a binary name
      */
     public static ClassDesc binaryNameToDesc(String binaryName) {
-        return ReferenceClassDescImpl.ofValidated(concat('L', binaryToInternal(name), ';');
+        return ReferenceClassDescImpl.ofValidated(concat('L', binaryToInternal(binaryName), ';'));
     }
 
     /**
@@ -383,6 +383,9 @@ public final class ConstantUtils {
                         ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS));
     }
 
+    /**
+     * Concatenation of prefix and suffix characters to a String for early bootstrap
+     */
     public static String concat(char prefix, String value, char suffix) {
         return JLA.concat(prefix, value, suffix);
     }
