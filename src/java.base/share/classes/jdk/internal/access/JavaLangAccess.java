@@ -453,6 +453,8 @@ public interface JavaLangAccess {
      */
     String join(String prefix, String suffix, String delimiter, String[] elements, int size);
 
+    String concat(char prefix, String value, char suffix);
+
     /*
      * Get the class data associated with the given class.
      * @param c the class

@@ -2639,6 +2639,10 @@ public final class System {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }
 
+            public String concat(char prefix, String value, char suffix) {
+                return StringConcatHelper.concat(prefix, value, suffix);
+            }
+
             public Object classData(Class<?> c) {
                 return c.getClassData();
             }
