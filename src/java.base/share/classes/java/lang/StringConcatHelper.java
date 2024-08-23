@@ -788,7 +788,7 @@ final class StringConcatHelper {
         if (value == null) {
             value = "null";
         }
-        byte coder = StringLatin1.canEncode(prefix | suffix) ? String.UTF16 : value.coder();
+        byte coder = StringLatin1.canEncode(prefix | suffix) ? value.coder() : String.UTF16;
         int len = value.length() + 2;
         byte[] buf = newArray(len << coder);
         prepend(len, coder, buf, suffix, value);
