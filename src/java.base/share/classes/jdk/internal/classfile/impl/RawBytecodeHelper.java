@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -109,52 +109,58 @@ public final class RawBytecodeHelper {
             rawCode = code;
             return code;
         } else {
-            len = switch (bytecode.get(bci) & 0xff) {
-                case WIDE -> {
-                    if (bci + 1 >= endBci) {
-                        yield -1;
-                    }
-                    yield LENGTHS[bytecode.get(bci + 1) & 0xff] >> 4;
-                }
-                case TABLESWITCH -> {
-                    int aligned_bci = align(bci + 1);
-                    if (aligned_bci + 3 * 4 >= endBci) {
-                        yield -1;
-                    }
-                    int lo = bytecode.getInt(aligned_bci + 1 * 4);
-                    int hi = bytecode.getInt(aligned_bci + 2 * 4);
-                    int l = aligned_bci - bci + (3 + hi - lo + 1) * 4;
-                    if (l > 0) yield l; else yield -1;
-                }
-                case LOOKUPSWITCH -> {
-                    int aligned_bci = align(bci + 1);
-                    if (aligned_bci + 2 * 4 >= endBci) {
-                        yield -1;
-                    }
-                    int npairs = bytecode.getInt(aligned_bci + 4);
-                    int l = aligned_bci - bci + (2 + 2 * npairs) * 4;
-                    if (l > 0) yield l; else yield -1;
-                }
-                default ->
-                    0;
-            };
-            if (len <= 0 || (bci > endBci - len) || (bci - len >= nextBci)) {
-                code = ILLEGAL;
-            } else {
-                nextBci += len;
-                isWide = false;
-                if (code == WIDE) {
-                    if (bci + 1 >= endBci) {
-                        code = ILLEGAL;
-                    } else {
-                        code = bytecode.get(bci + 1) & 0xff;
-                        isWide = true;
-                    }
+            return rawNext(bci, code);
+        }
+    }
+
+    private int rawNext(int bci, int code) {
+        int len = switch (bytecode.get(bci) & 0xff) {
+            case WIDE -> sizeWide(bci);
+            case TABLESWITCH -> sizeTableSwitch(bci);
+            case LOOKUPSWITCH -> sizeLookupSwitch(bci);
+            default -> 0;
+        };
+        if (len <= 0 || (bci > endBci - len) || (bci - len >= nextBci)) {
+            code = ILLEGAL;
+        } else {
+            nextBci += len;
+            isWide = false;
+            if (code == WIDE) {
+                if (bci + 1 >= endBci) {
+                    code = ILLEGAL;
+                } else {
+                    code = bytecode.get(bci + 1) & 0xff;
+                    isWide = true;
                 }
             }
-            rawCode = code;
-            return code;
         }
+        rawCode = code;
+        return code;
+    }
+
+    private int sizeWide(int bci) {
+        return bci + 1 >= endBci ? -1 : LENGTHS[bytecode.get(bci + 1) & 0xff] >> 4;
+    }
+
+    private int sizeTableSwitch(int bci) {
+        int aligned_bci = align(bci + 1);
+        if (aligned_bci + 3 * 4 >= endBci) {
+            return  -1;
+        }
+        int lo = bytecode.getInt(aligned_bci + 1 * 4);
+        int hi = bytecode.getInt(aligned_bci + 2 * 4);
+        int l = aligned_bci - bci + (3 + hi - lo + 1) * 4;
+        return l > 0 ? l : -1;
+    }
+
+    private int sizeLookupSwitch(int bci) {
+        int aligned_bci = align(bci + 1);
+        if (aligned_bci + 2 * 4 >= endBci) {
+            return  -1;
+        }
+        int npairs = bytecode.getInt(aligned_bci + 4);
+        int l = aligned_bci - bci + (2 + 2 * npairs) * 4;
+        return l > 0 ? l : -1;
     }
 
     public int getIndex() {

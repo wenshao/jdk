@@ -291,18 +291,8 @@ public final class StackMapGenerator {
     private void generate() {
         exMin = bytecode.capacity();
         exMax = -1;
-        for (var exhandler : handlers) {
-            int start_pc = labelContext.labelToBci(exhandler.tryStart());
-            int end_pc = labelContext.labelToBci(exhandler.tryEnd());
-            int handler_pc = labelContext.labelToBci(exhandler.handler());
-            if (start_pc >= 0 && end_pc >= 0 && end_pc > start_pc && handler_pc >= 0) {
-                if (start_pc < exMin) exMin = start_pc;
-                if (end_pc > exMax) exMax = end_pc;
-                var catchType = exhandler.catchType();
-                rawHandlers.add(new RawExceptionCatch(start_pc, end_pc, handler_pc,
-                        catchType.isPresent() ? cpIndexToType(catchType.get().index(), cp)
-                                              : Type.THROWABLE_TYPE));
-            }
+        if (!handlers.isEmpty()) {
+            generateHandlers();
         }
         BitSet frameOffsets = detectFrameOffsets();
         int framesCount = frameOffsets.cardinality();
@@ -320,22 +310,42 @@ public final class StackMapGenerator {
 
         //dead code patching
         for (int i = 0; i < framesCount; i++) {
-            var frame = frames.get(i);
-            if (frame.flags == -1) {
-                if (!patchDeadCode) throw generatorError("Unable to generate stack map frame for dead code", frame.offset);
-                //patch frame
-                frame.pushStack(Type.THROWABLE_TYPE);
-                if (maxStack < 1) maxStack = 1;
-                int blockSize = (i < framesCount - 1 ? frames.get(i + 1).offset : bytecode.limit()) - frame.offset;
-                //patch bytecode
-                bytecode.position(frame.offset);
-                for (int n=1; n<blockSize; n++) {
-                    bytecode.put((byte) NOP);
-                }
-                bytecode.put((byte) ATHROW);
-                //patch handlers
-                removeRangeFromExcTable(frame.offset, frame.offset + blockSize);
+            generateFrame(framesCount, i);
+        }
+    }
+
+    private void generateHandlers() {
+        for (var exhandler : handlers) {
+            int start_pc = labelContext.labelToBci(exhandler.tryStart());
+            int end_pc = labelContext.labelToBci(exhandler.tryEnd());
+            int handler_pc = labelContext.labelToBci(exhandler.handler());
+            if (start_pc >= 0 && end_pc >= 0 && end_pc > start_pc && handler_pc >= 0) {
+                if (start_pc < exMin) exMin = start_pc;
+                if (end_pc > exMax) exMax = end_pc;
+                var catchType = exhandler.catchType();
+                rawHandlers.add(new RawExceptionCatch(start_pc, end_pc, handler_pc,
+                        catchType.isPresent() ? cpIndexToType(catchType.get().index(), cp)
+                                : Type.THROWABLE_TYPE));
             }
+        }
+    }
+
+    private void generateFrame(int framesCount, int i) {
+        var frame = frames.get(i);
+        if (frame.flags == -1) {
+            if (!patchDeadCode) throw generatorError("Unable to generate stack map frame for dead code", frame.offset);
+            //patch frame
+            frame.pushStack(Type.THROWABLE_TYPE);
+            if (maxStack < 1) maxStack = 1;
+            int blockSize = (i < framesCount - 1 ? frames.get(i + 1).offset : bytecode.limit()) - frame.offset;
+            //patch bytecode
+            bytecode.position(frame.offset);
+            for (int n=1; n<blockSize; n++) {
+                bytecode.put((byte) NOP);
+            }
+            bytecode.put((byte) ATHROW);
+            //patch handlers
+            removeRangeFromExcTable(frame.offset, frame.offset + blockSize);
         }
     }
 
@@ -431,13 +441,17 @@ public final class StackMapGenerator {
                     currentFrame.copyFrom(nextFrame);
                     nextFrame.dirty = false;
                 } else if (thisOffset < bcs.bci) {
-                    throw new ClassFormatError(String.format("Bad stack map offset %d", thisOffset));
+                    throw classFormatError(thisOffset);
                 }
             } else if (ncf) {
                 throw generatorError("Expecting a stack map frame");
             }
             ncf = processBlock(bcs);
         }
+    }
+
+    private ClassFormatError classFormatError(int offset) {
+        return new ClassFormatError(String.format("Bad stack map offset %d", offset));
     }
 
     private boolean processBlock(RawBytecodeHelper bcs) {
@@ -863,40 +877,12 @@ public final class StackMapGenerator {
                 offsets.set(bci);
             }
             no_control_flow = switch (opcode) {
-                case GOTO -> {
-                            offsets.set(bcs.dest());
-                            yield true;
-                        }
-                case GOTO_W -> {
-                            offsets.set(bcs.destW());
-                            yield true;
-                        }
-                case IF_ICMPEQ, IF_ICMPNE, IF_ICMPLT, IF_ICMPGE,
+                case GOTO, GOTO_W,
+                     IF_ICMPEQ, IF_ICMPNE, IF_ICMPLT, IF_ICMPGE,
                      IF_ICMPGT, IF_ICMPLE, IFEQ, IFNE,
                      IFLT, IFGE, IFGT, IFLE, IF_ACMPEQ,
-                     IF_ACMPNE , IFNULL , IFNONNULL -> {
-                            offsets.set(bcs.dest());
-                            yield false;
-                        }
-                case TABLESWITCH, LOOKUPSWITCH -> {
-                            int aligned_bci = RawBytecodeHelper.align(bci + 1);
-                            int default_ofset = bcs.getInt(aligned_bci);
-                            int keys, delta;
-                            if (bcs.rawCode == TABLESWITCH) {
-                                int low = bcs.getInt(aligned_bci + 4);
-                                int high = bcs.getInt(aligned_bci + 2 * 4);
-                                keys = high - low + 1;
-                                delta = 1;
-                            } else {
-                                keys = bcs.getInt(aligned_bci + 4);
-                                delta = 2;
-                            }
-                            offsets.set(bci + default_ofset);
-                            for (int i = 0; i < keys; i++) {
-                                offsets.set(bci + bcs.getInt(aligned_bci + (3 + i * delta) * 4));
-                            }
-                            yield true;
-                        }
+                     IF_ACMPNE , IFNULL , IFNONNULL -> controlFlowGoto(offsets, bcs, opcode);
+                case TABLESWITCH, LOOKUPSWITCH      -> controlFlowSwitch(offsets, bcs, bci);
                 case IRETURN, LRETURN, FRETURN, DRETURN,
                      ARETURN, RETURN, ATHROW -> true;
                 default -> false;
@@ -904,13 +890,46 @@ public final class StackMapGenerator {
         } catch (IllegalArgumentException iae) {
             throw generatorError("Detected branch target out of bytecode range", bci);
         }
+        if (!rawHandlers.isEmpty()) {
+            detectFrameOffsetsRawHandlers(offsets);
+        }
+        return offsets;
+    }
+
+    private void detectFrameOffsetsRawHandlers(BitSet offsets) {
         for (var exhandler : rawHandlers) try {
-             offsets.set(exhandler.handler());
+            offsets.set(exhandler.handler());
         } catch (IllegalArgumentException iae) {
             if (!filterDeadLabels)
                 throw generatorError("Detected exception handler out of bytecode range");
         }
-        return offsets;
+    }
+
+    private static boolean controlFlowGoto(BitSet offsets, RawBytecodeHelper bcs, int opcode) {
+        offsets.set(
+                GOTO_W == opcode ? bcs.destW() : bcs.dest()
+        );
+        return GOTO == opcode || GOTO_W == opcode;
+    }
+
+    private static boolean controlFlowSwitch(BitSet offsets, RawBytecodeHelper bcs, int bci) {
+        int aligned_bci = RawBytecodeHelper.align(bci + 1);
+        int default_ofset = bcs.getInt(aligned_bci);
+        int keys, delta;
+        if (bcs.rawCode == TABLESWITCH) {
+            int low = bcs.getInt(aligned_bci + 4);
+            int high = bcs.getInt(aligned_bci + 2 * 4);
+            keys = high - low + 1;
+            delta = 1;
+        } else {
+            keys = bcs.getInt(aligned_bci + 4);
+            delta = 2;
+        }
+        offsets.set(bci + default_ofset);
+        for (int i = 0; i < keys; i++) {
+            offsets.set(bci + bcs.getInt(aligned_bci + (3 + i * delta) * 4));
+        }
+        return true;
     }
 
     private final class Frame {
@@ -1062,12 +1081,14 @@ public final class StackMapGenerator {
                     setLocalRawInternal(localsSize++, Type.referenceType(desc));
                 } else switch (desc.descriptorString().charAt(0)) {
                     case 'J' -> {
-                        setLocalRawInternal(localsSize++, Type.LONG_TYPE);
-                        setLocalRawInternal(localsSize++, Type.LONG2_TYPE);
+                        setLocalRawInternal(localsSize, Type.LONG_TYPE);
+                        setLocalRawInternal(localsSize + 1, Type.LONG2_TYPE);
+                        localsSize += 2;
                     }
                     case 'D' -> {
-                        setLocalRawInternal(localsSize++, Type.DOUBLE_TYPE);
-                        setLocalRawInternal(localsSize++, Type.DOUBLE2_TYPE);
+                        setLocalRawInternal(localsSize, Type.DOUBLE_TYPE);
+                        setLocalRawInternal(localsSize + 1, Type.DOUBLE2_TYPE);
+                        localsSize += 2;
                     }
                     case 'I', 'Z', 'B', 'C', 'S' ->
                         setLocalRawInternal(localsSize++, Type.INTEGER_TYPE);
