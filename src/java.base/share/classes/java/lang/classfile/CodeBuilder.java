@@ -530,7 +530,7 @@ public sealed interface CodeBuilder
      * @since 23
      */
     default CodeBuilder arrayLoad(TypeKind tk) {
-        Opcode opcode = BytecodeHelpers.arrayLoadOpcode(tk);
+        Opcode opcode = tk.arrayLoadOpcode();
         return with(ArrayLoadInstruction.of(opcode));
     }
 
@@ -541,7 +541,7 @@ public sealed interface CodeBuilder
      * @since 23
      */
     default CodeBuilder arrayStore(TypeKind tk) {
-        Opcode opcode = BytecodeHelpers.arrayStoreOpcode(tk);
+        Opcode opcode = tk.arrayStoreOpcode();
         return with(ArrayStoreInstruction.of(opcode));
     }
 

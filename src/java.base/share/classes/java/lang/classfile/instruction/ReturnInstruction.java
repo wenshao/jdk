@@ -57,7 +57,7 @@ public sealed interface ReturnInstruction extends Instruction
      * @param typeKind the type of the return instruction
      */
     static ReturnInstruction of(TypeKind typeKind) {
-        return of(BytecodeHelpers.returnOpcode(typeKind));
+        return of(typeKind.returnOpcode());
     }
 
     /**

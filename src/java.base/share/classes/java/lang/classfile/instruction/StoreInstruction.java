@@ -63,7 +63,7 @@ public sealed interface StoreInstruction extends Instruction
      * @param slot the local variable slot to store to
      */
     static StoreInstruction of(TypeKind kind, int slot) {
-        return of(BytecodeHelpers.storeOpcode(kind, slot), slot);
+        return of(kind.storeOpcode(slot), slot);
     }
 
     /**

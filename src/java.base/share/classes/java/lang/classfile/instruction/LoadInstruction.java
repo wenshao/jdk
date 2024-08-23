@@ -64,7 +64,7 @@ public sealed interface LoadInstruction extends Instruction
      * @param slot the local variable slot to load from
      */
     static LoadInstruction of(TypeKind kind, int slot) {
-        return of(BytecodeHelpers.loadOpcode(kind, slot), slot);
+        return of(kind.loadOpcode(slot), slot);
     }
 
     /**
