@@ -28,6 +28,7 @@ package java.lang.classfile;
 
 import java.lang.invoke.TypeDescriptor;
 import jdk.internal.javac.PreviewFeature;
+import jdk.internal.vm.annotation.Stable;
 
 import static java.lang.classfile.Opcode.*;
 
@@ -39,77 +40,32 @@ import static java.lang.classfile.Opcode.*;
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
 public enum TypeKind {
     /** the primitive type byte */
-    ByteType("byte", "B", 8,
-            ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
-            ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
-            IRETURN, BALOAD, BASTORE),
+    ByteType("byte", "B", 8),
     /** the primitive type short */
-    ShortType("short", "S", 9,
-            ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
-            ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
-            IRETURN, SALOAD, SASTORE),
+    ShortType("short", "S", 9),
     /** the primitive type int */
-    IntType("int", "I", 10,
-            ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
-            ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
-            IRETURN, IALOAD, IASTORE),
+    IntType("int", "I", 10),
     /** the primitive type float */
-    FloatType("float", "F", 6,
-            FLOAD_0, FLOAD_1, FLOAD_2, FLOAD_3, FLOAD, FLOAD_W,
-            FSTORE_0, FSTORE_1, FSTORE_2, FSTORE_3, FSTORE, FSTORE_W,
-            FRETURN, FALOAD, FASTORE),
+    FloatType("float", "F", 6),
     /** the primitive type long */
-    LongType("long", "J", 11,
-            LLOAD_0, LLOAD_1, LLOAD_2, LLOAD_3, LLOAD, LLOAD_W,
-            LSTORE_0, LSTORE_1, LSTORE_2, LSTORE_3, LSTORE, LSTORE_W,
-            LRETURN, LALOAD, LASTORE),
+    LongType("long", "J", 11),
     /** the primitive type double */
-    DoubleType("double", "D", 7,
-            DLOAD_0, DLOAD_1, DLOAD_2, DLOAD_3, DLOAD, DLOAD_W,
-            DSTORE_0, DSTORE_1, DSTORE_2, DSTORE_3, DSTORE, DSTORE_W,
-            DRETURN, DALOAD, DASTORE),
+    DoubleType("double", "D", 7),
     /** a reference type */
-    ReferenceType("reference type", "L", -1,
-            ALOAD_0, ALOAD_1, ALOAD_2, ALOAD_3, ALOAD, ALOAD_W,
-            ASTORE_0, ASTORE_1, ASTORE_2, ASTORE_3, ASTORE, ASTORE_W,
-            ARETURN, AALOAD, AASTORE),
+    ReferenceType("reference type", "L", -1),
     /** the primitive type char */
-    CharType("char", "C", 5,
-            ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
-            ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
-            IRETURN, CALOAD, CASTORE),
+    CharType("char", "C", 5),
     /** the primitive type boolean */
-    BooleanType("boolean", "Z", 4,
-            ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
-            ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
-            IRETURN, BALOAD, BASTORE),
+    BooleanType("boolean", "Z", 4),
     /** void */
-    VoidType("void", "V", -1,
-            null, null, null, null, null, null,
-            null, null, null, null, null, null,
-            RETURN, null, null);
+    VoidType("void", "V", -1);
 
     private final String name;
     private final String descriptor;
     private final int newarrayCode;
 
-    private final Opcode load0;
-    private final Opcode load1;
-    private final Opcode load2;
-    private final Opcode load3;
-    private final Opcode load;
-    private final Opcode loadw;
-
-    private final Opcode store0;
-    private final Opcode store1;
-    private final Opcode store2;
-    private final Opcode store3;
-    private final Opcode store;
-    private final Opcode storew;
-
-    private final Opcode returnOpcode;
-    private final Opcode arrayLoadOpcode;
-    private final Opcode arrayStoreOpcode;
+    @Stable
+    private Operators operators;
 
     /** {@return the human-readable name corresponding to this type} */
     public String typeName() { return name; }
@@ -148,32 +104,10 @@ public enum TypeKind {
         };
     }
 
-    TypeKind(String name, String descriptor, int newarrayCode,
-             Opcode load0, Opcode load1, Opcode load2, Opcode load3, Opcode load, Opcode loadw,
-             Opcode store0, Opcode store1, Opcode store2, Opcode store3, Opcode store, Opcode storew,
-             Opcode returnOpcode, Opcode arrayLoadOpcode, Opcode arrayStoreOpcode
-    ) {
+    TypeKind(String name, String descriptor, int newarrayCode) {
         this.name = name;
         this.descriptor = descriptor;
         this.newarrayCode = newarrayCode;
-
-        this.load0 = load0;
-        this.load1 = load1;
-        this.load2 = load2;
-        this.load3 = load3;
-        this.load = load;
-        this.loadw = loadw;
-
-        this.store0 = store0;
-        this.store1 = store1;
-        this.store2 = store2;
-        this.store3 = store3;
-        this.store = store;
-        this.storew = storew;
-
-        this.returnOpcode = returnOpcode;
-        this.arrayLoadOpcode = arrayLoadOpcode;
-        this.arrayStoreOpcode = arrayStoreOpcode;
     }
 
     /**
@@ -231,6 +165,14 @@ public enum TypeKind {
                 : TypeKind.ReferenceType;
     }
 
+    private Operators operators() {
+        Operators operators = this.operators;
+        if (operators == null) {
+            this.operators = operators = makeOperators(this);
+        }
+        return operators;
+    }
+
     /**
      * {@return a local variable load instruction}
      *
@@ -241,12 +183,13 @@ public enum TypeKind {
             throw new IllegalArgumentException("void");
         }
 
+        Operators op = this.operators();
         return switch (slot) {
-            case 0 -> load0;
-            case 1 -> load1;
-            case 2 -> load2;
-            case 3 -> load3;
-            default -> (slot < 256) ? load : loadw;
+            case 0 -> op.load0;
+            case 1 -> op.load1;
+            case 2 -> op.load2;
+            case 3 -> op.load3;
+            default -> (slot < 256) ? op.load : op.loadw;
         };
     }
 
@@ -260,12 +203,13 @@ public enum TypeKind {
             throw new IllegalArgumentException("void");
         }
 
+        Operators op = this.operators();
         return switch (slot) {
-            case 0 -> store0;
-            case 1 -> store1;
-            case 2 -> store2;
-            case 3 -> store3;
-            default -> (slot < 256) ? store : storew;
+            case 0 -> op.store0;
+            case 1 -> op.store1;
+            case 2 -> op.store2;
+            case 3 -> op.store3;
+            default -> (slot < 256) ? op.store : op.storew;
         };
     }
 
@@ -273,7 +217,7 @@ public enum TypeKind {
      * {@return a return instruction}
      */
     public Opcode returnOpcode() {
-        return returnOpcode;
+        return operators().returnOpcode;
     }
 
     /**
@@ -283,7 +227,7 @@ public enum TypeKind {
         if (this == VoidType) {
             throw new IllegalArgumentException("void not an allowable array type");
         }
-        return arrayLoadOpcode;
+        return operators().arrayLoadOpcode;
     }
 
     /**
@@ -293,7 +237,58 @@ public enum TypeKind {
         if (this == VoidType) {
             throw new IllegalArgumentException("void not an allowable array type");
         }
-        return arrayStoreOpcode;
+        return operators().arrayStoreOpcode;
     }
 
+    private static Operators makeOperators(TypeKind tk) {
+        return switch (tk) {
+            case ByteType -> new Operators(
+                    ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
+                    ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
+                    IRETURN, BALOAD, BASTORE);
+            case ShortType -> new Operators(
+                    ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
+                    ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
+                    IRETURN, SALOAD, SASTORE);
+            case IntType -> new Operators(
+                    ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
+                    ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
+                    IRETURN, IALOAD, IASTORE);
+            case FloatType -> new Operators(
+                    FLOAD_0, FLOAD_1, FLOAD_2, FLOAD_3, FLOAD, FLOAD_W,
+                    FSTORE_0, FSTORE_1, FSTORE_2, FSTORE_3, FSTORE, FSTORE_W,
+                    FRETURN, FALOAD, FASTORE);
+            case LongType -> new Operators(
+                    LLOAD_0, LLOAD_1, LLOAD_2, LLOAD_3, LLOAD, LLOAD_W,
+                    LSTORE_0, LSTORE_1, LSTORE_2, LSTORE_3, LSTORE, LSTORE_W,
+                    LRETURN, LALOAD, LASTORE);
+            case DoubleType -> new Operators(
+                    DLOAD_0, DLOAD_1, DLOAD_2, DLOAD_3, DLOAD, DLOAD_W,
+                    DSTORE_0, DSTORE_1, DSTORE_2, DSTORE_3, DSTORE, DSTORE_W,
+                    DRETURN, DALOAD, DASTORE);
+            case ReferenceType -> new Operators(
+                    ALOAD_0, ALOAD_1, ALOAD_2, ALOAD_3, ALOAD, ALOAD_W,
+                    ASTORE_0, ASTORE_1, ASTORE_2, ASTORE_3, ASTORE, ASTORE_W,
+                    ARETURN, AALOAD, AASTORE);
+            case CharType -> new Operators(
+                    ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
+                    ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
+                    IRETURN, CALOAD, CASTORE);
+            case BooleanType -> new Operators(
+                    ILOAD_0, ILOAD_1, ILOAD_2, ILOAD_3, ILOAD, ILOAD_W,
+                    ISTORE_0, ISTORE_1, ISTORE_2, ISTORE_3, ISTORE, ISTORE_W,
+                    IRETURN, BALOAD, BASTORE);
+            case VoidType -> new Operators(
+                    null, null, null, null, null, null,
+                    null, null, null, null, null, null,
+                    RETURN, null, null);
+            default -> throw new AssertionError();
+        };
+    }
+
+    private record Operators (
+            Opcode load0, Opcode load1, Opcode load2, Opcode load3, Opcode load, Opcode loadw,
+            Opcode store0, Opcode store1, Opcode store2, Opcode store3, Opcode store, Opcode storew,
+            Opcode returnOpcode, Opcode arrayLoadOpcode, Opcode arrayStoreOpcode
+    ) {}
 }
