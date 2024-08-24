@@ -59,10 +59,7 @@ import static java.lang.invoke.MethodType.methodType;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Warmup(iterations = 3, time = 2)
 @Measurement(iterations = 6, time = 1)
-@Fork(jvmArgsAppend = {
-        "--enable-preview",
-        "--add-exports",
-        "java.base/jdk.internal.constant=ALL-UNNAMED" }, value = 1)
+@Fork(jvmArgsAppend = "--enable-preview", value = 1)
 @State(Scope.Thread)
 public class StringConcatHiddenClassGenerate {
     static final int FORCE_INLINE_THRESHOLD = 16;
@@ -115,35 +112,12 @@ public class StringConcatHiddenClassGenerate {
         }
     };
 
+    static MethodType methodType = MethodType.methodType(String.class, Object.class, float.class, int.class);
+    static String[] constants = new String[] {"", "", "", ""};
+
     @Benchmark
     public void generateBytes() throws Exception {
-        MethodType methodType = MethodType.methodType(String.class, String.class, float.class);
-        String[] constants = new String[] {"", "", ""};
         generateBytes(methodType, constants);
-    }
-
-    /**
-     * The parameter types are normalized into 7 types: int,long,boolean,char,float,double,Object
-     */
-    private static MethodType erasedArgs(MethodType args) {
-        int parameterCount = args.parameterCount();
-        var paramTypes = new Class<?>[parameterCount];
-        boolean changed = false;
-        for (int i = 0; i < parameterCount; i++) {
-            Class<?> cl = args.parameterType(i);
-            // Use int as the logical type for subword integral types
-            // (byte and short). char and boolean require special
-            // handling so don't change the logical type of those
-            if (cl == byte.class || cl == short.class) {
-                cl = int.class;
-                changed = true;
-            } else if (cl != Object.class && !cl.isPrimitive()) {
-                cl = Object.class;
-                changed = true;
-            }
-            paramTypes[i] = cl;
-        }
-        return changed ? MethodType.methodType(args.returnType(), paramTypes) : args;
     }
 
     /**
@@ -203,8 +177,7 @@ public class StringConcatHiddenClassGenerate {
         return MethodTypeDesc.of(CD_int, paramTypes);
     }
 
-    private static byte[] generateBytes(MethodType args, String[] constants) throws Exception {
-        final MethodType concatArgs = erasedArgs(args);
+    private static byte[] generateBytes(MethodType concatArgs, String[] constants) throws Exception {
         final boolean forceInline = true;
 
         MethodTypeDesc lengthArgs  = lengthArgs(concatArgs),
