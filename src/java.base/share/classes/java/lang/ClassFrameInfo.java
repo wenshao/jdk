@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,8 @@ package java.lang;
 import jdk.internal.access.JavaLangInvokeAccess;
 import jdk.internal.access.SharedSecrets;
 import java.lang.StackWalker.StackFrame;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * ClassFrameInfo is an implementation of StackFrame that contains only
@@ -117,7 +119,7 @@ class ClassFrameInfo implements StackFrame {
         if (isCallerSensitive()) {
             tags += " caller sensitive";
         }
-        return declaringClass().getName() + " " + tags;
+        return concat(declaringClass().getName(), " ", tags);
     }
 
     private static final int MEMBER_INFO_FLAGS = 0x00FFFFFF;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,6 +28,8 @@ import java.lang.module.Configuration;
 import java.lang.module.ModuleReference;
 import java.net.URI;
 
+import static java.lang.StringConcatHelper.concat;
+
 /**
  * A NamedPackage represents a package by name in a specific module.
  *
@@ -46,7 +48,7 @@ class NamedPackage {
 
     NamedPackage(String pn, Module module) {
         if (pn.isEmpty() && module.isNamed()) {
-            throw new InternalError("unnamed package in  " + module);
+            throw new InternalError(concat("unnamed package in  ", module));
         }
         this.name = pn.intern();
         this.module = module;

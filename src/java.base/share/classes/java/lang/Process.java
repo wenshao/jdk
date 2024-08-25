@@ -39,6 +39,8 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static java.lang.StringConcatHelper.concat;
+
 /**
  * {@code Process} provides control of native processes started by
  * ProcessBuilder.start and Runtime.exec.
@@ -267,7 +269,7 @@ public abstract class Process {
                 inputReader = new BufferedReader(new InputStreamReader(getInputStream(), charset));
             } else {
                 if (!inputCharset.equals(charset))
-                    throw new IllegalStateException("BufferedReader was created with charset: " + inputCharset);
+                    throw new IllegalStateException(concat("BufferedReader was created with charset: ", inputCharset));
             }
             return inputReader;
         }
@@ -337,7 +339,7 @@ public abstract class Process {
                 errorReader = new BufferedReader(new InputStreamReader(getErrorStream(), charset));
             } else {
                 if (!errorCharset.equals(charset))
-                    throw new IllegalStateException("BufferedReader was created with charset: " + errorCharset);
+                    throw new IllegalStateException(concat("BufferedReader was created with charset: ", errorCharset));
             }
             return errorReader;
         }
@@ -408,7 +410,7 @@ public abstract class Process {
                 outputWriter = new BufferedWriter(new OutputStreamWriter(getOutputStream(), charset));
             } else {
                 if (!outputCharset.equals(charset))
-                    throw new IllegalStateException("BufferedWriter was created with charset: " + outputCharset);
+                    throw new IllegalStateException(concat("BufferedWriter was created with charset: ", outputCharset));
             }
             return outputWriter;
         }
@@ -595,8 +597,8 @@ public abstract class Process {
      * @since 9
      */
     public boolean supportsNormalTermination() {
-        throw new UnsupportedOperationException(this.getClass()
-                + ".supportsNormalTermination() not supported" );
+        throw new UnsupportedOperationException(concat(this.getClass(),
+                ".supportsNormalTermination() not supported" ));
     }
 
     /**
@@ -771,8 +773,8 @@ public abstract class Process {
      * @since 9
      */
     public ProcessHandle toHandle() {
-        throw new UnsupportedOperationException(this.getClass()
-                + ".toHandle() not supported");
+        throw new UnsupportedOperationException(concat(this.getClass(),
+                ".toHandle() not supported"));
     }
 
     /**

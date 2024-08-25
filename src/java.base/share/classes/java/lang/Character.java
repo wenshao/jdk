@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,6 +41,7 @@ import java.util.Optional;
 import static java.lang.constant.ConstantDescs.BSM_EXPLICIT_CAST;
 import static java.lang.constant.ConstantDescs.CD_char;
 import static java.lang.constant.ConstantDescs.DEFAULT_NAME;
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * The {@code Character} class wraps a value of the primitive
@@ -11888,8 +11889,8 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
             return null;
         UnicodeBlock block = UnicodeBlock.of(codePoint);
         if (block != null)
-            return block.toString().replace('_', ' ') + " "
-                   + Integer.toHexString(codePoint).toUpperCase(Locale.ROOT);
+            return concat(block.toString().replace('_', ' '), " ",
+                   Integer.toHexString(codePoint).toUpperCase(Locale.ROOT));
         // should never come here
         return Integer.toHexString(codePoint).toUpperCase(Locale.ROOT);
     }
@@ -11941,6 +11942,6 @@ class Character implements java.io.Serializable, Comparable<Character>, Constabl
                     return cp;
             }
         } catch (Exception x) {}
-        throw new IllegalArgumentException("Unrecognized character name :" + name);
+        throw new IllegalArgumentException("Unrecognized character name :".concat(name));
     }
 }

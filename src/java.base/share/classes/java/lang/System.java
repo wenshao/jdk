@@ -97,6 +97,8 @@ import sun.nio.ch.Interruptible;
 import sun.nio.cs.UTF_8;
 import sun.security.util.SecurityConstants;
 
+import static java.lang.StringConcatHelper.concat;
+
 /**
  * The {@code System} class contains several useful class fields
  * and methods. It cannot be instantiated.
@@ -2113,11 +2115,11 @@ public final class System {
         } else {
             log.println(e);
             for (Throwable suppressed : e.getSuppressed()) {
-                log.println("Suppressed: " + suppressed);
+                log.println(concat("Suppressed: ", suppressed));
             }
             Throwable cause = e.getCause();
             if (cause != null) {
-                log.println("Caused by: " + cause);
+                log.println(concat("Caused by: ", cause));
             }
         }
     }
@@ -2400,9 +2402,8 @@ public final class System {
         // Emit a warning if `sun.jnu.encoding` is not supported.
         if (notSupportedJnuEncoding != null) {
             System.err.println(
-                    "WARNING: The encoding of the underlying platform's" +
-                    " file system is not supported: " +
-                    notSupportedJnuEncoding);
+                    "WARNING: The encoding of the underlying platform's file system is not supported: "
+                            .concat(notSupportedJnuEncoding));
         }
 
         // initializing the system class loader
@@ -2639,7 +2640,7 @@ public final class System {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }
 
-            public String concat(String prefix, String value, String suffix) {
+            public String concat(String prefix, Object value, String suffix) {
                 return StringConcatHelper.concat(prefix, value, suffix);
             }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 
 package java.lang;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * Thrown when an application tries to access an enum constant by name
@@ -60,7 +62,7 @@ public class EnumConstantNotPresentException extends RuntimeException {
      */
     public EnumConstantNotPresentException(Class<? extends Enum> enumType,
                                            String constantName) {
-        super(enumType.getName() + "." + constantName);
+        super(concat(enumType.getName(), ".", constantName));
         this.enumType = enumType;
         this.constantName  = constantName;
     }

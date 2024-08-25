@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -30,6 +30,8 @@ import java.util.*;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.event.ThrowableTracer;
 import jdk.internal.misc.InternalLock;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * The {@code Throwable} class is the superclass of all errors and
@@ -488,8 +490,8 @@ public class Throwable implements Serializable {
      */
     public synchronized Throwable initCause(Throwable cause) {
         if (this.cause != this)
-            throw new IllegalStateException("Can't overwrite cause with " +
-                                            Objects.toString(cause, "a null"), this);
+            throw new IllegalStateException("Can't overwrite cause with ".concat(
+                                            Objects.toString(cause, "a null")), this);
         if (cause == this)
             throw new IllegalArgumentException("Self-causation not permitted", this);
         this.cause = cause;
@@ -523,7 +525,7 @@ public class Throwable implements Serializable {
     public String toString() {
         String s = getClass().getName();
         String message = getLocalizedMessage();
-        return (message != null) ? (s + ": " + message) : s;
+        return (message != null) ? (concat(s, ": ", message)) : s;
     }
 
     /**
@@ -712,7 +714,7 @@ public class Throwable implements Serializable {
         s.println(this);
         StackTraceElement[] trace = getOurStackTrace();
         for (StackTraceElement traceElement : trace)
-            s.println("\tat " + traceElement);
+            s.println(concat("\tat ", traceElement));
 
         // Print suppressed exceptions, if any
         for (Throwable se : getSuppressed())
@@ -928,7 +930,7 @@ public class Throwable implements Serializable {
         StackTraceElement[] defensiveCopy = stackTrace.clone();
         for (int i = 0; i < defensiveCopy.length; i++) {
             if (defensiveCopy[i] == null)
-                throw new NullPointerException("stackTrace[" + i + "]");
+                throw new NullPointerException(concat("stackTrace[", i, "]"));
         }
 
         synchronized (this) {

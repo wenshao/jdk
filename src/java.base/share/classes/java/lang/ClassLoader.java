@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2024, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2019, Azul Systems, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -69,6 +69,8 @@ import jdk.internal.reflect.Reflection;
 import jdk.internal.util.StaticProperty;
 import sun.reflect.misc.ReflectUtil;
 import sun.security.util.SecurityConstants;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * A class loader is an object that is responsible for loading classes. The
@@ -397,11 +399,11 @@ public abstract class ClassLoader {
      * If it's built-in loader then omit `@<id>` as there is only one instance.
      */
     private static String nameAndId(ClassLoader ld) {
-        String nid = ld.getName() != null ? "\'" + ld.getName() + "\'"
+        String nid = ld.getName() != null ? concat("\'", ld.getName(), "\'")
                                           : ld.getClass().getName();
         if (!(ld instanceof BuiltinClassLoader)) {
             String id = Integer.toHexString(System.identityHashCode(ld));
-            nid = nid + " @" + id;
+            nid = concat(nid, " @", id);
         }
         return nid;
     }
@@ -899,7 +901,7 @@ public abstract class ClassLoader {
                                             ProtectionDomain pd)
     {
         if (!checkName(name))
-            throw new NoClassDefFoundError("IllegalName: " + name);
+            throw new NoClassDefFoundError("IllegalName: ".concat(name));
 
         // Note:  Checking logic in java.lang.invoke.MemberName.checkForTypeAlias
         // relies on the fact that spoofing is impossible if a class has a name
@@ -907,8 +909,8 @@ public abstract class ClassLoader {
         if ((name != null) && name.startsWith("java.")
                 && this != getBuiltinPlatformClassLoader()) {
             throw new SecurityException
-                ("Prohibited package name: " +
-                 name.substring(0, name.lastIndexOf('.')));
+                ("Prohibited package name: ".concat(
+                 name.substring(0, name.lastIndexOf('.'))));
         }
         if (pd == null) {
             pd = defaultDomain;
@@ -1638,7 +1640,7 @@ public abstract class ClassLoader {
     @CallerSensitiveAdapter
     private static boolean registerAsParallelCapable(Class<?> caller) {
         if ((caller == null) || !ClassLoader.class.isAssignableFrom(caller)) {
-            throw new IllegalCallerException(caller + " not a subclass of ClassLoader");
+            throw new IllegalCallerException(concat(caller, " not a subclass of ClassLoader"));
         }
         return ParallelLoaders.register(caller.asSubclass(ClassLoader.class));
     }
@@ -1978,8 +1980,8 @@ public abstract class ClassLoader {
      */
     static synchronized ClassLoader initSystemClassLoader() {
         if (VM.initLevel() != 3) {
-            throw new InternalError("system class loader cannot be set at initLevel " +
-                                    VM.initLevel());
+            throw new InternalError(concat("system class loader cannot be set at initLevel ",
+                                    VM.initLevel()));
         }
 
         // detect recursive initialization
@@ -2105,7 +2107,7 @@ public abstract class ClassLoader {
      */
     Package definePackage(String name, Module m) {
         if (name.isEmpty() && m.isNamed()) {
-            throw new InternalError("unnamed package in  " + m);
+            throw new InternalError(concat("unnamed package in  ", m));
         }
 
         // check if Package object is already defined
@@ -2403,7 +2405,7 @@ public abstract class ClassLoader {
         if (nl != null) {
             return nl;
         }
-        throw new UnsatisfiedLinkError("Can't load library: " + file);
+        throw new UnsatisfiedLinkError(concat("Can't load library: ", file));
     }
     static NativeLibrary loadLibrary(Class<?> fromClass, String name) {
         ClassLoader loader = (fromClass == null) ? null : fromClass.getClassLoader();
@@ -2423,13 +2425,13 @@ public abstract class ClassLoader {
             File libfile = new File(libfilename);
             if (!libfile.isAbsolute()) {
                 throw new UnsatisfiedLinkError(
-                        "ClassLoader.findLibrary failed to return an absolute path: " + libfilename);
+                        "ClassLoader.findLibrary failed to return an absolute path: ".concat(libfilename));
             }
             NativeLibrary nl = libs.loadLibrary(fromClass, libfile);
             if (nl != null) {
                 return nl;
             }
-            throw new UnsatisfiedLinkError("Can't load " + libfilename);
+            throw new UnsatisfiedLinkError("Can't load ".concat(libfilename));
         }
         // Then load from system library path and java library path
         NativeLibrary nl = libs.loadLibrary(fromClass, name);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 
 package java.lang;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * Thrown to indicate that an index of some sort (such as to an array, to a
@@ -66,7 +68,7 @@ public class IndexOutOfBoundsException extends RuntimeException {
      * @since 9
      */
     public IndexOutOfBoundsException(int index) {
-        super("Index out of range: " + index);
+        super(concat("Index out of range: ", index));
     }
 
     /**
@@ -80,6 +82,6 @@ public class IndexOutOfBoundsException extends RuntimeException {
      * @since 16
      */
     public IndexOutOfBoundsException(long index) {
-        super("Index out of range: " + index);
+        super(concat("Index out of range: ", index));
     }
 }

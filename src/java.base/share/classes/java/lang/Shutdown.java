@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,6 +27,8 @@ package java.lang;
 
 
 import jdk.internal.misc.VM;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * Package-private utility class containing data structures and logic
@@ -83,11 +85,11 @@ class Shutdown {
      */
     static void add(int slot, boolean registerShutdownInProgress, Runnable hook) {
         if (slot < 0 || slot >= MAX_SYSTEM_HOOKS) {
-            throw new IllegalArgumentException("Invalid slot: " + slot);
+            throw new IllegalArgumentException(concat("Invalid slot: ", slot));
         }
         synchronized (lock) {
             if (hooks[slot] != null)
-                throw new InternalError("Shutdown hook at slot " + slot + " already registered");
+                throw new InternalError(concat("Shutdown hook at slot ", slot, " already registered"));
 
             if (!registerShutdownInProgress) {
                 if (currentRunningHook >= 0)
@@ -176,7 +178,7 @@ class Shutdown {
         try {
             System.Logger log = System.getLogger("java.lang.Runtime");
             if (log.isLoggable(System.Logger.Level.DEBUG)) {
-                Throwable throwable = new Throwable("Runtime.exit(" + status + ")");
+                Throwable throwable = new Throwable(concat("Runtime.exit(", status, ")"));
                 log.log(System.Logger.Level.DEBUG, "Runtime.exit() called with status: " + status,
                         throwable);
             }

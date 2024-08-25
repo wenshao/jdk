@@ -896,7 +896,7 @@ public final class StringConcatFactory {
     private static MethodHandle simpleConcat() {
         MethodHandle mh = SIMPLE_CONCAT;
         if (mh == null) {
-            MethodHandle simpleConcat = JLA.stringConcatHelper("simpleConcat",
+            MethodHandle simpleConcat = JLA.stringConcatHelper("concat",
                     methodType(String.class, Object.class, Object.class));
             SIMPLE_CONCAT = mh = simpleConcat.rebind();
         }

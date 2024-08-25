@@ -60,6 +60,7 @@ import jdk.internal.vm.annotation.JvmtiMountTransition;
 import jdk.internal.vm.annotation.ReservedStackAccess;
 import sun.nio.ch.Interruptible;
 import sun.security.action.GetPropertyAction;
+import static java.lang.StringConcatHelper.concat;
 import static java.util.concurrent.TimeUnit.*;
 
 /**
@@ -1355,7 +1356,7 @@ final class VirtualThread extends BaseVirtualThread {
         if (propValue != null) {
             queueCount = Integer.parseInt(propValue);
             if (queueCount != Integer.highestOneBit(queueCount)) {
-                throw new RuntimeException("Value of " + propName + " must be power of 2");
+                throw new RuntimeException(concat("Value of ", propName, " must be power of 2"));
             }
         } else {
             int ncpus = Runtime.getRuntime().availableProcessors();

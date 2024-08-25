@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2024, Oracle and/or its affiliates. All rights reserved.
  * Copyright (c) 2019, Azul Systems, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
@@ -38,6 +38,8 @@ import java.util.StringTokenizer;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * Every Java application has a single instance of class
@@ -847,7 +849,7 @@ public class Runtime {
         File file = new File(filename);
         if (!file.isAbsolute()) {
             throw new UnsatisfiedLinkError(
-                "Expecting an absolute path of the library: " + filename);
+                "Expecting an absolute path of the library: ".concat(filename));
         }
         ClassLoader.loadLibrary(fromClass, file);
     }
@@ -911,7 +913,7 @@ public class Runtime {
         }
         if (libname.indexOf((int)File.separatorChar) != -1) {
             throw new UnsatisfiedLinkError(
-                "Directory separator should not appear in library name: " + libname);
+                "Directory separator should not appear in library name: ".concat(libname));
         }
         ClassLoader.loadLibrary(fromClass, libname);
     }
@@ -1119,8 +1121,8 @@ public class Runtime {
             }
             Matcher m = VersionPattern.VSTR_PATTERN.matcher(s);
             if (!m.matches())
-                throw new IllegalArgumentException("Invalid version string: '"
-                                                   + s + "'");
+                throw new IllegalArgumentException(concat("Invalid version string: '",
+                                                   s, "'"));
 
             // $VNUM is a dot-separated list of integers of arbitrary length
             String[] split = m.group(VersionPattern.VNUM_GROUP).split("\\.");
@@ -1146,18 +1148,16 @@ public class Runtime {
                 if (m.group(VersionPattern.PLUS_GROUP) != null) {
                     if (optional.isPresent()) {
                         if (pre.isPresent())
-                            throw new IllegalArgumentException("'+' found with"
-                                + " pre-release and optional components:'" + s
-                                + "'");
+                            throw new IllegalArgumentException(
+                                concat("'+' found with pre-release and optional components:'", s, "'"));
                     } else {
-                        throw new IllegalArgumentException("'+' found with neither"
-                            + " build or optional components: '" + s + "'");
+                        throw new IllegalArgumentException(
+                            concat("'+' found with neither build or optional components: '", s, "'"));
                     }
                 } else {
                     if (optional.isPresent() && pre.isEmpty()) {
-                        throw new IllegalArgumentException("optional component"
-                            + " must be preceded by a pre-release component"
-                            + " or '+': '" + s + "'");
+                        throw new IllegalArgumentException(
+                            concat("optional component must be preceded by a pre-release component or '+': '", s, "'"));
                     }
                 }
             }

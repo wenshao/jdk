@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,6 +48,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import jdk.internal.module.ModuleLoaderMap;
 import sun.security.util.SecurityConstants;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * The security manager is a class that allows
@@ -896,7 +898,7 @@ public class SecurityManager {
             throw new NullPointerException("host can't be null");
         }
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = concat("[", host, "]");
         }
         if (port == -1) {
             checkPermission(new SocketPermission(host,
@@ -951,7 +953,7 @@ public class SecurityManager {
             throw new NullPointerException("host can't be null");
         }
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = concat("[", host, "]");
         }
         if (port == -1)
             checkPermission(new SocketPermission(host,
@@ -1016,7 +1018,7 @@ public class SecurityManager {
             throw new NullPointerException("host can't be null");
         }
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = concat("[", host, "]");
         }
         checkPermission(new SocketPermission(host+":"+port,
             SecurityConstants.SOCKET_ACCEPT_ACTION));
@@ -1047,7 +1049,7 @@ public class SecurityManager {
     public void checkMulticast(InetAddress maddr) {
         String host = maddr.getHostAddress();
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = concat("[", host, "]");
         }
         checkPermission(new SocketPermission(host,
             SecurityConstants.SOCKET_CONNECT_ACCEPT_ACTION));
@@ -1082,7 +1084,7 @@ public class SecurityManager {
     public void checkMulticast(InetAddress maddr, byte ttl) {
         String host = maddr.getHostAddress();
         if (!host.startsWith("[") && host.indexOf(':') != -1) {
-            host = "[" + host + "]";
+            host = concat("[", host, "]");
         }
         checkPermission(new SocketPermission(host,
             SecurityConstants.SOCKET_CONNECT_ACCEPT_ACTION));
@@ -1316,7 +1318,7 @@ public class SecurityManager {
         // check if pkg is not exported to all modules
         if (nonExportedPkgs.containsKey(pkg)) {
             checkPermission(
-                new RuntimePermission("accessClassInPackage." + pkg));
+                new RuntimePermission("accessClassInPackage.".concat(pkg)));
             return;
         }
 
@@ -1369,7 +1371,7 @@ public class SecurityManager {
                 restrictedPkg.charAt(rlast) == '.')
             {
                 checkPermission(
-                    new RuntimePermission("accessClassInPackage." + pkg));
+                    new RuntimePermission("accessClassInPackage.".concat(pkg)));
                 break;  // No need to continue; only need to check this once
             }
         }
@@ -1416,7 +1418,7 @@ public class SecurityManager {
         // check if pkg is not exported to all modules
         if (nonExportedPkgs.containsKey(pkg)) {
             checkPermission(
-                new RuntimePermission("defineClassInPackage." + pkg));
+                new RuntimePermission("defineClassInPackage.".concat(pkg)));
             return;
         }
 
@@ -1448,9 +1450,9 @@ public class SecurityManager {
          * Traverse the list of packages, check for any matches.
          */
         for (String restrictedPkg : pkgs) {
-            if (pkg.startsWith(restrictedPkg) || restrictedPkg.equals(pkg + ".")) {
+            if (pkg.startsWith(restrictedPkg) || restrictedPkg.equals(pkg.concat("."))) {
                 checkPermission(
-                    new RuntimePermission("defineClassInPackage." + pkg));
+                    new RuntimePermission("defineClassInPackage.".concat(pkg)));
                 break; // No need to continue; only need to check this once
             }
         }

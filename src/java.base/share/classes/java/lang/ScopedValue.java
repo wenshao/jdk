@@ -40,6 +40,8 @@ import jdk.internal.vm.annotation.Hidden;
 import jdk.internal.vm.ScopedValueContainer;
 import sun.security.action.GetPropertyAction;
 
+import static java.lang.StringConcatHelper.concat;
+
 /**
  * A value that may be safely and efficiently shared to methods without using method
  * parameters.
@@ -813,11 +815,11 @@ public final class ScopedValue<T> {
             var cacheSize = Integer.valueOf(sizeString);
             if (cacheSize < 2 || cacheSize > MAX_CACHE_SIZE) {
                 cacheSize = MAX_CACHE_SIZE;
-                System.err.println(propertyName + " is out of range: is " + sizeString);
+                System.err.println(concat(propertyName, " is out of range: is ", sizeString));
             }
             if ((cacheSize & (cacheSize - 1)) != 0) {  // a power of 2
                 cacheSize = MAX_CACHE_SIZE;
-                System.err.println(propertyName + " must be an integer power of 2: is " + sizeString);
+                System.err.println(concat(propertyName, " must be an integer power of 2: is ", sizeString));
             }
             CACHE_TABLE_SIZE = cacheSize;
             SLOT_MASK = cacheSize - 1;
