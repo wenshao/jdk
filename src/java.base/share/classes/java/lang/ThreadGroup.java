@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1995, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import jdk.internal.misc.VM;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * A thread group represents a set of threads. In addition, a thread group can
@@ -662,7 +664,7 @@ public class ThreadGroup implements Thread.UncaughtExceptionHandler {
             if (ueh != null) {
                 ueh.uncaughtException(t, e);
             } else {
-                System.err.print("Exception in thread \"" + t.getName() + "\" ");
+                System.err.print(concat("Exception in thread \"", t.getName(), "\" "));
                 e.printStackTrace(System.err);
             }
         }

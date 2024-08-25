@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,6 +48,7 @@ import jdk.internal.vm.ContinuationScope;
 import sun.security.action.GetPropertyAction;
 
 import static java.lang.StackStreamFactory.WalkerState.*;
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * StackStreamFactory class provides static factory methods
@@ -604,7 +605,7 @@ final class StackStreamFactory {
                 return true;
             }
             if (isDebug) {
-                System.err.println("tryAdvance: " + index + " NO element");
+                System.err.println(concat("tryAdvance: ", index, " NO element"));
             }
             return false;
         }

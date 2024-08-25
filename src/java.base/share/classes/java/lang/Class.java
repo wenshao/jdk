@@ -99,6 +99,8 @@ import sun.security.util.SecurityConstants;
 import sun.reflect.annotation.*;
 import sun.reflect.misc.ReflectUtil;
 
+import static java.lang.StringConcatHelper.concat;
+
 /**
  * Instances of the class {@code Class} represent classes and
  * interfaces in a running Java application. An enum class and a record
@@ -401,10 +403,10 @@ public final class Class<T> implements java.io.Serializable,
         if (bounds.length == 1 && bounds[0].equals(Object.class)) {
             return typeVar.getName();
         } else {
-            return typeVar.getName() + " extends " +
+            return concat(typeVar.getName(), " extends ",
                 Arrays.stream(bounds)
                 .map(Type::getTypeName)
-                .collect(Collectors.joining(" & "));
+                .collect(Collectors.joining(" & ")));
         }
     }
 
@@ -3355,7 +3357,7 @@ public final class Class<T> implements java.io.Serializable,
 
             for (Class<?> c : subClasses) {
                 if (Proxy.isProxyClass(c))
-                    throw new InternalError("a permitted subclass should not be a proxy class: " + c);
+                    throw new InternalError(concat("a permitted subclass should not be a proxy class: ", c));
                 String pkg = c.getPackageName();
                 if (!pkg.isEmpty()) {
                     packages.add(pkg);
@@ -4117,7 +4119,7 @@ public final class Class<T> implements java.io.Serializable,
             T[] universe = getEnumConstantsShared();
             if (universe == null)
                 throw new IllegalArgumentException(
-                    getName() + " is not an enum class");
+                        concat(getName(), " is not an enum class"));
             directory = HashMap.newHashMap(universe.length);
             for (T constant : universe) {
                 directory.put(((Enum<?>)constant).name(), constant);
@@ -4647,7 +4649,7 @@ public final class Class<T> implements java.io.Serializable,
             return Wrapper.forPrimitiveType(this).basicTypeString();
 
         if (isArray()) {
-            return "[" + componentType.descriptorString();
+            return "[".concat(componentType.descriptorString());
         } else if (isHidden()) {
             String name = getName();
             int index = name.indexOf('/');
@@ -4659,12 +4661,7 @@ public final class Class<T> implements java.io.Serializable,
                     .append(';')
                     .toString();
         } else {
-            String name = getName().replace('.', '/');
-            return new StringBuilder(name.length() + 2)
-                    .append('L')
-                    .append(name)
-                    .append(';')
-                    .toString();
+            return concat("L", getName().replace('.', '/'), ";");
         }
     }
 

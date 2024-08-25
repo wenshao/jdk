@@ -446,8 +446,6 @@ public interface JavaLangAccess {
      */
     long stringConcatMix(long lengthCoder, char value);
 
-    Object stringConcat1(String[] constants);
-
     /**
      * Join strings
      */
@@ -456,7 +454,7 @@ public interface JavaLangAccess {
     /**
      * Concatenation of prefix and suffix characters to a String for early bootstrap
      */
-    String concat(String prefix, String value, String suffix);
+    String concat(String prefix, Object value, String suffix);
 
     /*
      * Get the class data associated with the given class.

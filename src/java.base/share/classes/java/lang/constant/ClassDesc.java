@@ -36,12 +36,12 @@ import static java.util.stream.Collectors.joining;
 import static jdk.internal.constant.ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS;
 import static jdk.internal.constant.ConstantUtils.arrayDepth;
 import static jdk.internal.constant.ConstantUtils.binaryToInternal;
-import static jdk.internal.constant.ConstantUtils.concat;
 import static jdk.internal.constant.ConstantUtils.forPrimitiveType;
 import static jdk.internal.constant.ConstantUtils.internalToBinary;
 import static jdk.internal.constant.ConstantUtils.validateBinaryClassName;
 import static jdk.internal.constant.ConstantUtils.validateInternalClassName;
 import static jdk.internal.constant.ConstantUtils.validateMemberName;
+import static jdk.internal.util.StringHelper.concat;
 
 /**
  * A <a href="package-summary.html#nominal">nominal descriptor</a> for a
@@ -362,7 +362,7 @@ public sealed interface ClassDesc
             ClassDesc c = this;
             for (int i=0; i<depth; i++)
                 c = c.componentType();
-            return c.displayName() + "[]".repeat(depth);
+            return c.displayName().concat("[]".repeat(depth));
         }
         else
             throw new IllegalStateException(descriptorString());

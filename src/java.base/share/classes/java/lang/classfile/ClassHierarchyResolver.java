@@ -184,7 +184,7 @@ public interface ClassHierarchyResolver {
         return ofResourceParsing(new Function<>() {
             @Override
             public InputStream apply(ClassDesc classDesc) {
-                return loader.getResourceAsStream(Util.toInternalName(classDesc) + ".class");
+                return loader.getResourceAsStream(Util.toInternalName(classDesc).concat(".class"));
             }
         });
     }

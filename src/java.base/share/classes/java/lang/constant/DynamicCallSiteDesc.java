@@ -285,7 +285,7 @@ public class DynamicCallSiteDesc {
         return String.format("DynamicCallSiteDesc[%s::%s(%s%s):%s]",
                              bootstrapMethod.owner().displayName(),
                              bootstrapMethod.methodName(),
-                             invocationName.equals(ConstantDescs.DEFAULT_NAME) ? "" : invocationName + "/",
+                             invocationName.equals(ConstantDescs.DEFAULT_NAME) ? "" : invocationName.concat("/"),
                              Stream.of(bootstrapArgs).map(Object::toString).collect(joining(",")),
                              invocationType.displayDescriptor());
     }

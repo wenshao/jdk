@@ -71,6 +71,8 @@ import jdk.internal.reflect.Reflection;
 import jdk.internal.vm.annotation.Stable;
 import sun.security.util.SecurityConstants;
 
+import static java.lang.StringConcatHelper.concat;
+
 /**
  * Represents a run-time module, either {@link #isNamed() named} or unnamed.
  *
@@ -305,13 +307,13 @@ public final class Module implements AnnotatedElement {
         Module target = moduleForNativeAccess();
         if (!EnableNativeAccess.isNativeAccessEnabled(target)) {
             if (ModuleBootstrap.hasEnableNativeAccessFlag()) {
-                throw new IllegalCallerException("Illegal native access from: " + this);
+                throw new IllegalCallerException(concat("Illegal native access from: ", this));
             }
             if (EnableNativeAccess.trySetEnableNativeAccess(target)) {
                 // warn and set flag, so that only one warning is reported per module
                 String cls = owner.getName();
-                String mtd = cls + "::" + methodName;
-                String mod = isNamed() ? "module " + getName() : "an unnamed module";
+                String mtd = concat(cls, "::", methodName);
+                String mod = isNamed() ? "module ".concat(getName()) : "an unnamed module";
                 String modflag = isNamed() ? getName() : "ALL-UNNAMED";
                 String caller = currentClass != null ? currentClass.getName() : "code";
                 System.err.printf("""
@@ -1011,8 +1013,8 @@ public final class Module implements AnnotatedElement {
 
         // can only export a package in the module
         if (!descriptor.packages().contains(pn)) {
-            throw new IllegalArgumentException("package " + pn
-                                               + " not in contents");
+            throw new IllegalArgumentException(concat("package ", pn,
+                                               " not in contents"));
         }
 
         // update VM first, just in case it fails
@@ -1739,10 +1741,10 @@ public final class Module implements AnnotatedElement {
     @Override
     public String toString() {
         if (isNamed()) {
-            return "module " + name;
+            return "module ".concat(name);
         } else {
             String id = Integer.toHexString(System.identityHashCode(this));
-            return "unnamed module @" + id;
+            return "unnamed module @".concat(id);
         }
     }
 

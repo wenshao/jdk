@@ -56,6 +56,8 @@ import jdk.internal.reflect.Reflection;
 import jdk.internal.vm.annotation.Stable;
 import sun.security.util.SecurityConstants;
 
+import static java.lang.StringConcatHelper.concat;
+
 /**
  * A layer of modules in the Java virtual machine.
  *
@@ -218,7 +220,7 @@ public final class ModuleLayer {
 
         private void ensureInLayer(Module source) {
             if (source.getLayer() != layer)
-                throw new IllegalArgumentException(source + " not in layer");
+                throw new IllegalArgumentException(concat(source, " not in layer"));
         }
 
 
@@ -931,8 +933,8 @@ public final class ModuleLayer {
         if (om.isPresent()) {
             return om.get().getClassLoader();
         } else {
-            throw new IllegalArgumentException("Module " + name
-                                               + " not known to this layer");
+            throw new IllegalArgumentException(concat("Module ", name,
+                                               " not known to this layer"));
         }
     }
 

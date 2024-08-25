@@ -38,6 +38,7 @@ import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
 import jdk.internal.util.Preconditions;
 
+import static java.lang.StringConcatHelper.concat;
 import static java.lang.String.COMPACT_STRINGS;
 import static java.lang.String.UTF16;
 import static java.lang.String.LATIN1;
@@ -140,7 +141,7 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
     AbstractStringBuilder(CharSequence seq) {
         int length = seq.length();
         if (length < 0) {
-            throw new NegativeArraySizeException("Negative length: " + length);
+            throw new NegativeArraySizeException(concat("Negative length: ", length));
         }
         int capacity = (length < Integer.MAX_VALUE - 16)
                 ? length + 16 : Integer.MAX_VALUE;
@@ -1919,7 +1920,7 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      */
     public AbstractStringBuilder repeat(int codePoint, int count) {
         if (count < 0) {
-            throw new IllegalArgumentException("count is negative: " + count);
+            throw new IllegalArgumentException(concat("count is negative: ", count));
         } else if (count == 0) {
             return this;
         }

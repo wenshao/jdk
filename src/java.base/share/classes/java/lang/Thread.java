@@ -57,6 +57,7 @@ import sun.nio.ch.Interruptible;
 import sun.security.util.SecurityConstants;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * A <i>thread</i> is a thread of execution in a program. The Java
@@ -1107,7 +1108,7 @@ public class Thread implements Runnable {
      * Generates a thread name of the form {@code Thread-<n>}.
      */
     static String genThreadName() {
-        return "Thread-" + ThreadNumbering.next();
+        return concat("Thread-", ThreadNumbering.next());
     }
 
     /**

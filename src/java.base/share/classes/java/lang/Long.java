@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -43,6 +43,7 @@ import static java.lang.Character.digit;
 import static java.lang.String.COMPACT_STRINGS;
 import static java.lang.String.LATIN1;
 import static java.lang.String.UTF16;
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * The {@code Long} class wraps a value of the primitive type {@code
@@ -845,7 +846,7 @@ public final class Long extends Number
         char firstChar = s.charAt(i++);
         if (firstChar == '-') {
             throw new NumberFormatException(
-                "Illegal leading minus sign on unsigned string " + s + ".");
+                    concat("Illegal leading minus sign on unsigned string ", s, "."));
         }
         int digit = ~0xFF;
         if (firstChar != '+') {
@@ -1081,7 +1082,7 @@ public final class Long extends Number
             // If number is Long.MIN_VALUE, we'll end up here. The next line
             // handles this case, and causes any genuine format error to be
             // rethrown.
-            String constant = negative ? ("-" + nm.substring(index))
+            String constant = negative ? ("-".concat(nm.substring(index)))
                                        : nm.substring(index);
             result = parseLong(constant, radix);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,6 +31,7 @@ import jdk.internal.vm.Continuation;
 import jdk.internal.vm.ContinuationScope;
 
 import static java.lang.StackWalker.ExtendedOption.LOCALS_AND_OPERANDS;
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * <em>UNSUPPORTED</em> This interface is intended to be package-private
@@ -135,7 +136,7 @@ interface LiveStackFrame extends StackFrame {
          * of size 4.
          */
         public int intValue() {
-            throw new UnsupportedOperationException("this " + size() + "-byte primitive");
+            throw new UnsupportedOperationException(concat("this ", size(), "-byte primitive"));
         }
 
         /**
@@ -146,7 +147,7 @@ interface LiveStackFrame extends StackFrame {
          * of size 8.
          */
         public long longValue() {
-            throw new UnsupportedOperationException("this " + size() + "-byte primitive");
+            throw new UnsupportedOperationException(concat("this ", size(), "-byte primitive"));
         }
     }
 

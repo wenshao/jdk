@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2014, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -42,6 +42,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * ProcessHandleImpl is the implementation of ProcessHandle.
@@ -158,7 +160,7 @@ final class ProcessHandleImpl implements ProcessHandle {
                     public void run() {
                         Thread t = Thread.currentThread();
                         String threadName = t.getName();
-                        privilegedThreadSetName(t, "process reaper (pid " + pid + ")");
+                        privilegedThreadSetName(t, concat("process reaper (pid ", pid, ")"));
                         try {
                             int exitValue = waitForProcessExit0(pid, shouldReap);
                             if (exitValue == NOT_A_CHILD) {
@@ -623,7 +625,7 @@ final class ProcessHandleImpl implements ProcessHandle {
         @Override
         public Optional<String> commandLine() {
             if (command != null && arguments != null) {
-                return Optional.of(command + " " + String.join(" ", arguments));
+                return Optional.of(concat(command, " ", String.join(" ", arguments)));
             } else {
                 return Optional.ofNullable(commandLine);
             }

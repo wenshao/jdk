@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -36,6 +36,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import jdk.internal.event.ProcessStartEvent;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * This class is used to create operating system processes.
@@ -603,7 +605,7 @@ public final class ProcessBuilder
                     public Type type() { return Type.READ; }
                     public File file() { return file; }
                     public String toString() {
-                        return "redirect to read from file \"" + file + "\"";
+                        return concat("redirect to read from file \"", file, "\"");
                     }
                 };
         }
@@ -629,7 +631,7 @@ public final class ProcessBuilder
                     public Type type() { return Type.WRITE; }
                     public File file() { return file; }
                     public String toString() {
-                        return "redirect to write to file \"" + file + "\"";
+                        return concat("redirect to write to file \"", file, "\"");
                     }
                     boolean append() { return false; }
                 };
@@ -659,7 +661,7 @@ public final class ProcessBuilder
                     public Type type() { return Type.APPEND; }
                     public File file() { return file; }
                     public String toString() {
-                        return "redirect to append to file \"" + file + "\"";
+                        return concat("redirect to append to file \"", file, "\"");
                     }
                     boolean append() { return true; }
                 };
@@ -763,7 +765,7 @@ public final class ProcessBuilder
         if (source.type() == Redirect.Type.WRITE ||
             source.type() == Redirect.Type.APPEND)
             throw new IllegalArgumentException(
-                "Redirect invalid for reading: " + source);
+                concat("Redirect invalid for reading: ", source));
         redirects()[0] = source;
         return this;
     }
@@ -793,7 +795,7 @@ public final class ProcessBuilder
     public ProcessBuilder redirectOutput(Redirect destination) {
         if (destination.type() == Redirect.Type.READ)
             throw new IllegalArgumentException(
-                "Redirect invalid for writing: " + destination);
+                concat("Redirect invalid for writing: ", destination));
         redirects()[1] = destination;
         return this;
     }
@@ -827,7 +829,7 @@ public final class ProcessBuilder
     public ProcessBuilder redirectError(Redirect destination) {
         if (destination.type() == Redirect.Type.READ)
             throw new IllegalArgumentException(
-                "Redirect invalid for writing: " + destination);
+                concat("Redirect invalid for writing: ", destination));
         redirects()[2] = destination;
         return this;
     }
@@ -1152,7 +1154,7 @@ public final class ProcessBuilder
             }
             return process;
         } catch (IOException | IllegalArgumentException e) {
-            String exceptionInfo = ": " + e.getMessage();
+            String exceptionInfo = ": ".concat(e.getMessage());
             Throwable cause = e;
             if ((e instanceof IOException) && security != null) {
                 // Can not disclose the fail reason for read-protected files.

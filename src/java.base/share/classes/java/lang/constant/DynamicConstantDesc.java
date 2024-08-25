@@ -373,7 +373,7 @@ public abstract non-sealed class DynamicConstantDesc<T>
         return String.format("DynamicConstantDesc[%s::%s(%s%s)%s]",
                              bootstrapMethod.owner().displayName(),
                              bootstrapMethod.methodName(),
-                             constantName.equals(ConstantDescs.DEFAULT_NAME) ? "" : constantName + "/",
+                             constantName.equals(ConstantDescs.DEFAULT_NAME) ? "" : constantName.concat("/"),
                              Stream.of(bootstrapArgs).map(Object::toString).collect(joining(",")),
                              constantType.displayName());
     }

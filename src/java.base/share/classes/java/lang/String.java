@@ -1297,7 +1297,7 @@ public final class String
     }
 
     private static void throwUnmappable(int off) {
-        String msg = "malformed input off : " + off + ", length : 1";
+        String msg = StringConcatHelper.concat("malformed input off : ", off, ", length : 1");
         throw new IllegalArgumentException(msg, new UnmappableCharacterException(1));
     }
 
@@ -4756,7 +4756,7 @@ public final class String
      */
     public String repeat(int count) {
         if (count < 0) {
-            throw new IllegalArgumentException("count is negative: " + count);
+            throw new IllegalArgumentException(StringConcatHelper.concat("count is negative: ", count));
         }
         if (count == 1) {
             return this;

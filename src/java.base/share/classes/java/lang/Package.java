@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1997, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -402,11 +402,11 @@ public class Package extends NamedPackage implements java.lang.reflect.Annotated
         String spec = versionInfo.specTitle;
         String ver =  versionInfo.specVersion;
         if (spec != null && !spec.isEmpty())
-            spec = ", " + spec;
+            spec = ", ".concat(spec);
         else
             spec = "";
         if (ver != null && !ver.isEmpty())
-            ver = ", version " + ver;
+            ver = ", version ".concat(ver);
         else
             ver = "";
         return "package " + packageName() + spec + ver;
@@ -415,7 +415,7 @@ public class Package extends NamedPackage implements java.lang.reflect.Annotated
     private Class<?> getPackageInfo() {
         if (packageInfo == null) {
             // find package-info.class defined by loader
-            String cn = packageName() + ".package-info";
+            String cn = packageName().concat(".package-info");
             Module module = module();
             PrivilegedAction<ClassLoader> pa = module::getClassLoader;
             @SuppressWarnings("removal")

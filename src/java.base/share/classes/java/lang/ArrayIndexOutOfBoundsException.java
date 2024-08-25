@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2019, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 
 package java.lang;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * Thrown to indicate that an array has been accessed with an illegal index. The
@@ -63,6 +65,6 @@ public class ArrayIndexOutOfBoundsException extends IndexOutOfBoundsException {
      * @param index the illegal index.
      */
     public ArrayIndexOutOfBoundsException(int index) {
-        super("Array index out of range: " + index);
+        super(concat("Array index out of range: ", index));
     }
 }

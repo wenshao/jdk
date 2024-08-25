@@ -35,16 +35,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import jdk.internal.access.JavaLangAccess;
-import jdk.internal.access.SharedSecrets;
 import static jdk.internal.constant.PrimitiveClassDescImpl.*;
+import static jdk.internal.util.StringHelper.concat;
 
 /**
  * Helper methods for the implementation of {@code java.lang.constant}.
  */
 public final class ConstantUtils {
-    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
-
     /** an empty constant descriptor */
     public static final ConstantDesc[] EMPTY_CONSTANTDESC = new ConstantDesc[0];
     public static final ClassDesc[] EMPTY_CLASSDESC = new ClassDesc[0];
@@ -381,9 +378,5 @@ public final class ConstantUtils {
         return new IllegalArgumentException(String.format(
                         "Cannot create an array type descriptor with more than %d dimensions",
                         ConstantUtils.MAX_ARRAY_TYPE_DESC_DIMENSIONS));
-    }
-
-    public static String concat(String prefix, String value, String suffix) {
-        return JLA.concat(prefix, value, suffix);
     }
 }

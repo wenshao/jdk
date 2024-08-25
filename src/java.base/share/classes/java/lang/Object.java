@@ -28,6 +28,8 @@ package java.lang;
 import jdk.internal.misc.Blocker;
 import jdk.internal.vm.annotation.IntrinsicCandidate;
 
+import static java.lang.StringConcatHelper.concat;
+
 /**
  * Class {@code Object} is the root of the class hierarchy.
  * Every class has {@code Object} as a superclass. All objects,
@@ -267,7 +269,7 @@ public class Object {
      * overridden by the object's class.
      */
     public String toString() {
-        return getClass().getName() + "@" + Integer.toHexString(hashCode());
+        return concat(getClass().getName(), "@", Integer.toHexString(hashCode()));
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003, 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2003, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,8 @@
  */
 
 package java.lang;
+
+import static java.lang.StringConcatHelper.concat;
 
 /**
  * Thrown when an application tries to access a type using a string
@@ -61,7 +63,7 @@ public class TypeNotPresentException extends RuntimeException {
      *    load the named type, or {@code null} if unavailable or inapplicable
      */
     public TypeNotPresentException(String typeName, Throwable cause) {
-        super("Type " + typeName + " not present", cause);
+        super(concat("Type ", typeName, " not present"), cause);
         this.typeName = typeName;
     }
 
