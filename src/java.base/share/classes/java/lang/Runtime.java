@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.StringTokenizer;
 
 import jdk.internal.access.SharedSecrets;
+import jdk.internal.javac.Restricted;
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 
@@ -830,14 +831,19 @@ public class Runtime {
      *             a native library image by the host system.
      * @throws     NullPointerException if {@code filename} is
      *             {@code null}
+     * @throws     IllegalCallerException if the caller is in a module that
+     *             does not have native access enabled.
      * @spec jni/index.html Java Native Interface Specification
      * @see        java.lang.Runtime#getRuntime()
      * @see        java.lang.SecurityException
      * @see        java.lang.SecurityManager#checkLink(java.lang.String)
      */
     @CallerSensitive
+    @Restricted
     public void load(String filename) {
-        load0(Reflection.getCallerClass(), filename);
+        Class<?> caller = Reflection.getCallerClass();
+        Reflection.ensureNativeAccess(caller, Runtime.class, "load", false);
+        load0(caller, filename);
     }
 
     void load0(Class<?> fromClass, String filename) {
@@ -896,13 +902,18 @@ public class Runtime {
      *             native library image by the host system.
      * @throws     NullPointerException if {@code libname} is
      *             {@code null}
+     * @throws     IllegalCallerException if the caller is in a module that
+     *             does not have native access enabled.
      * @spec jni/index.html Java Native Interface Specification
      * @see        java.lang.SecurityException
      * @see        java.lang.SecurityManager#checkLink(java.lang.String)
      */
     @CallerSensitive
+    @Restricted
     public void loadLibrary(String libname) {
-        loadLibrary0(Reflection.getCallerClass(), libname);
+        Class<?> caller = Reflection.getCallerClass();
+        Reflection.ensureNativeAccess(caller, Runtime.class, "loadLibrary", false);
+        loadLibrary0(caller, libname);
     }
 
     void loadLibrary0(Class<?> fromClass, String libname) {

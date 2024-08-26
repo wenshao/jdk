@@ -325,7 +325,7 @@ public final class ModuleLayer {
         public Controller enableNativeAccess(Module target) {
             ensureInLayer(target);
             Reflection.ensureNativeAccess(Reflection.getCallerClass(), Module.class,
-                "enableNativeAccess");
+                "enableNativeAccess", false);
             target.implAddEnableNativeAccess();
             return this;
         }
