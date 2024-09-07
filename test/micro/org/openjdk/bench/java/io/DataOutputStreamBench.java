@@ -88,4 +88,14 @@ public class DataOutputStreamBench {
         objectOutput.flush();
         bh.consume(bytesOutput.size());
     }
+
+    @Benchmark
+    public void objectWriteChars(Blackhole bh) throws Exception {
+        bytesOutput.reset();
+        for (var s : strings) {
+            objectOutput.writeChars(s);
+        }
+        objectOutput.flush();
+        bh.consume(bytesOutput.size());
+    }
 }
