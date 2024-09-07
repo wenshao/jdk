@@ -1764,15 +1764,11 @@ public class ObjectOutputStream
         private static final int MAX_BLOCK_SIZE = 1024;
         /** maximum data block header length */
         private static final int MAX_HEADER_SIZE = 5;
-        /** (tunable) length of char buffer (for writing strings) */
-        private static final int CHAR_BUF_SIZE = 256;
 
         /** buffer for writing general/block data */
         private final byte[] buf = new byte[MAX_BLOCK_SIZE];
         /** buffer for writing block data headers */
         private final byte[] hbuf = new byte[MAX_HEADER_SIZE];
-        /** char buffer for fast string writes */
-        private final char[] cbuf = new char[CHAR_BUF_SIZE];
 
         /** block data mode */
         private boolean blkmode = false;
@@ -2030,13 +2026,22 @@ public class ObjectOutputStream
         }
 
         public void writeChars(String s) throws IOException {
-            int endoff = s.length();
-            for (int off = 0; off < endoff; ) {
-                int csize = Math.min(endoff - off, CHAR_BUF_SIZE);
-                s.getChars(off, off + csize, cbuf, 0);
-                writeChars(cbuf, 0, csize);
-                off += csize;
+            int len = s.length();
+            int pos = this.pos;
+            for (int strpos = 0; strpos < len;) {
+                if (pos + 2 >= MAX_BLOCK_SIZE) {
+                    this.pos = pos;
+                    drain();
+                    pos = 0;
+                }
+
+                int crem = (MAX_BLOCK_SIZE - pos) >> 1;
+                for (int end = strpos + Math.min(len - strpos, crem); strpos < end;) {
+                    ByteArray.setChar(buf, pos, s.charAt(strpos++));
+                    pos += 2;
+                }
             }
+            this.pos = pos;
         }
 
         public void writeUTF(String str) throws IOException {
