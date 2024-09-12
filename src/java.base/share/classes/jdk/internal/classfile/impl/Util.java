@@ -44,6 +44,7 @@ import java.lang.classfile.BufWriter;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.Opcode;
 import java.lang.classfile.constantpool.ClassEntry;
+import java.lang.classfile.constantpool.ConstantPoolException;
 import java.lang.classfile.constantpool.ModuleEntry;
 import java.lang.classfile.constantpool.NameAndTypeEntry;
 import java.lang.constant.ModuleDesc;
@@ -327,5 +328,17 @@ public class Util {
 
     interface WritableLocalVariable {
         boolean writeLocalTo(BufWriterImpl buf);
+    }
+
+    static ConstantPoolException badCP(int index) {
+        return new ConstantPoolException("Bad CP index: " + index);
+    }
+
+    static ConstantPoolException badBSM(int index) {
+        return new ConstantPoolException("Bad BSM index: " + index);
+    }
+
+    static ConstantPoolException unusableCP(int index) {
+        return new ConstantPoolException("Unusable CP index: " + index);
     }
 }

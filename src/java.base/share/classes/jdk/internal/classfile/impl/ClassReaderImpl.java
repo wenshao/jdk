@@ -54,6 +54,10 @@ import static java.lang.classfile.ClassFile.TAG_PACKAGE;
 import static java.lang.classfile.ClassFile.TAG_STRING;
 import static java.lang.classfile.ClassFile.TAG_UTF8;
 
+import static jdk.internal.classfile.impl.Util.badBSM;
+import static jdk.internal.classfile.impl.Util.badCP;
+import static jdk.internal.classfile.impl.Util.unusableCP;
+
 public final class ClassReaderImpl
         implements ClassReader {
     static final int CP_ITEM_START = 10;
@@ -183,7 +187,7 @@ public final class ClassReaderImpl
     @Override
     public BootstrapMethodEntryImpl bootstrapMethodEntry(int index) {
         if (index < 0 || index >= bootstrapMethodCount()) {
-            throw new ConstantPoolException("Bad BSM index: " + index);
+            throw badBSM(index);
         }
         return bsmEntries().get(index);
     }
@@ -369,20 +373,24 @@ public final class ClassReaderImpl
 
     static <T extends PoolEntry> T checkType(PoolEntry e, int index, Class<T> cls) {
         if (cls.isInstance(e)) return cls.cast(e);
-        throw new ConstantPoolException("Not a " + cls.getSimpleName() + " at index: " + index);
+        throw notAtIndex(index, cls);
+    }
+
+    static ConstantPoolException notAtIndex(int index, Class<?> cls) {
+        return new ConstantPoolException("Not a " + cls.getSimpleName() + " at index: " + index);
     }
 
     @Override
     public <T extends PoolEntry> T entryByIndex(int index, Class<T> cls) {
         Objects.requireNonNull(cls);
         if (index <= 0 || index >= constantPoolCount) {
-            throw new ConstantPoolException("Bad CP index: " + index);
+            throw badCP(index);
         }
         PoolEntry info = cp[index];
         if (info == null) {
             int offset = cpOffset[index];
             if (offset == 0) {
-                throw new ConstantPoolException("Unusable CP index: " + index);
+                throw unusableCP(index);
             }
             int tag = readU1(offset);
             if (!checkTag(tag, cls)) {

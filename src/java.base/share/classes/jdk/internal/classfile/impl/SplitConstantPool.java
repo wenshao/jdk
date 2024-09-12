@@ -54,6 +54,10 @@ import static java.lang.classfile.ClassFile.TAG_NAMEANDTYPE;
 import static java.lang.classfile.ClassFile.TAG_PACKAGE;
 import static java.lang.classfile.ClassFile.TAG_STRING;
 
+import static jdk.internal.classfile.impl.Util.badBSM;
+import static jdk.internal.classfile.impl.Util.badCP;
+import static jdk.internal.classfile.impl.Util.unusableCP;
+
 public final class SplitConstantPool implements ConstantPoolBuilder {
 
     private final ClassReaderImpl parent;
@@ -101,13 +105,13 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
     @Override
     public PoolEntry entryByIndex(int index) {
         if (index <= 0 || index >= size()) {
-            throw new ConstantPoolException("Bad CP index: " + index);
+            throw badCP(index);
         }
         PoolEntry pe = (index < parentSize)
                ? parent.entryByIndex(index)
                : myEntries[index - parentSize];
         if (pe == null) {
-            throw new ConstantPoolException("Unusable CP index: " + index);
+            throw unusableCP(index);
         }
         return pe;
     }
@@ -121,7 +125,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
     @Override
     public BootstrapMethodEntryImpl bootstrapMethodEntry(int index) {
         if (index < 0 || index >= bootstrapMethodCount()) {
-            throw new ConstantPoolException("Bad BSM index: " + index);
+            throw badBSM(index);
         }
         return (index < parentBsmSize)
                ? parent.bootstrapMethodEntry(index)
