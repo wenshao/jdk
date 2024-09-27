@@ -1184,7 +1184,10 @@ public final class StackMapGenerator {
             int compressed = 0;
             for (int i = 0; i < count; i++) {
                 if (!types[i].isCategory2_2nd()) {
-                    types[compressed++] = types[i];
+                    if (compressed != i) {
+                        types[compressed] = types[i];
+                    }
+                    compressed++;
                 }
             }
             return compressed;
