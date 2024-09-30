@@ -100,7 +100,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
 
     @Override
     public <T extends PoolEntry> T entryByIndex(int index, Class<T> cls) {
-        Objects.requireNonNull(cls);
+//        Objects.requireNonNull(cls);
         return ClassReaderImpl.checkType(entryByIndex(index), index, cls);
     }
 
