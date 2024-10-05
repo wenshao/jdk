@@ -188,9 +188,8 @@ public final class ClassReaderImpl
     @Override
     public int readU2(int p) {
         try {
-            int b1 = buffer[p] & 0xFF;
-            int b2 = buffer[p + 1] & 0xFF;
-            return (b1 << 8) + b2;
+            return ((buffer[p    ] & 0xFF) << 8)
+                  | (buffer[p + 1] & 0xFF);
         } catch (IndexOutOfBoundsException e) {
             throw outOfBoundsError(e);
         }
@@ -208,9 +207,8 @@ public final class ClassReaderImpl
     @Override
     public int readS2(int p) {
         try {
-            int b1 = buffer[p];
-            int b2 = buffer[p + 1] & 0xFF;
-            return (b1 << 8) + b2;
+            return (buffer[p    ] << 8)
+                 | (buffer[p + 1] & 0xFF);
         } catch (IndexOutOfBoundsException e) {
             throw outOfBoundsError(e);
         }
@@ -219,11 +217,10 @@ public final class ClassReaderImpl
     @Override
     public int readInt(int p) {
         try {
-            int ch1 = buffer[p] & 0xFF;
-            int ch2 = buffer[p + 1] & 0xFF;
-            int ch3 = buffer[p + 2] & 0xFF;
-            int ch4 = buffer[p + 3] & 0xFF;
-            return (ch1 << 24) + (ch2 << 16) + (ch3 << 8) + ch4;
+            return ((buffer[p    ] & 0xFF) << 24)
+                 | ((buffer[p + 1] & 0xFF) << 16)
+                 | ((buffer[p + 2] & 0xFF) << 8)
+                 |  (buffer[p + 3] & 0xFF);
         } catch (IndexOutOfBoundsException e) {
             throw outOfBoundsError(e);
         }
@@ -232,10 +229,14 @@ public final class ClassReaderImpl
     @Override
     public long readLong(int p) {
         try {
-            return ((long) buffer[p + 0] << 56) + ((long) (buffer[p + 1] & 255) << 48) +
-                   ((long) (buffer[p + 2] & 255) << 40) + ((long) (buffer[p + 3] & 255) << 32) +
-                   ((long) (buffer[p + 4] & 255) << 24) + ((buffer[p + 5] & 255) << 16) + ((buffer[p + 6] & 255) << 8) +
-                   (buffer[p + 7] & 255);
+            return ((long)  buffer[p + 0]        << 56)
+                 | ((long) (buffer[p + 1] & 255) << 48)
+                 | ((long) (buffer[p + 2] & 255) << 40)
+                 | ((long) (buffer[p + 3] & 255) << 32)
+                 | ((long) (buffer[p + 4] & 255) << 24)
+                 |        ((buffer[p + 5] & 255) << 16)
+                 |        ((buffer[p + 6] & 255) << 8)
+                 |         (buffer[p + 7] & 255);
         } catch (IndexOutOfBoundsException e) {
             throw outOfBoundsError(e);
         }
