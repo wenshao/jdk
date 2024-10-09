@@ -3779,15 +3779,12 @@ public class ObjectInputStream
                                                    ((b2 & 0x3F) << 0));
                         }
                         case 14 -> {  // 3 byte format: 1110xxxx 10xxxxxx 10xxxxxx
-                            b3 = buf[pos + 1];
-                            b2 = buf[pos + 0];
-                            pos += 2;
-                            if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80) {
+                            if (pos + 1 >= buf.length
+                                    || ((b3 = UNSAFE.getShortUnaligned(buf, Unsafe.ARRAY_BYTE_BASE_OFFSET + pos, true)) & 0xC0C0) != 0x8080) {
                                 throw new UTFDataFormatException();
                             }
-                            cbuf[cpos++] = (char) (((b1 & 0x0F) << 12) |
-                                                   ((b2 & 0x3F) << 6) |
-                                                   ((b3 & 0x3F) << 0));
+                            pos += 2;
+                            cbuf[cpos++] = (char) (((b1 & 0x0F) << 12) | Integer.compress(b3, 0b0011111100111111));
                         }
                         default ->  throw new UTFDataFormatException(); // 10xx xxxx, 1111 xxxx
                     }
@@ -3844,14 +3841,12 @@ public class ObjectInputStream
                         }
                         throw new UTFDataFormatException();
                     }
-                    b2 = readByte();
-                    b3 = readByte();
-                    if ((b2 & 0xC0) != 0x80 || (b3 & 0xC0) != 0x80) {
+                    b3 = readShort();
+                    if ((b3 & 0xC0C0) != 0x8080) {
                         throw new UTFDataFormatException();
                     }
-                    sbuf.append((char) (((b1 & 0x0F) << 12) |
-                                        ((b2 & 0x3F) << 6)  |
-                                        ((b3 & 0x3F) << 0)));
+
+                    sbuf.append((char) (((b1 & 0x0F) << 12) |Integer.compress(b3, 0b0011111100111111)));
                     return 3;
                 }
                 default -> throw new UTFDataFormatException(); // 10xx xxxx, 1111 xxxx
