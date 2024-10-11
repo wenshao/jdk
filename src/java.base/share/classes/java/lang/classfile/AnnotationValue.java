@@ -31,14 +31,13 @@ import java.lang.classfile.constantpool.FloatEntry;
 import java.lang.classfile.constantpool.IntegerEntry;
 import java.lang.classfile.constantpool.LongEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
-import jdk.internal.classfile.impl.AnnotationImpl;
-import jdk.internal.classfile.impl.TemporaryConstantPool;
-
 import java.lang.constant.ClassDesc;
 import java.lang.constant.Constable;
 import java.util.ArrayList;
 import java.util.List;
 
+import jdk.internal.classfile.impl.AnnotationImpl;
+import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.Util;
 import jdk.internal.javac.PreviewFeature;
 
@@ -65,7 +64,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfAnnotation extends AnnotationValue
+    sealed interface OfAnnotation
+            extends AnnotationValue
             permits AnnotationImpl.OfAnnotationImpl {
         /** {@return the annotation value} */
         Annotation annotation();
@@ -78,7 +78,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfArray extends AnnotationValue
+    sealed interface OfArray
+            extends AnnotationValue
             permits AnnotationImpl.OfArrayImpl {
         /**
          * {@return the array elements of the array value}
@@ -99,7 +100,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfConstant extends AnnotationValue {
+    sealed interface OfConstant
+            extends AnnotationValue {
         /**
          * {@return the constant pool entry backing this constant element}
          *
@@ -136,7 +138,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfString extends OfConstant
+    sealed interface OfString
+            extends OfConstant
             permits AnnotationImpl.OfStringImpl {
         /** {@return the backing UTF8 entry} */
         @Override
@@ -164,7 +167,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfDouble extends OfConstant
+    sealed interface OfDouble
+            extends OfConstant
             permits AnnotationImpl.OfDoubleImpl {
         /** {@return the backing double entry} */
         @Override
@@ -192,7 +196,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfFloat extends OfConstant
+    sealed interface OfFloat
+            extends OfConstant
             permits AnnotationImpl.OfFloatImpl {
         /** {@return the backing float entry} */
         @Override
@@ -220,7 +225,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfLong extends OfConstant
+    sealed interface OfLong
+            extends OfConstant
             permits AnnotationImpl.OfLongImpl {
         /** {@return the backing long entry} */
         @Override
@@ -248,7 +254,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfInt extends OfConstant
+    sealed interface OfInt
+            extends OfConstant
             permits AnnotationImpl.OfIntImpl {
         /** {@return the backing integer entry} */
         @Override
@@ -276,7 +283,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfShort extends OfConstant
+    sealed interface OfShort
+            extends OfConstant
             permits AnnotationImpl.OfShortImpl {
         /** {@return the backing integer entry} */
         @Override
@@ -307,7 +315,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfChar extends OfConstant
+    sealed interface OfChar
+            extends OfConstant
             permits AnnotationImpl.OfCharImpl {
         /** {@return the backing integer entry} */
         @Override
@@ -338,7 +347,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfByte extends OfConstant
+    sealed interface OfByte
+            extends OfConstant
             permits AnnotationImpl.OfByteImpl {
         /** {@return the backing integer entry} */
         @Override
@@ -369,7 +379,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfBoolean extends OfConstant
+    sealed interface OfBoolean
+            extends OfConstant
             permits AnnotationImpl.OfBooleanImpl {
         /** {@return the backing integer entry} */
         @Override
@@ -400,7 +411,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfClass extends AnnotationValue
+    sealed interface OfClass
+            extends AnnotationValue
             permits AnnotationImpl.OfClassImpl {
         /** {@return the class descriptor string} */
         Utf8Entry className();
@@ -418,7 +430,8 @@ public sealed interface AnnotationValue {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OfEnum extends AnnotationValue
+    sealed interface OfEnum
+            extends AnnotationValue
             permits AnnotationImpl.OfEnumImpl {
         /** {@return the enum class descriptor string} */
         Utf8Entry className();

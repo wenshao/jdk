@@ -28,67 +28,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-import java.lang.classfile.Annotation;
-import java.lang.classfile.AnnotationValue;
-import java.lang.classfile.Attribute;
-import java.lang.classfile.AttributeMapper;
-import java.lang.classfile.Attributes;
-import java.lang.classfile.BootstrapMethodEntry;
-import java.lang.classfile.constantpool.ClassEntry;
-import java.lang.classfile.TypeAnnotation;
-import java.lang.classfile.attribute.AnnotationDefaultAttribute;
-import java.lang.classfile.attribute.BootstrapMethodsAttribute;
-import java.lang.classfile.attribute.CharacterRangeInfo;
-import java.lang.classfile.attribute.CharacterRangeTableAttribute;
-import java.lang.classfile.attribute.CompilationIDAttribute;
-import java.lang.classfile.attribute.ConstantValueAttribute;
-import java.lang.classfile.attribute.DeprecatedAttribute;
-import java.lang.classfile.attribute.EnclosingMethodAttribute;
-import java.lang.classfile.attribute.ExceptionsAttribute;
-import java.lang.classfile.attribute.InnerClassInfo;
-import java.lang.classfile.attribute.InnerClassesAttribute;
-import java.lang.classfile.attribute.LineNumberInfo;
-import java.lang.classfile.attribute.LineNumberTableAttribute;
-import java.lang.classfile.attribute.LocalVariableInfo;
-import java.lang.classfile.attribute.LocalVariableTableAttribute;
-import java.lang.classfile.attribute.LocalVariableTypeInfo;
-import java.lang.classfile.attribute.LocalVariableTypeTableAttribute;
-import java.lang.classfile.attribute.MethodParameterInfo;
-import java.lang.classfile.attribute.MethodParametersAttribute;
-import java.lang.classfile.attribute.ModuleAttribute;
-import java.lang.classfile.attribute.ModuleExportInfo;
-import java.lang.classfile.attribute.ModuleHashInfo;
-import java.lang.classfile.attribute.ModuleHashesAttribute;
-import java.lang.classfile.attribute.ModuleMainClassAttribute;
-import java.lang.classfile.attribute.ModuleOpenInfo;
-import java.lang.classfile.attribute.ModulePackagesAttribute;
-import java.lang.classfile.attribute.ModuleProvideInfo;
-import java.lang.classfile.attribute.ModuleRequireInfo;
-import java.lang.classfile.attribute.ModuleResolutionAttribute;
-import java.lang.classfile.attribute.ModuleTargetAttribute;
-import java.lang.classfile.attribute.NestHostAttribute;
-import java.lang.classfile.attribute.NestMembersAttribute;
-import java.lang.classfile.attribute.PermittedSubclassesAttribute;
-import java.lang.classfile.attribute.RecordAttribute;
-import java.lang.classfile.attribute.RecordComponentInfo;
-import java.lang.classfile.attribute.RuntimeInvisibleAnnotationsAttribute;
-import java.lang.classfile.attribute.RuntimeInvisibleParameterAnnotationsAttribute;
-import java.lang.classfile.attribute.RuntimeInvisibleTypeAnnotationsAttribute;
-import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
-import java.lang.classfile.attribute.RuntimeVisibleParameterAnnotationsAttribute;
-import java.lang.classfile.attribute.RuntimeVisibleTypeAnnotationsAttribute;
-import java.lang.classfile.attribute.SignatureAttribute;
-import java.lang.classfile.attribute.SourceDebugExtensionAttribute;
-import java.lang.classfile.attribute.SourceFileAttribute;
-import java.lang.classfile.attribute.SourceIDAttribute;
-import java.lang.classfile.attribute.StackMapTableAttribute;
-import java.lang.classfile.attribute.StackMapFrameInfo;
-import java.lang.classfile.attribute.SyntheticAttribute;
-import java.lang.classfile.constantpool.ConstantValueEntry;
-import java.lang.classfile.constantpool.ModuleEntry;
-import java.lang.classfile.constantpool.NameAndTypeEntry;
-import java.lang.classfile.constantpool.PackageEntry;
-import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.classfile.*;
+import java.lang.classfile.attribute.*;
+import java.lang.classfile.constantpool.*;
 
 import jdk.internal.access.SharedSecrets;
 
@@ -144,7 +86,6 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
     public static final class UnboundConstantValueAttribute
             extends UnboundAttribute<ConstantValueAttribute>
             implements ConstantValueAttribute {
-
         private final ConstantValueEntry entry;
 
         public UnboundConstantValueAttribute(ConstantValueEntry entry) {
@@ -156,7 +97,6 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         public ConstantValueEntry constant() {
             return entry;
         }
-
     }
 
     public static final class UnboundDeprecatedAttribute
@@ -223,7 +163,8 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         }
     }
 
-    public static final class UnboundSourceFileAttribute extends UnboundAttribute<SourceFileAttribute>
+    public static final class UnboundSourceFileAttribute
+            extends UnboundAttribute<SourceFileAttribute>
             implements SourceFileAttribute {
         private final Utf8Entry sourceFile;
 
@@ -239,7 +180,8 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
 
     }
 
-    public static final class UnboundStackMapTableAttribute extends UnboundAttribute<StackMapTableAttribute>
+    public static final class UnboundStackMapTableAttribute
+            extends UnboundAttribute<StackMapTableAttribute>
             implements StackMapTableAttribute {
         private final List<StackMapFrameInfo> entries;
 
@@ -689,38 +631,44 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
     public record UnboundLineNumberInfo(int startPc, int lineNumber)
             implements LineNumberInfo { }
 
-    public record UnboundLocalVariableInfo(int startPc, int length,
-                                           Utf8Entry name,
-                                           Utf8Entry type,
-                                           int slot)
-            implements LocalVariableInfo { }
+    public record UnboundLocalVariableInfo(
+            int startPc,
+            int length,
+            Utf8Entry name,
+            Utf8Entry type,
+            int slot
+    ) implements LocalVariableInfo { }
 
-    public record UnboundLocalVariableTypeInfo(int startPc, int length,
-                                               Utf8Entry name,
-                                               Utf8Entry signature,
-                                               int slot)
-            implements LocalVariableTypeInfo { }
+    public record UnboundLocalVariableTypeInfo(
+            int startPc,
+            int length,
+            Utf8Entry name,
+            Utf8Entry signature,
+            int slot
+    ) implements LocalVariableTypeInfo { }
 
     public record UnboundMethodParameterInfo(Optional<Utf8Entry> name, int flagsMask)
             implements MethodParameterInfo {}
 
-    public record UnboundModuleExportInfo(PackageEntry exportedPackage,
-                                          int exportsFlagsMask,
-                                          List<ModuleEntry> exportsTo)
-            implements ModuleExportInfo {
-        public UnboundModuleExportInfo(PackageEntry exportedPackage, int exportsFlagsMask,
-                                       List<ModuleEntry> exportsTo) {
+    public record UnboundModuleExportInfo(
+            PackageEntry exportedPackage,
+            int exportsFlagsMask,
+            List<ModuleEntry> exportsTo
+    ) implements ModuleExportInfo {
+        public UnboundModuleExportInfo(
+                PackageEntry exportedPackage,
+                int exportsFlagsMask,
+                List<ModuleEntry> exportsTo
+        ) {
             this.exportedPackage = exportedPackage;
             this.exportsFlagsMask = exportsFlagsMask;
             this.exportsTo = List.copyOf(exportsTo);
         }
     }
 
-    public record UnboundModuleHashInfo(ModuleEntry moduleName,
-                                        byte[] hash) implements ModuleHashInfo { }
+    public record UnboundModuleHashInfo(ModuleEntry moduleName, byte[] hash) implements ModuleHashInfo { }
 
-    public record UnboundModuleOpenInfo(PackageEntry openedPackage, int opensFlagsMask,
-                                        List<ModuleEntry> opensTo)
+    public record UnboundModuleOpenInfo(PackageEntry openedPackage, int opensFlagsMask, List<ModuleEntry> opensTo)
             implements ModuleOpenInfo {
         public UnboundModuleOpenInfo(PackageEntry openedPackage, int opensFlagsMask,
                                      List<ModuleEntry> opensTo) {
@@ -730,8 +678,7 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         }
     }
 
-    public record UnboundModuleProvideInfo(ClassEntry provides,
-                                           List<ClassEntry> providesWith)
+    public record UnboundModuleProvideInfo(ClassEntry provides, List<ClassEntry> providesWith)
             implements ModuleProvideInfo {
         public UnboundModuleProvideInfo(ClassEntry provides, List<ClassEntry> providesWith) {
             this.provides = provides;
@@ -739,13 +686,13 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         }
     }
 
-    public record UnboundModuleRequiresInfo(ModuleEntry requires, int requiresFlagsMask,
-                                            Optional<Utf8Entry> requiresVersion)
-            implements ModuleRequireInfo {}
+    public record UnboundModuleRequiresInfo(
+            ModuleEntry requires,
+            int requiresFlagsMask,
+            Optional<Utf8Entry> requiresVersion
+    ) implements ModuleRequireInfo {}
 
-    public record UnboundRecordComponentInfo(Utf8Entry name,
-                                             Utf8Entry descriptor,
-                                             List<Attribute<?>> attributes)
+    public record UnboundRecordComponentInfo(Utf8Entry name, Utf8Entry descriptor, List<Attribute<?>> attributes)
             implements RecordComponentInfo {
         public UnboundRecordComponentInfo(Utf8Entry name, Utf8Entry descriptor, List<Attribute<?>> attributes) {
             this.name = name;
@@ -754,10 +701,11 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         }
     }
 
-    public record UnboundTypeAnnotation(TargetInfo targetInfo,
-                                        List<TypePathComponent> targetPath,
-                                        Annotation annotation) implements TypeAnnotation {
-
+    public record UnboundTypeAnnotation(
+            TargetInfo targetInfo,
+            List<TypePathComponent> targetPath,
+            Annotation annotation
+    ) implements TypeAnnotation {
         public UnboundTypeAnnotation {
             targetPath = List.copyOf(targetPath);
         }
@@ -776,15 +724,16 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         private final List<ClassEntry> uses;
         private final List<ModuleProvideInfo> provides;
 
-        public UnboundModuleAttribute(ModuleEntry moduleName,
-                                      int moduleFlags,
-                                      Utf8Entry moduleVersion,
-                                      Collection<ModuleRequireInfo> requires,
-                                      Collection<ModuleExportInfo> exports,
-                                      Collection<ModuleOpenInfo> opens,
-                                      Collection<ClassEntry> uses,
-                                      Collection<ModuleProvideInfo> provides)
-        {
+        public UnboundModuleAttribute(
+                ModuleEntry moduleName,
+                int moduleFlags,
+                Utf8Entry moduleVersion,
+                Collection<ModuleRequireInfo> requires,
+                Collection<ModuleExportInfo> exports,
+                Collection<ModuleOpenInfo> opens,
+                Collection<ClassEntry> uses,
+                Collection<ModuleProvideInfo> provides
+        ) {
             super(Attributes.module());
             this.moduleName = moduleName;
             this.moduleFlags = moduleFlags;
@@ -839,7 +788,6 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
 
     public abstract static non-sealed class AdHocAttribute<T extends Attribute<T>>
             extends UnboundAttribute<T> {
-
         public AdHocAttribute(AttributeMapper<T> mapper) {
             super(mapper);
         }

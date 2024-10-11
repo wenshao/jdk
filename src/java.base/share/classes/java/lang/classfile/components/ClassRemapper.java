@@ -24,15 +24,16 @@
  */
 package java.lang.classfile.components;
 
-import java.lang.constant.ClassDesc;
-import java.util.Map;
-import java.util.function.Function;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.ClassTransform;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.CodeTransform;
 import java.lang.classfile.FieldTransform;
 import java.lang.classfile.MethodTransform;
+import java.lang.constant.ClassDesc;
+import java.util.Map;
+import java.util.function.Function;
+
 import jdk.internal.classfile.impl.ClassRemapperImpl;
 import jdk.internal.javac.PreviewFeature;
 
@@ -55,7 +56,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface ClassRemapper extends ClassTransform permits ClassRemapperImpl {
+public sealed interface ClassRemapper
+        extends ClassTransform permits ClassRemapperImpl {
 
     /**
      * Creates new instance of {@code ClassRemapper} instructed with a class map.

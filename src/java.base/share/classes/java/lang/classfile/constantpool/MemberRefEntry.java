@@ -35,7 +35,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface MemberRefEntry extends PoolEntry
+public sealed interface MemberRefEntry
+        extends PoolEntry
         permits FieldRefEntry, InterfaceMethodRefEntry, MethodRefEntry, AbstractPoolEntry.AbstractMemberRefEntry {
     /**
      * {@return the class in which this member ref lives}

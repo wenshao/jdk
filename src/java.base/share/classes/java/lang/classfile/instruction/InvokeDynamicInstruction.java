@@ -24,18 +24,18 @@
  */
 package java.lang.classfile.instruction;
 
-import java.lang.constant.ConstantDesc;
-import java.lang.constant.DirectMethodHandleDesc;
-import java.lang.constant.MethodTypeDesc;
-import java.util.List;
-import java.util.function.Function;
-
 import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.Instruction;
 import java.lang.classfile.constantpool.InvokeDynamicEntry;
 import java.lang.classfile.constantpool.LoadableConstantEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.constant.ConstantDesc;
+import java.lang.constant.DirectMethodHandleDesc;
+import java.lang.constant.MethodTypeDesc;
+import java.util.List;
+import java.util.function.Function;
+
 import jdk.internal.classfile.impl.AbstractInstruction;
 import jdk.internal.classfile.impl.Util;
 import jdk.internal.javac.PreviewFeature;
@@ -48,7 +48,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface InvokeDynamicInstruction extends Instruction
+public sealed interface InvokeDynamicInstruction
+        extends Instruction
         permits AbstractInstruction.BoundInvokeDynamicInstruction, AbstractInstruction.UnboundInvokeDynamicInstruction {
     /**
      * {@return an {@link InvokeDynamicEntry} describing the call site}

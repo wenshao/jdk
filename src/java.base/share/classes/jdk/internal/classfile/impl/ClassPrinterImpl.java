@@ -24,6 +24,13 @@
  */
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.*;
+import java.lang.classfile.AnnotationValue.*;
+import java.lang.classfile.attribute.*;
+import java.lang.classfile.attribute.StackMapFrameInfo.*;
+import java.lang.classfile.components.ClassPrinter.*;
+import java.lang.classfile.constantpool.*;
+import java.lang.classfile.instruction.*;
 import java.lang.constant.ConstantDesc;
 import java.lang.constant.DirectMethodHandleDesc;
 import java.lang.reflect.AccessFlag;
@@ -41,42 +48,24 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.lang.classfile.Annotation;
 
-import java.lang.classfile.AnnotationElement;
-import java.lang.classfile.AnnotationValue;
-import java.lang.classfile.AnnotationValue.*;
-import java.lang.classfile.Attribute;
-import java.lang.classfile.ClassModel;
-import java.lang.classfile.components.ClassPrinter.*;
-import java.lang.classfile.CodeModel;
-import java.lang.classfile.Instruction;
-import java.lang.classfile.MethodModel;
-import java.lang.classfile.TypeAnnotation;
-import java.lang.classfile.attribute.*;
-import java.lang.classfile.attribute.StackMapFrameInfo.*;
-import java.lang.classfile.constantpool.*;
-import java.lang.classfile.instruction.*;
-
-import java.lang.classfile.CompoundElement;
-import java.lang.classfile.FieldModel;
 import static java.lang.classfile.constantpool.PoolEntry.*;
 import static jdk.internal.classfile.impl.ClassPrinterImpl.Style.*;
 
 public final class ClassPrinterImpl {
-
     public enum Style { BLOCK, FLOW }
 
-    public record LeafNodeImpl(ConstantDesc name, ConstantDesc value) implements LeafNode {
-
+    public record LeafNodeImpl(ConstantDesc name, ConstantDesc value)
+            implements LeafNode {
         @Override
         public Stream<Node> walk() {
             return Stream.of(this);
         }
     }
 
-    public static sealed class ListNodeImpl extends AbstractList<Node> implements ListNode {
-
+    public static sealed class ListNodeImpl
+            extends AbstractList<Node>
+            implements ListNode {
         private final Style style;
         private final ConstantDesc name;
         protected final List<Node> nodes;
@@ -118,9 +107,10 @@ public final class ClassPrinterImpl {
         }
     }
 
-    public static final class MapNodeImpl implements MapNode {
-
-        private static final class PrivateListNodeImpl extends ListNodeImpl {
+    public static final class MapNodeImpl
+            implements MapNode {
+        private static final class PrivateListNodeImpl
+                extends ListNodeImpl {
             PrivateListNodeImpl(Style style, ConstantDesc name, Node... n) {
                 super(style, name, new ArrayList<>(List.of(n)));
             }
@@ -207,7 +197,6 @@ public final class ClassPrinterImpl {
             return Collections.unmodifiableSet(map.entrySet());
         }
 
-
         MapNodeImpl with(Node... nodes) {
             for (var n : nodes) {
                 if (n != null) {
@@ -254,19 +243,19 @@ public final class ClassPrinterImpl {
 
     private static void escape(int c, StringBuilder sb) {
         switch (c) {
-            case '\\'  -> sb.append('\\').append('\\');
-            case '"' -> sb.append('\\').append('"');
+            case '\\' -> sb.append('\\').append('\\');
+            case '"'  -> sb.append('\\').append('"');
             case '\b' -> sb.append('\\').append('b');
             case '\n' -> sb.append('\\').append('n');
             case '\t' -> sb.append('\\').append('t');
             case '\f' -> sb.append('\\').append('f');
             case '\r' -> sb.append('\\').append('r');
-            default -> {
+            default   -> {
                 if (c >= 0x20 && c < 0x7f) {
                     sb.append((char)c);
                 } else {
                     sb.append('\\').append('u').append(DIGITS[(c >> 12) & 0xf])
-                            .append(DIGITS[(c >> 8) & 0xf]).append(DIGITS[(c >> 4) & 0xf]).append(DIGITS[(c) & 0xf]);
+                      .append(DIGITS[(c >> 8) & 0xf]).append(DIGITS[(c >> 4) & 0xf]).append(DIGITS[(c) & 0xf]);
                 }
             }
         }
@@ -493,8 +482,8 @@ public final class ClassPrinterImpl {
             case '>'  -> sb.append("&gt;");
             case '"'  -> sb.append("&quot;");
             case '&'  -> sb.append("&amp;");
-            case '\''  -> sb.append("&apos;");
-            default -> escape(c, sb);
+            case '\'' -> sb.append("&apos;");
+            default   -> escape(c, sb);
         }});
         return sb.toString();
     }

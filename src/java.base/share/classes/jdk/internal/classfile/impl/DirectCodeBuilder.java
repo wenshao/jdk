@@ -27,33 +27,11 @@ package jdk.internal.classfile.impl;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
-import java.lang.classfile.Attribute;
-import java.lang.classfile.Attributes;
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.CodeElement;
-import java.lang.classfile.CodeModel;
-import java.lang.classfile.CustomAttribute;
-import java.lang.classfile.Label;
-import java.lang.classfile.Opcode;
-import java.lang.classfile.TypeKind;
+import java.lang.classfile.*;
 import java.lang.classfile.attribute.CodeAttribute;
 import java.lang.classfile.attribute.LineNumberTableAttribute;
-import java.lang.classfile.constantpool.ClassEntry;
-import java.lang.classfile.constantpool.ConstantPoolBuilder;
-import java.lang.classfile.constantpool.DoubleEntry;
-import java.lang.classfile.constantpool.FieldRefEntry;
-import java.lang.classfile.constantpool.InterfaceMethodRefEntry;
-import java.lang.classfile.constantpool.InvokeDynamicEntry;
-import java.lang.classfile.constantpool.LoadableConstantEntry;
-import java.lang.classfile.constantpool.LongEntry;
-import java.lang.classfile.constantpool.MemberRefEntry;
-import java.lang.classfile.constantpool.MethodRefEntry;
-import java.lang.classfile.instruction.CharacterRange;
-import java.lang.classfile.instruction.ExceptionCatch;
-import java.lang.classfile.instruction.LocalVariable;
-import java.lang.classfile.instruction.LocalVariableType;
-import java.lang.classfile.instruction.SwitchCase;
+import java.lang.classfile.constantpool.*;
+import java.lang.classfile.instruction.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -105,11 +83,13 @@ public final class DirectCodeBuilder
        allocLocal(TypeKind) bumps by nSlots
      */
 
-    public static UnboundAttribute<CodeAttribute> build(MethodInfo methodInfo,
-                                                 Consumer<? super CodeBuilder> handler,
-                                                 SplitConstantPool constantPool,
-                                                 ClassFileImpl context,
-                                                 CodeModel original) {
+    public static UnboundAttribute<CodeAttribute> build(
+            MethodInfo methodInfo,
+            Consumer<? super CodeBuilder> handler,
+            SplitConstantPool constantPool,
+            ClassFileImpl context,
+            CodeModel original
+    ) {
         DirectCodeBuilder cb;
         try {
             handler.accept(cb = new DirectCodeBuilder(methodInfo, constantPool, context, original, false));
@@ -125,17 +105,20 @@ public final class DirectCodeBuilder
         return cb.content;
     }
 
-    private DirectCodeBuilder(MethodInfo methodInfo,
-                              SplitConstantPool constantPool,
-                              ClassFileImpl context,
-                              CodeModel original,
-                              boolean transformDeferredJumps) {
+    private DirectCodeBuilder(
+            MethodInfo methodInfo,
+            SplitConstantPool constantPool,
+            ClassFileImpl context,
+            CodeModel original,
+            boolean transformDeferredJumps
+    ) {
         super(constantPool, context);
         setOriginal(original);
         this.methodInfo = methodInfo;
         this.transformDeferredJumps = transformDeferredJumps;
         this.transformKnownJumps = context.fixShortJumps();
-        bytecodesBufWriter = (original instanceof CodeImpl cai) ? new BufWriterImpl(constantPool, context, cai.codeLength())
+        bytecodesBufWriter = (original instanceof CodeImpl cai)
+                ? new BufWriterImpl(constantPool, context, cai.codeLength())
                 : new BufWriterImpl(constantPool, context);
         this.startLabel = new LabelImpl(this, 0);
         this.endLabel = new LabelImpl(this, -1);
@@ -239,7 +222,6 @@ public final class DirectCodeBuilder
         if (context.passDebugElements()) {
             if (characterRangesCount > 0) {
                 Attribute<?> a = new UnboundAttribute.AdHocAttribute<>(Attributes.characterRangeTable()) {
-
                     @Override
                     public void writeBody(BufWriterImpl b) {
                         int pos = b.size();
@@ -322,7 +304,6 @@ public final class DirectCodeBuilder
         }
 
         content = new UnboundAttribute.AdHocAttribute<>(Attributes.code()) {
-
             private void writeCounters(boolean codeMatch, BufWriterImpl buf) {
                 if (codeMatch) {
                     var originalAttribute = (CodeImpl) original;
@@ -397,7 +378,8 @@ public final class DirectCodeBuilder
         };
     }
 
-    private static class DedupLineNumberTableAttribute extends UnboundAttribute.AdHocAttribute<LineNumberTableAttribute> {
+    private static class DedupLineNumberTableAttribute
+            extends UnboundAttribute.AdHocAttribute<LineNumberTableAttribute> {
         private final BufWriterImpl buf;
         private int lastPc, lastLine, writtenLine;
 
@@ -445,15 +427,15 @@ public final class DirectCodeBuilder
         boolean codeAttributesMatch;
         if (original instanceof CodeImpl cai && canWriteDirect(cai.constantPool())) {
             codeAttributesMatch = cai.codeLength == curPc()
-                                  && cai.compareCodeBytes(bytecodesBufWriter, 0, codeLength);
+                    && cai.compareCodeBytes(bytecodesBufWriter, 0, codeLength);
             if (codeAttributesMatch) {
                 var bw = new BufWriterImpl(constantPool, context);
                 writeExceptionHandlers(bw);
                 codeAttributesMatch = cai.classReader.compare(bw, 0, cai.exceptionHandlerPos, bw.size());
             }
-        }
-        else
+        } else {
             codeAttributesMatch = false;
+        }
         return codeAttributesMatch;
     }
 
@@ -639,8 +621,8 @@ public final class DirectCodeBuilder
         for (var c : cases) {
             caseMap.put(c.caseValue(), c.target());
         }
-        for (long l = low; l<=high; l++) {
-            var target = caseMap.getOrDefault((int)l, defaultTarget);
+        for (long l = low; l <= high; l++) {
+            var target = caseMap.getOrDefault((int) l, defaultTarget);
             writeLongLabelOffset(instructionPc, target);
         }
     }
@@ -728,8 +710,7 @@ public final class DirectCodeBuilder
     private int labelToBci(LabelContext context, LabelImpl lab) {
         if (context == mruParent) {
             return mruParentTable[lab.getBCI()] - 1;
-        }
-        else if (context instanceof CodeAttribute parent) {
+        } else if (context instanceof CodeAttribute parent) {
             if (parentMap == null)
                 parentMap = new IdentityHashMap<>();
             //critical JDK bootstrap path, cannot use lambda here
@@ -743,12 +724,10 @@ public final class DirectCodeBuilder
             mruParent = parent;
             mruParentTable = table;
             return mruParentTable[lab.getBCI()] - 1;
-        }
-        else if (context instanceof BufferedCodeBuilder) {
+        } else if (context instanceof BufferedCodeBuilder) {
             // Hijack the label
             return lab.getBCI();
-        }
-        else {
+        } else {
             throw new IllegalStateException(String.format("Unexpected label context %s in =%s", context, this));
         }
     }
@@ -779,8 +758,7 @@ public final class DirectCodeBuilder
         LabelContext context = lab.labelContext();
         if (context == mruParent) {
             mruParentTable[lab.getBCI()] = bci + 1;
-        }
-        else if (context instanceof CodeAttribute parent) {
+        } else if (context instanceof CodeAttribute parent) {
             if (parentMap == null)
                 parentMap = new IdentityHashMap<>();
             int[] table = parentMap.computeIfAbsent(parent, new Function<CodeAttribute, int[]>() {
@@ -793,12 +771,10 @@ public final class DirectCodeBuilder
             mruParent = parent;
             mruParentTable = table;
             table[lab.getBCI()] = bci + 1;
-        }
-        else if (context instanceof BufferedCodeBuilder) {
+        } else if (context instanceof BufferedCodeBuilder) {
             // Hijack the label
             lab.setBCI(bci);
-        }
-        else {
+        } else {
             throw new IllegalStateException(String.format("Unexpected label context %s in =%s", context, this));
         }
     }
@@ -820,10 +796,15 @@ public final class DirectCodeBuilder
     }
 
     public void addHandler(ExceptionCatch element) {
-        AbstractPseudoInstruction.ExceptionCatchImpl el = (AbstractPseudoInstruction.ExceptionCatchImpl) element;
+        var el = (AbstractPseudoInstruction.ExceptionCatchImpl) element;
         ClassEntry type = el.catchTypeEntry();
-        if (type != null && !constantPool.canWriteDirect(type.constantPool()))
-            el = new AbstractPseudoInstruction.ExceptionCatchImpl(element.handler(), element.tryStart(), element.tryEnd(), AbstractPoolEntry.maybeClone(constantPool, type));
+        if (type != null && !constantPool.canWriteDirect(type.constantPool())) {
+            el = new AbstractPseudoInstruction.ExceptionCatchImpl(
+                    element.handler(),
+                    element.tryStart(),
+                    element.tryEnd(),
+                    AbstractPoolEntry.maybeClone(constantPool, type));
+        }
         handlers.add(el);
     }
 
@@ -849,8 +830,8 @@ public final class DirectCodeBuilder
     }
 
     //ToDo: consolidate and open all exceptions
-    private static final class LabelOverflowException extends IllegalArgumentException {
-
+    private static final class LabelOverflowException
+            extends IllegalArgumentException {
         private static final long serialVersionUID = 1L;
 
         public LabelOverflowException() {
@@ -882,7 +863,7 @@ public final class DirectCodeBuilder
             case DOUBLE    -> dstore(slot);
             case FLOAT     -> fstore(slot);
             case REFERENCE -> astore(slot);
-            case VOID      -> throw new IllegalArgumentException("void");
+            case VOID -> throw new IllegalArgumentException("void");
         };
     }
 

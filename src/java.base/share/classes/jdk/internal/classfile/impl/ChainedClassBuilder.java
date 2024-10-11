@@ -24,20 +24,18 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.constant.MethodTypeDesc;
-import java.util.function.Consumer;
-
 import java.lang.classfile.*;
 import java.lang.classfile.constantpool.ConstantPoolBuilder;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.constant.MethodTypeDesc;
+import java.util.function.Consumer;
 
 public final class ChainedClassBuilder
         implements ClassBuilder, Consumer<ClassElement> {
     private final DirectClassBuilder terminal;
     private final Consumer<ClassElement> consumer;
 
-    public ChainedClassBuilder(ClassBuilder downstream,
-                               Consumer<ClassElement> consumer) {
+    public ChainedClassBuilder(ClassBuilder downstream, Consumer<ClassElement> consumer) {
         this.consumer = consumer;
         this.terminal = switch (downstream) {
             case ChainedClassBuilder cb -> cb.terminal;
@@ -53,36 +51,46 @@ public final class ChainedClassBuilder
 
     @Override
     public ClassBuilder withField(Utf8Entry name, Utf8Entry descriptor, Consumer<? super FieldBuilder> handler) {
-        consumer.accept(new BufferedFieldBuilder(terminal.constantPool, terminal.context,
-                                                        name, descriptor)
-                                       .run(handler)
-                                       .toModel());
+        consumer.accept(
+                new BufferedFieldBuilder(terminal.constantPool, terminal.context, name, descriptor)
+                        .run(handler)
+                        .toModel());
         return this;
     }
 
     @Override
     public ClassBuilder transformField(FieldModel field, FieldTransform transform) {
-        BufferedFieldBuilder builder = new BufferedFieldBuilder(terminal.constantPool, terminal.context,
-                                                                field.fieldName(), field.fieldType());
+        BufferedFieldBuilder builder =
+                new BufferedFieldBuilder(terminal.constantPool, terminal.context, field.fieldName(), field.fieldType());
         builder.transform(field, transform);
         consumer.accept(builder.toModel());
         return this;
     }
 
     @Override
-    public ClassBuilder withMethod(Utf8Entry name, Utf8Entry descriptor, int flags,
-                                   Consumer<? super MethodBuilder> handler) {
-        consumer.accept(new BufferedMethodBuilder(terminal.constantPool, terminal.context,
-                                                         name, descriptor, flags, null)
-                                       .run(handler)
-                                       .toModel());
+    public ClassBuilder withMethod(
+            Utf8Entry name,
+            Utf8Entry descriptor,
+            int flags,
+            Consumer<? super MethodBuilder> handler
+    ) {
+        consumer.accept(
+                new BufferedMethodBuilder(terminal.constantPool, terminal.context, name, descriptor, flags, null)
+                        .run(handler)
+                        .toModel());
         return this;
     }
 
     @Override
     public ClassBuilder transformMethod(MethodModel method, MethodTransform transform) {
-        BufferedMethodBuilder builder = new BufferedMethodBuilder(terminal.constantPool, terminal.context,
-                                                                  method.methodName(), method.methodType(), method.flags().flagsMask(), method);
+        BufferedMethodBuilder builder =
+                new BufferedMethodBuilder(
+                        terminal.constantPool,
+                        terminal.context,
+                        method.methodName(),
+                        method.methodType(),
+                        method.flags().flagsMask(),
+                        method);
         builder.transform(method, transform);
         consumer.accept(builder.toModel());
         return this;

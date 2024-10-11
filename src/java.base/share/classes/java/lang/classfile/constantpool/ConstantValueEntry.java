@@ -37,7 +37,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface ConstantValueEntry extends LoadableConstantEntry
+public sealed interface ConstantValueEntry
+        extends LoadableConstantEntry
         permits DoubleEntry, FloatEntry, IntegerEntry, LongEntry, StringEntry {
 
     /**

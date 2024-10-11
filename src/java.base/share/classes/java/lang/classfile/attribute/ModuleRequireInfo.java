@@ -24,14 +24,14 @@
  */
 package java.lang.classfile.attribute;
 
+import java.lang.classfile.constantpool.ModuleEntry;
+import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.constant.ModuleDesc;
+import java.lang.reflect.AccessFlag;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
-import java.lang.classfile.constantpool.ModuleEntry;
-import java.lang.classfile.constantpool.Utf8Entry;
-import java.lang.reflect.AccessFlag;
-import java.lang.constant.ModuleDesc;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.UnboundAttribute;
 import jdk.internal.classfile.impl.Util;
@@ -107,7 +107,10 @@ public sealed interface ModuleRequireInfo
      * @param requiresVersion the required version
      */
     static ModuleRequireInfo of(ModuleDesc requires, int requiresFlags, String requiresVersion) {
-        return new UnboundAttribute.UnboundModuleRequiresInfo(TemporaryConstantPool.INSTANCE.moduleEntry(TemporaryConstantPool.INSTANCE.utf8Entry(requires.name())), requiresFlags, Optional.ofNullable(requiresVersion).map(s -> TemporaryConstantPool.INSTANCE.utf8Entry(s)));
+        return new UnboundAttribute.UnboundModuleRequiresInfo(
+                TemporaryConstantPool.INSTANCE.moduleEntry(TemporaryConstantPool.INSTANCE.utf8Entry(requires.name())),
+                requiresFlags,
+                Optional.ofNullable(requiresVersion).map(s -> TemporaryConstantPool.INSTANCE.utf8Entry(s)));
     }
 
     /**

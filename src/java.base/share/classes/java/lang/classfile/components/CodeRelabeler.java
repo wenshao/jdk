@@ -24,12 +24,13 @@
  */
 package java.lang.classfile.components;
 
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.function.BiFunction;
 import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.CodeTransform;
 import java.lang.classfile.Label;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.function.BiFunction;
+
 import jdk.internal.classfile.impl.CodeRelabelerImpl;
 import jdk.internal.javac.PreviewFeature;
 
@@ -46,7 +47,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface CodeRelabeler extends CodeTransform permits CodeRelabelerImpl {
+public sealed interface CodeRelabeler
+        extends CodeTransform permits CodeRelabelerImpl {
 
     /**
      * Creates a new instance of CodeRelabeler.

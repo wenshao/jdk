@@ -25,7 +25,6 @@
 
 package java.lang.classfile;
 
-
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
 import java.util.Arrays;
@@ -151,9 +150,10 @@ public sealed interface ClassBuilder
      *                    further define the contents of the field
      * @return this builder
      */
-    ClassBuilder withField(Utf8Entry name,
-                           Utf8Entry descriptor,
-                           Consumer<? super FieldBuilder> handler);
+    ClassBuilder withField(
+            Utf8Entry name,
+            Utf8Entry descriptor,
+            Consumer<? super FieldBuilder> handler);
 
     /**
      * Adds a field.
@@ -162,9 +162,11 @@ public sealed interface ClassBuilder
      * @param flags the access flags for this field
      * @return this builder
      */
-    default ClassBuilder withField(Utf8Entry name,
-                                   Utf8Entry descriptor,
-                                   int flags) {
+    default ClassBuilder withField(
+            Utf8Entry name,
+            Utf8Entry descriptor,
+            int flags
+    ) {
         return withField(name, descriptor, Util.buildingFlags(flags));
     }
 
@@ -191,9 +193,11 @@ public sealed interface ClassBuilder
      * @param flags the access flags for this field
      * @return this builder
      */
-    default ClassBuilder withField(String name,
-                                   ClassDesc descriptor,
-                                   int flags) {
+    default ClassBuilder withField(
+            String name,
+            ClassDesc descriptor,
+            int flags
+    ) {
         return withField(constantPool().utf8Entry(name),
                          constantPool().utf8Entry(descriptor),
                          flags);
@@ -224,10 +228,11 @@ public sealed interface ClassBuilder
      *                    further define the contents of the method
      * @return this builder
      */
-    ClassBuilder withMethod(Utf8Entry name,
-                            Utf8Entry descriptor,
-                            int methodFlags,
-                            Consumer<? super MethodBuilder> handler);
+    ClassBuilder withMethod(
+            Utf8Entry name,
+            Utf8Entry descriptor,
+            int methodFlags,
+            Consumer<? super MethodBuilder> handler);
 
     /**
      * Adds a method, with only a {@code Code} attribute.
@@ -239,10 +244,12 @@ public sealed interface ClassBuilder
      *                    define the contents of the method body
      * @return this builder
      */
-    default ClassBuilder withMethodBody(Utf8Entry name,
-                                        Utf8Entry descriptor,
-                                        int methodFlags,
-                                        Consumer<? super CodeBuilder> handler) {
+    default ClassBuilder withMethodBody(
+            Utf8Entry name,
+            Utf8Entry descriptor,
+            int methodFlags,
+            Consumer<? super CodeBuilder> handler
+    ) {
         return withMethod(name, descriptor, methodFlags, Util.buildingCode(handler));
     }
 
@@ -255,10 +262,12 @@ public sealed interface ClassBuilder
      *                    further define the contents of the method
      * @return this builder
      */
-    default ClassBuilder withMethod(String name,
-                                    MethodTypeDesc descriptor,
-                                    int methodFlags,
-                                    Consumer<? super MethodBuilder> handler) {
+    default ClassBuilder withMethod(
+            String name,
+            MethodTypeDesc descriptor,
+            int methodFlags,
+            Consumer<? super MethodBuilder> handler
+    ) {
         return withMethod(constantPool().utf8Entry(name),
                           constantPool().utf8Entry(descriptor),
                           methodFlags,
@@ -274,10 +283,12 @@ public sealed interface ClassBuilder
      *                    define the contents of the method body
      * @return this builder
      */
-    default ClassBuilder withMethodBody(String name,
-                                        MethodTypeDesc descriptor,
-                                        int methodFlags,
-                                        Consumer<? super CodeBuilder> handler) {
+    default ClassBuilder withMethodBody(
+            String name,
+            MethodTypeDesc descriptor,
+            int methodFlags,
+            Consumer<? super CodeBuilder> handler
+    ) {
         return withMethod(name, descriptor, methodFlags, Util.buildingCode(handler));
     }
 

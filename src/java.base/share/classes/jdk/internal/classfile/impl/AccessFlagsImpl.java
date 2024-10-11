@@ -24,18 +24,18 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.util.Set;
 import java.lang.classfile.AccessFlags;
 import java.lang.reflect.AccessFlag;
+import java.util.Set;
 
-public final class AccessFlagsImpl extends AbstractElement
+public final class AccessFlagsImpl
+        extends AbstractElement
         implements AccessFlags {
-
     private final AccessFlag.Location location;
     private final int flagsMask;
     private Set<AccessFlag> flags;
 
-    public  AccessFlagsImpl(AccessFlag.Location location, AccessFlag... flags) {
+    public AccessFlagsImpl(AccessFlag.Location location, AccessFlag... flags) {
         this.location = location;
         this.flagsMask = Util.flagsToBits(location, flags);
         this.flags = Set.of(flags);

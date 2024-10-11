@@ -45,7 +45,6 @@ import static java.lang.classfile.constantpool.PoolEntry.*;
 import static jdk.internal.classfile.impl.RawBytecodeHelper.*;
 
 public final class StackCounter {
-
     private record Target(int bci, int stack) {}
 
     static StackCounter of(DirectCodeBuilder dcb, BufWriterImpl buf) {
@@ -100,15 +99,17 @@ public final class StackCounter {
         return false;
     }
 
-    public StackCounter(LabelContext labelContext,
-                     StackMapTableAttribute smta,
-                     ClassDesc thisClass,
-                     String methodName,
-                     MethodTypeDesc methodDesc,
-                     boolean isStatic,
-                     RawBytecodeHelper.CodeRange bytecode,
-                     SplitConstantPool cp,
-                     List<AbstractPseudoInstruction.ExceptionCatchImpl> handlers) {
+    public StackCounter(
+            LabelContext labelContext,
+            StackMapTableAttribute smta,
+            ClassDesc thisClass,
+            String methodName,
+            MethodTypeDesc methodDesc,
+            boolean isStatic,
+            RawBytecodeHelper.CodeRange bytecode,
+            SplitConstantPool cp,
+            List<AbstractPseudoInstruction.ExceptionCatchImpl> handlers
+    ) {
         this.thisClass = thisClass;
         this.methodName = methodName;
         this.methodDesc = methodDesc;

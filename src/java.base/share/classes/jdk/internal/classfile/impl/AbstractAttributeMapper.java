@@ -24,12 +24,7 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.classfile.Annotation;
-import java.lang.classfile.Attribute;
-import java.lang.classfile.AttributeMapper;
-import java.lang.classfile.AttributedElement;
-import java.lang.classfile.BufWriter;
-import java.lang.classfile.ClassReader;
+import java.lang.classfile.*;
 import java.lang.classfile.attribute.*;
 import java.util.List;
 
@@ -37,7 +32,6 @@ import static java.lang.classfile.Attributes.*;
 
 public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         implements AttributeMapper<T> {
-
     private final String name;
     private final AttributeMapper.AttributeStability stability;
     private final boolean allowMultiple;
@@ -48,9 +42,7 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         this(name, stability, false);
     }
 
-    public AbstractAttributeMapper(String name,
-                                   AttributeMapper.AttributeStability stability,
-                                   boolean allowMultiple) {
+    public AbstractAttributeMapper(String name, AttributeMapper.AttributeStability stability, boolean allowMultiple) {
         this.name = name;
         this.stability = stability;
         this.allowMultiple = allowMultiple;
@@ -87,7 +79,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
                 name, allowMultiple, stability());
     }
 
-    public static final class AnnotationDefaultMapper extends AbstractAttributeMapper<AnnotationDefaultAttribute> {
+    public static final class AnnotationDefaultMapper
+            extends AbstractAttributeMapper<AnnotationDefaultAttribute> {
         public static final AnnotationDefaultMapper INSTANCE = new AnnotationDefaultMapper();
 
         private AnnotationDefaultMapper() {
@@ -105,7 +98,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class BootstrapMethodsMapper extends AbstractAttributeMapper<BootstrapMethodsAttribute> {
+    public static final class BootstrapMethodsMapper
+            extends AbstractAttributeMapper<BootstrapMethodsAttribute> {
         public static final BootstrapMethodsMapper INSTANCE = new BootstrapMethodsMapper();
 
         private BootstrapMethodsMapper() {
@@ -127,7 +121,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class CharacterRangeTableMapper extends AbstractAttributeMapper<CharacterRangeTableAttribute> {
+    public static final class CharacterRangeTableMapper
+            extends AbstractAttributeMapper<CharacterRangeTableAttribute> {
         public static final CharacterRangeTableMapper INSTANCE = new CharacterRangeTableMapper();
 
         private CharacterRangeTableMapper() {
@@ -152,7 +147,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class CodeMapper extends AbstractAttributeMapper<CodeAttribute> {
+    public static final class CodeMapper
+            extends AbstractAttributeMapper<CodeAttribute> {
         public static final CodeMapper INSTANCE = new CodeMapper();
 
         private CodeMapper() {
@@ -170,7 +166,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class CompilationIDMapper extends AbstractAttributeMapper<CompilationIDAttribute> {
+    public static final class CompilationIDMapper
+            extends AbstractAttributeMapper<CompilationIDAttribute> {
         public static final CompilationIDMapper INSTANCE = new CompilationIDMapper();
 
         private CompilationIDMapper() {
@@ -188,7 +185,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class ConstantValueMapper extends AbstractAttributeMapper<ConstantValueAttribute> {
+    public static final class ConstantValueMapper
+            extends AbstractAttributeMapper<ConstantValueAttribute> {
         public static final ConstantValueMapper INSTANCE = new ConstantValueMapper();
 
         private ConstantValueMapper() {
@@ -206,7 +204,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class DeprecatedMapper extends AbstractAttributeMapper<DeprecatedAttribute> {
+    public static final class DeprecatedMapper
+            extends AbstractAttributeMapper<DeprecatedAttribute> {
         public static final DeprecatedMapper INSTANCE = new DeprecatedMapper();
 
         private DeprecatedMapper() {
@@ -224,7 +223,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class EnclosingMethodMapper extends AbstractAttributeMapper<EnclosingMethodAttribute> {
+    public static final class EnclosingMethodMapper
+            extends AbstractAttributeMapper<EnclosingMethodAttribute> {
         public static final EnclosingMethodMapper INSTANCE = new EnclosingMethodMapper();
 
         private EnclosingMethodMapper() {
@@ -244,7 +244,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class ExceptionsMapper extends AbstractAttributeMapper<ExceptionsAttribute> {
+    public static final class ExceptionsMapper
+            extends AbstractAttributeMapper<ExceptionsAttribute> {
         public static final ExceptionsMapper INSTANCE = new ExceptionsMapper();
 
         private ExceptionsMapper() {
@@ -262,7 +263,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class InnerClassesMapper extends AbstractAttributeMapper<InnerClassesAttribute> {
+    public static final class InnerClassesMapper
+            extends AbstractAttributeMapper<InnerClassesAttribute> {
         public static final InnerClassesMapper INSTANCE = new InnerClassesMapper();
 
         private InnerClassesMapper() {
@@ -288,7 +290,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class LineNumberTableMapper extends AbstractAttributeMapper<LineNumberTableAttribute> {
+    public static final class LineNumberTableMapper
+            extends AbstractAttributeMapper<LineNumberTableAttribute> {
         public static final LineNumberTableMapper INSTANCE = new LineNumberTableMapper();
 
         private LineNumberTableMapper() {
@@ -311,7 +314,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class LocalVariableTableMapper extends AbstractAttributeMapper<LocalVariableTableAttribute> {
+    public static final class LocalVariableTableMapper
+            extends AbstractAttributeMapper<LocalVariableTableAttribute> {
         public static final LocalVariableTableMapper INSTANCE = new LocalVariableTableMapper();
 
         private LocalVariableTableMapper() {
@@ -335,7 +339,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class LocalVariableTypeTableMapper extends AbstractAttributeMapper<LocalVariableTypeTableAttribute> {
+    public static final class LocalVariableTypeTableMapper
+            extends AbstractAttributeMapper<LocalVariableTypeTableAttribute> {
         public static final LocalVariableTypeTableMapper INSTANCE = new LocalVariableTypeTableMapper();
 
         private LocalVariableTypeTableMapper() {
@@ -359,7 +364,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class MethodParametersMapper extends AbstractAttributeMapper<MethodParametersAttribute> {
+    public static final class MethodParametersMapper
+            extends AbstractAttributeMapper<MethodParametersAttribute> {
         public static final MethodParametersMapper INSTANCE = new MethodParametersMapper();
 
         private MethodParametersMapper() {
@@ -377,13 +383,15 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
             BufWriterImpl buf = (BufWriterImpl) bufWriter;
             buf.writeU1(parameters.size());
             for (MethodParameterInfo info : parameters) {
-                buf.writeU2U2(buf.cpIndexOrZero(info.name().orElse(null)),
+                buf.writeU2U2(
+                        buf.cpIndexOrZero(info.name().orElse(null)),
                         info.flagsMask());
             }
         }
     }
 
-    public static final class ModuleMapper extends AbstractAttributeMapper<ModuleAttribute> {
+    public static final class ModuleMapper
+            extends AbstractAttributeMapper<ModuleAttribute> {
         public static final ModuleMapper INSTANCE = new ModuleMapper();
 
         private ModuleMapper() {
@@ -398,24 +406,28 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         @Override
         protected void writeBody(BufWriter bufWriter, ModuleAttribute attr) {
             BufWriterImpl buf = (BufWriterImpl) bufWriter;
-            buf.writeU2U2U2(buf.cpIndex(attr.moduleName()),
+            buf.writeU2U2U2(
+                    buf.cpIndex(attr.moduleName()),
                     attr.moduleFlagsMask(),
                     buf.cpIndexOrZero(attr.moduleVersion().orElse(null)));
             buf.writeU2(attr.requires().size());
             for (ModuleRequireInfo require : attr.requires()) {
-                buf.writeU2U2U2(buf.cpIndex(require.requires()),
+                buf.writeU2U2U2(
+                        buf.cpIndex(require.requires()),
                         require.requiresFlagsMask(),
                         buf.cpIndexOrZero(require.requiresVersion().orElse(null)));
             }
             buf.writeU2(attr.exports().size());
             for (ModuleExportInfo export : attr.exports()) {
-                buf.writeU2U2(buf.cpIndex(export.exportedPackage()),
+                buf.writeU2U2(
+                        buf.cpIndex(export.exportedPackage()),
                         export.exportsFlagsMask());
                 Util.writeListIndices(buf, export.exportsTo());
             }
             buf.writeU2(attr.opens().size());
             for (ModuleOpenInfo open : attr.opens()) {
-                buf.writeU2U2(buf.cpIndex(open.openedPackage()),
+                buf.writeU2U2(
+                        buf.cpIndex(open.openedPackage()),
                         open.opensFlagsMask());
                 Util.writeListIndices(buf, open.opensTo());
             }
@@ -428,7 +440,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class ModuleHashesMapper extends AbstractAttributeMapper<ModuleHashesAttribute> {
+    public static final class ModuleHashesMapper
+            extends AbstractAttributeMapper<ModuleHashesAttribute> {
         public static final ModuleHashesMapper INSTANCE = new ModuleHashesMapper();
 
         private ModuleHashesMapper() {
@@ -444,16 +457,20 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         protected void writeBody(BufWriter bufWriter, ModuleHashesAttribute attr) {
             List<ModuleHashInfo> hashes = attr.hashes();
             BufWriterImpl buf = (BufWriterImpl) bufWriter;
-            buf.writeU2U2(buf.cpIndex(attr.algorithm()), hashes.size());
+            buf.writeU2U2(
+                    buf.cpIndex(attr.algorithm()),
+                    hashes.size());
             for (ModuleHashInfo hash : hashes) {
-                buf.writeU2U2(buf.cpIndex(hash.moduleName()),
+                buf.writeU2U2(
+                        buf.cpIndex(hash.moduleName()),
                         hash.hash().length);
                 buf.writeBytes(hash.hash());
             }
         }
     }
 
-    public static final class ModuleMainClassMapper extends AbstractAttributeMapper<ModuleMainClassAttribute> {
+    public static final class ModuleMainClassMapper
+            extends AbstractAttributeMapper<ModuleMainClassAttribute> {
         public static final ModuleMainClassMapper INSTANCE = new ModuleMainClassMapper();
 
         private ModuleMainClassMapper() {
@@ -471,7 +488,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class ModulePackagesMapper extends AbstractAttributeMapper<ModulePackagesAttribute> {
+    public static final class ModulePackagesMapper
+            extends AbstractAttributeMapper<ModulePackagesAttribute> {
         public static final ModulePackagesMapper INSTANCE = new ModulePackagesMapper();
 
         private ModulePackagesMapper() {
@@ -489,7 +507,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class ModuleResolutionMapper extends AbstractAttributeMapper<ModuleResolutionAttribute> {
+    public static final class ModuleResolutionMapper
+            extends AbstractAttributeMapper<ModuleResolutionAttribute> {
         public static final ModuleResolutionMapper INSTANCE = new ModuleResolutionMapper();
 
         private ModuleResolutionMapper() {
@@ -507,7 +526,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class ModuleTargetMapper extends AbstractAttributeMapper<ModuleTargetAttribute> {
+    public static final class ModuleTargetMapper
+            extends AbstractAttributeMapper<ModuleTargetAttribute> {
         public static final ModuleTargetMapper INSTANCE = new ModuleTargetMapper();
 
         private ModuleTargetMapper() {
@@ -525,7 +545,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class NestHostMapper extends AbstractAttributeMapper<NestHostAttribute> {
+    public static final class NestHostMapper
+            extends AbstractAttributeMapper<NestHostAttribute> {
         public static final NestHostMapper INSTANCE = new NestHostMapper();
 
         private NestHostMapper() {
@@ -543,7 +564,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class NestMembersMapper extends AbstractAttributeMapper<NestMembersAttribute> {
+    public static final class NestMembersMapper
+            extends AbstractAttributeMapper<NestMembersAttribute> {
         public static final NestMembersMapper INSTANCE = new NestMembersMapper();
 
         private NestMembersMapper() {
@@ -561,7 +583,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class PermittedSubclassesMapper extends AbstractAttributeMapper<PermittedSubclassesAttribute> {
+    public static final class PermittedSubclassesMapper
+            extends AbstractAttributeMapper<PermittedSubclassesAttribute> {
         public static final PermittedSubclassesMapper INSTANCE = new PermittedSubclassesMapper();
 
         private PermittedSubclassesMapper() {
@@ -579,7 +602,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class RecordMapper extends AbstractAttributeMapper<RecordAttribute> {
+    public static final class RecordMapper
+            extends AbstractAttributeMapper<RecordAttribute> {
         public static final RecordMapper INSTANCE = new RecordMapper();
 
         private RecordMapper() {
@@ -597,14 +621,16 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
             BufWriterImpl buf = (BufWriterImpl) bufWriter;
             buf.writeU2(components.size());
             for (RecordComponentInfo info : components) {
-                buf.writeU2U2(buf.cpIndex(info.name()),
+                buf.writeU2U2(
+                        buf.cpIndex(info.name()),
                         buf.cpIndex(info.descriptor()));
                 Util.writeAttributes(buf, info.attributes());
             }
         }
     }
 
-    public static final class RuntimeInvisibleAnnotationsMapper extends AbstractAttributeMapper<RuntimeInvisibleAnnotationsAttribute> {
+    public static final class RuntimeInvisibleAnnotationsMapper
+            extends AbstractAttributeMapper<RuntimeInvisibleAnnotationsAttribute> {
         public static final RuntimeInvisibleAnnotationsMapper INSTANCE = new RuntimeInvisibleAnnotationsMapper();
 
         private RuntimeInvisibleAnnotationsMapper() {
@@ -622,7 +648,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class RuntimeInvisibleParameterAnnotationsMapper extends AbstractAttributeMapper<RuntimeInvisibleParameterAnnotationsAttribute> {
+    public static final class RuntimeInvisibleParameterAnnotationsMapper
+            extends AbstractAttributeMapper<RuntimeInvisibleParameterAnnotationsAttribute> {
         public static final RuntimeInvisibleParameterAnnotationsMapper INSTANCE = new RuntimeInvisibleParameterAnnotationsMapper();
 
         private RuntimeInvisibleParameterAnnotationsMapper() {
@@ -643,7 +670,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class RuntimeInvisibleTypeAnnotationsMapper extends AbstractAttributeMapper<RuntimeInvisibleTypeAnnotationsAttribute> {
+    public static final class RuntimeInvisibleTypeAnnotationsMapper
+            extends AbstractAttributeMapper<RuntimeInvisibleTypeAnnotationsAttribute> {
         public static final RuntimeInvisibleTypeAnnotationsMapper INSTANCE = new RuntimeInvisibleTypeAnnotationsMapper();
 
         private RuntimeInvisibleTypeAnnotationsMapper() {
@@ -661,7 +689,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class RuntimeVisibleAnnotationsMapper extends AbstractAttributeMapper<RuntimeVisibleAnnotationsAttribute> {
+    public static final class RuntimeVisibleAnnotationsMapper
+            extends AbstractAttributeMapper<RuntimeVisibleAnnotationsAttribute> {
         public static final RuntimeVisibleAnnotationsMapper INSTANCE = new RuntimeVisibleAnnotationsMapper();
 
         private RuntimeVisibleAnnotationsMapper() {
@@ -679,7 +708,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class RuntimeVisibleParameterAnnotationsMapper extends AbstractAttributeMapper<RuntimeVisibleParameterAnnotationsAttribute> {
+    public static final class RuntimeVisibleParameterAnnotationsMapper
+            extends AbstractAttributeMapper<RuntimeVisibleParameterAnnotationsAttribute> {
         public static final RuntimeVisibleParameterAnnotationsMapper INSTANCE = new RuntimeVisibleParameterAnnotationsMapper();
 
         private RuntimeVisibleParameterAnnotationsMapper() {
@@ -700,7 +730,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class RuntimeVisibleTypeAnnotationsMapper extends AbstractAttributeMapper<RuntimeVisibleTypeAnnotationsAttribute> {
+    public static final class RuntimeVisibleTypeAnnotationsMapper
+            extends AbstractAttributeMapper<RuntimeVisibleTypeAnnotationsAttribute> {
         public static final RuntimeVisibleTypeAnnotationsMapper INSTANCE = new RuntimeVisibleTypeAnnotationsMapper();
 
         private RuntimeVisibleTypeAnnotationsMapper() {
@@ -718,7 +749,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class SignatureMapper extends AbstractAttributeMapper<SignatureAttribute> {
+    public static final class SignatureMapper
+            extends AbstractAttributeMapper<SignatureAttribute> {
         public static final SignatureMapper INSTANCE = new SignatureMapper();
 
         private SignatureMapper() {
@@ -754,7 +786,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class SourceFileMapper extends AbstractAttributeMapper<SourceFileAttribute> {
+    public static final class SourceFileMapper
+            extends AbstractAttributeMapper<SourceFileAttribute> {
         public static final SourceFileMapper INSTANCE = new SourceFileMapper();
 
         private SourceFileMapper() {
@@ -772,7 +805,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class SourceIDMapper extends AbstractAttributeMapper<SourceIDAttribute> {
+    public static final class SourceIDMapper
+            extends AbstractAttributeMapper<SourceIDAttribute> {
         public static final SourceIDMapper INSTANCE = new SourceIDMapper();
 
         private SourceIDMapper() {
@@ -790,7 +824,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class StackMapTableMapper extends AbstractAttributeMapper<StackMapTableAttribute> {
+    public static final class StackMapTableMapper
+            extends AbstractAttributeMapper<StackMapTableAttribute> {
         public static final StackMapTableMapper INSTANCE = new StackMapTableMapper();
 
         private StackMapTableMapper() {
@@ -799,7 +834,7 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
 
         @Override
         public StackMapTableAttribute readAttribute(AttributedElement e, ClassReader cf, int p) {
-            return new BoundAttribute.BoundStackMapTableAttribute((CodeImpl)e, cf, this, p);
+            return new BoundAttribute.BoundStackMapTableAttribute((CodeImpl) e, cf, this, p);
         }
 
         @Override
@@ -808,7 +843,8 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
         }
     }
 
-    public static final class SyntheticMapper extends AbstractAttributeMapper<SyntheticAttribute> {
+    public static final class SyntheticMapper
+            extends AbstractAttributeMapper<SyntheticAttribute> {
         public static final SyntheticMapper INSTANCE = new SyntheticMapper();
 
         private SyntheticMapper() {

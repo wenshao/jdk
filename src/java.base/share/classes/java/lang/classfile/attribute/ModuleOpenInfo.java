@@ -24,15 +24,14 @@
  */
 package java.lang.classfile.attribute;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
 import java.lang.classfile.constantpool.ModuleEntry;
 import java.lang.classfile.constantpool.PackageEntry;
 import java.lang.constant.ModuleDesc;
 import java.lang.constant.PackageDesc;
 import java.lang.reflect.AccessFlag;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.UnboundAttribute;
@@ -89,8 +88,7 @@ public sealed interface ModuleOpenInfo
      * @param opensFlags the open flags
      * @param opensTo the packages to which this package is opened, if it is a qualified open
      */
-    static ModuleOpenInfo of(PackageEntry opens, int opensFlags,
-                             List<ModuleEntry> opensTo) {
+    static ModuleOpenInfo of(PackageEntry opens, int opensFlags, List<ModuleEntry> opensTo) {
         return new UnboundAttribute.UnboundModuleOpenInfo(opens, opensFlags, opensTo);
     }
 
@@ -100,8 +98,7 @@ public sealed interface ModuleOpenInfo
      * @param opensFlags the open flags
      * @param opensTo the packages to which this package is opened, if it is a qualified open
      */
-    static ModuleOpenInfo of(PackageEntry opens, Collection<AccessFlag> opensFlags,
-                             List<ModuleEntry> opensTo) {
+    static ModuleOpenInfo of(PackageEntry opens, Collection<AccessFlag> opensFlags, List<ModuleEntry> opensTo) {
         return of(opens, Util.flagsToBits(AccessFlag.Location.MODULE_OPENS, opensFlags), opensTo);
     }
 
@@ -111,9 +108,7 @@ public sealed interface ModuleOpenInfo
      * @param opensFlags the open flags
      * @param opensTo the packages to which this package is opened, if it is a qualified open
      */
-    static ModuleOpenInfo of(PackageEntry opens,
-                             int opensFlags,
-                             ModuleEntry... opensTo) {
+    static ModuleOpenInfo of(PackageEntry opens, int opensFlags, ModuleEntry... opensTo) {
         return of(opens, opensFlags, List.of(opensTo));
     }
 
@@ -123,9 +118,11 @@ public sealed interface ModuleOpenInfo
      * @param opensFlags the open flags
      * @param opensTo the packages to which this package is opened, if it is a qualified open
      */
-    static ModuleOpenInfo of(PackageEntry opens,
-                             Collection<AccessFlag> opensFlags,
-                             ModuleEntry... opensTo) {
+    static ModuleOpenInfo of(
+            PackageEntry opens,
+            Collection<AccessFlag> opensFlags,
+            ModuleEntry... opensTo
+    ) {
         return of(opens, Util.flagsToBits(AccessFlag.Location.MODULE_OPENS, opensFlags), opensTo);
     }
 
@@ -135,9 +132,10 @@ public sealed interface ModuleOpenInfo
      * @param opensFlags the open flags
      * @param opensTo the packages to which this package is opened, if it is a qualified open
      */
-    static ModuleOpenInfo of(PackageDesc opens, int opensFlags,
-                             List<ModuleDesc> opensTo) {
-        return of(TemporaryConstantPool.INSTANCE.packageEntry(TemporaryConstantPool.INSTANCE.utf8Entry(opens.internalName())),
+    static ModuleOpenInfo of(PackageDesc opens, int opensFlags, List<ModuleDesc> opensTo) {
+        return of(
+                TemporaryConstantPool.INSTANCE.packageEntry(
+                        TemporaryConstantPool.INSTANCE.utf8Entry(opens.internalName())),
                 opensFlags,
                 Util.moduleEntryList(opensTo));
     }
@@ -148,8 +146,7 @@ public sealed interface ModuleOpenInfo
      * @param opensFlags the open flags
      * @param opensTo the packages to which this package is opened, if it is a qualified open
      */
-    static ModuleOpenInfo of(PackageDesc opens, Collection<AccessFlag> opensFlags,
-                             List<ModuleDesc> opensTo) {
+    static ModuleOpenInfo of(PackageDesc opens, Collection<AccessFlag> opensFlags, List<ModuleDesc> opensTo) {
         return of(opens, Util.flagsToBits(AccessFlag.Location.MODULE_OPENS, opensFlags), opensTo);
     }
 
@@ -159,9 +156,7 @@ public sealed interface ModuleOpenInfo
      * @param opensFlags the open flags
      * @param opensTo the packages to which this package is opened, if it is a qualified open
      */
-    static ModuleOpenInfo of(PackageDesc opens,
-                             int opensFlags,
-                             ModuleDesc... opensTo) {
+    static ModuleOpenInfo of(PackageDesc opens, int opensFlags, ModuleDesc... opensTo) {
         return of(opens, opensFlags, List.of(opensTo));
     }
 
@@ -171,9 +166,7 @@ public sealed interface ModuleOpenInfo
      * @param opensFlags the open flags
      * @param opensTo the packages to which this package is opened, if it is a qualified open
      */
-    static ModuleOpenInfo of(PackageDesc opens,
-                             Collection<AccessFlag> opensFlags,
-                             ModuleDesc... opensTo) {
+    static ModuleOpenInfo of(PackageDesc opens, Collection<AccessFlag> opensFlags, ModuleDesc... opensTo) {
         return of(opens, Util.flagsToBits(AccessFlag.Location.MODULE_OPENS, opensFlags), opensTo);
     }
 }

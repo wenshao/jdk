@@ -24,8 +24,8 @@
  */
 package java.lang.classfile.constantpool;
 
-import jdk.internal.classfile.impl.AbstractPoolEntry;
 import java.lang.constant.PackageDesc;
+import jdk.internal.classfile.impl.AbstractPoolEntry;
 import jdk.internal.javac.PreviewFeature;
 
 /**
@@ -36,7 +36,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface PackageEntry extends PoolEntry
+public sealed interface PackageEntry
+        extends PoolEntry
         permits AbstractPoolEntry.PackageEntryImpl {
     /**
      * {@return the package name}

@@ -26,8 +26,10 @@ package java.lang.classfile;
 
 import java.util.List;
 import jdk.internal.classfile.impl.SignaturesImpl;
-import static java.util.Objects.requireNonNull;
 import jdk.internal.javac.PreviewFeature;
+
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Models the generic signature of a class file, as defined by JVMS {@jvms 4.7.9}.
@@ -60,8 +62,10 @@ public sealed interface ClassSignature
      * @param superinterfaceSignatures the interfaces
      * @since 23
      */
-    public static ClassSignature of(Signature.ClassTypeSig superclassSignature,
-                                    Signature.ClassTypeSig... superinterfaceSignatures) {
+    public static ClassSignature of(
+            Signature.ClassTypeSig superclassSignature,
+            Signature.ClassTypeSig... superinterfaceSignatures
+    ) {
         return of(List.of(), superclassSignature, superinterfaceSignatures);
     }
 
@@ -72,9 +76,11 @@ public sealed interface ClassSignature
      * @param superinterfaceSignatures the interfaces
      * @since 23
      */
-    public static ClassSignature of(List<Signature.TypeParam> typeParameters,
-                                    Signature.ClassTypeSig superclassSignature,
-                                    Signature.ClassTypeSig... superinterfaceSignatures) {
+    public static ClassSignature of(
+            List<Signature.TypeParam> typeParameters,
+            Signature.ClassTypeSig superclassSignature,
+            Signature.ClassTypeSig... superinterfaceSignatures
+    ) {
         return new SignaturesImpl.ClassSignatureImpl(
                 List.copyOf(requireNonNull(typeParameters)),
                 requireNonNull(superclassSignature),

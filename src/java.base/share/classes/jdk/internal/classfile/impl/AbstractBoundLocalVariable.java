@@ -28,7 +28,8 @@ import java.lang.classfile.Label;
 import java.lang.classfile.constantpool.Utf8Entry;
 
 public class AbstractBoundLocalVariable
-        extends AbstractElement implements Util.WritableLocalVariable {
+        extends AbstractElement
+        implements Util.WritableLocalVariable {
     protected final CodeImpl code;
     protected final int offset;
     private Utf8Entry nameEntry;
@@ -72,7 +73,7 @@ public class AbstractBoundLocalVariable
     }
 
     public int length() {
-        return code.classReader.readU2(offset+2);
+        return code.classReader.readU2(offset + 2);
     }
 
     public int slot() {
@@ -91,8 +92,7 @@ public class AbstractBoundLocalVariable
         b.writeU2U2(startBci, length);
         if (b.canWriteDirect(code.constantPool())) {
             b.writeU2U2(nameIndex(), secondaryIndex());
-        }
-        else {
+        } else {
             b.writeU2U2(b.cpIndex(name()), b.cpIndex(secondaryEntry()));
         }
         b.writeU2(slot());

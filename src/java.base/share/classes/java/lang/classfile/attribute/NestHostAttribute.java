@@ -29,6 +29,7 @@ import java.lang.constant.ClassDesc;
 import java.lang.classfile.Attribute;
 import java.lang.classfile.ClassElement;
 import java.lang.classfile.constantpool.ClassEntry;
+
 import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.UnboundAttribute;
@@ -49,7 +50,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface NestHostAttribute extends Attribute<NestHostAttribute>, ClassElement
+public sealed interface NestHostAttribute
+        extends Attribute<NestHostAttribute>, ClassElement
         permits BoundAttribute.BoundNestHostAttribute,
                 UnboundAttribute.UnboundNestHostAttribute {
 

@@ -29,8 +29,10 @@ import java.lang.reflect.Modifier;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Objects;
+
 import jdk.internal.classfile.impl.ClassHierarchyImpl;
 import jdk.internal.classfile.impl.Util;
+
 import static jdk.internal.classfile.impl.verifier.VerifierImpl.*;
 import static jdk.internal.classfile.impl.verifier.VerificationSignature.BasicType.*;
 
@@ -39,20 +41,19 @@ import static jdk.internal.classfile.impl.verifier.VerificationSignature.BasicTy
  * @see <a href="https://raw.githubusercontent.com/openjdk/jdk/master/src/hotspot/share/classfile/verificationType.cpp">hotspot/share/classfile/verificationType.cpp</a>
  */
 class VerificationType {
-
     private static final int BitsPerByte = 8;
 
     static final int
-            ITEM_Top = 0,
-            ITEM_Integer = 1,
-            ITEM_Float = 2,
-            ITEM_Double = 3,
-            ITEM_Long = 4,
-            ITEM_Null = 5,
+            ITEM_Top               = 0,
+            ITEM_Integer           = 1,
+            ITEM_Float             = 2,
+            ITEM_Double            = 3,
+            ITEM_Long              = 4,
+            ITEM_Null              = 5,
             ITEM_UninitializedThis = 6,
-            ITEM_Object = 7,
-            ITEM_Uninitialized = 8,
-            ITEM_Bogus = -1;
+            ITEM_Object            = 7,
+            ITEM_Uninitialized     = 8,
+            ITEM_Bogus             = -1;
 
     VerificationType(String sym) {
         _data = 0x100;
@@ -99,63 +100,64 @@ class VerificationType {
             ITEM_Long_2nd = 13, ITEM_Double_2nd = 14;
 
     private static final int
-                            TypeMask                     = 0x00000003,
+                            TypeMask                 = 0x00000003,
                             // Topmost types encoding
-                            Reference                    = 0x0,                // _sym contains the name
-                            Primitive                    = 0x1,                // see below for primitive list
-                            Uninitialized            = 0x2,                // 0x00ffff00 contains bci
-                            TypeQuery                    = 0x3,                // Meta-types used for category testing
+                            Reference                = 0x0,              // _sym contains the name
+                            Primitive                = 0x1,              // see below for primitive list
+                            Uninitialized            = 0x2,              // 0x00ffff00 contains bci
+                            TypeQuery                = 0x3,              // Meta-types used for category testing
                             // Utility flags
                             ReferenceFlag            = 0x00,             // For reference query types
                             Category1Flag            = 0x01,             // One-word values
                             Category2Flag            = 0x02,             // First word of a two-word value
-                            Category2_2ndFlag    = 0x04,             // Second word of a two-word value
+                            Category2_2ndFlag        = 0x04,             // Second word of a two-word value
                             // special reference values
-                            Null                             = 0x00000000, // A reference with a 0 sym is null
+                            Null                     = 0x00000000,       // A reference with a 0 sym is null
                             // Primitives categories (the second byte determines the category)
-                            Category1                    = (Category1Flag         << BitsPerByte) | Primitive,
-                            Category2                    = (Category2Flag         << BitsPerByte) | Primitive,
+                            Category1                = (Category1Flag     << BitsPerByte) | Primitive,
+                            Category2                = (Category2Flag     << BitsPerByte) | Primitive,
                             Category2_2nd            = (Category2_2ndFlag << BitsPerByte) | Primitive,
                             // Primitive values (type discriminator stored in most-significant bytes)
                             // Bogus needs the " | Primitive".    Else, isReference(Bogus) returns TRUE.
-                            Bogus                            = (ITEM_Bogus            << 2 * BitsPerByte) | Primitive,
-                            Boolean                        = (ITEM_Boolean        << 2 * BitsPerByte) | Category1,
-                            Byte                             = (ITEM_Byte             << 2 * BitsPerByte) | Category1,
-                            Short                            = (ITEM_Short            << 2 * BitsPerByte) | Category1,
-                            Char                             = (ITEM_Char             << 2 * BitsPerByte) | Category1,
-                            Integer                        = (ITEM_Integer        << 2 * BitsPerByte) | Category1,
-                            Float                            = (ITEM_Float            << 2 * BitsPerByte) | Category1,
-                            Long                             = (ITEM_Long             << 2 * BitsPerByte) | Category2,
-                            Double                         = (ITEM_Double         << 2 * BitsPerByte) | Category2,
-                            Long_2nd                     = (ITEM_Long_2nd     << 2 * BitsPerByte) | Category2_2nd,
-                            Double_2nd                 = (ITEM_Double_2nd << 2 * BitsPerByte) | Category2_2nd,
+                            Bogus                    = (ITEM_Bogus      << 2 * BitsPerByte) | Primitive,
+                            Boolean                  = (ITEM_Boolean    << 2 * BitsPerByte) | Category1,
+                            Byte                     = (ITEM_Byte       << 2 * BitsPerByte) | Category1,
+                            Short                    = (ITEM_Short      << 2 * BitsPerByte) | Category1,
+                            Char                     = (ITEM_Char       << 2 * BitsPerByte) | Category1,
+                            Integer                  = (ITEM_Integer    << 2 * BitsPerByte) | Category1,
+                            Float                    = (ITEM_Float      << 2 * BitsPerByte) | Category1,
+                            Long                     = (ITEM_Long       << 2 * BitsPerByte) | Category2,
+                            Double                   = (ITEM_Double     << 2 * BitsPerByte) | Category2,
+                            Long_2nd                 = (ITEM_Long_2nd   << 2 * BitsPerByte) | Category2_2nd,
+                            Double_2nd               = (ITEM_Double_2nd << 2 * BitsPerByte) | Category2_2nd,
                             // Used by Uninitialized (second and third bytes hold the bci)
-                            BciMask                        = 0xffff << BitsPerByte,
+                            BciMask                  = 0xffff << BitsPerByte,
                             // A bci of -1 is an Uninitialized-This
-                            BciForThis = 0xffff,
+                            BciForThis               = 0xffff,
                             // Query values
-                            ReferenceQuery         = (ReferenceFlag         << BitsPerByte) | TypeQuery,
-                            Category1Query         = (Category1Flag         << BitsPerByte) | TypeQuery,
-                            Category2Query         = (Category2Flag         << BitsPerByte) | TypeQuery,
-                            Category2_2ndQuery = (Category2_2ndFlag << BitsPerByte) | TypeQuery;
+                            ReferenceQuery           = (ReferenceFlag     << BitsPerByte) | TypeQuery,
+                            Category1Query           = (Category1Flag     << BitsPerByte) | TypeQuery,
+                            Category2Query           = (Category2Flag     << BitsPerByte) | TypeQuery,
+                            Category2_2ndQuery       = (Category2_2ndFlag << BitsPerByte) | TypeQuery;
 
     VerificationType(int raw_data) {
         this._data = raw_data;
         this._sym = null;
     }
 
-    static final VerificationType bogus_type = new VerificationType(Bogus),
-            null_type = new VerificationType(Null),
-            integer_type = new VerificationType(Integer),
-            float_type = new VerificationType(Float),
-            long_type = new VerificationType(Long),
-            long2_type = new VerificationType(Long_2nd),
-            double_type = new VerificationType(Double),
-            boolean_type = new VerificationType(Boolean),
-            byte_type = new VerificationType(Byte),
-            char_type = new VerificationType(Char),
-            short_type = new VerificationType(Short),
-            double2_type = new VerificationType(Double_2nd),
+    static final VerificationType
+            bogus_type      = new VerificationType(Bogus),
+            null_type       = new VerificationType(Null),
+            integer_type    = new VerificationType(Integer),
+            float_type      = new VerificationType(Float),
+            long_type       = new VerificationType(Long),
+            long2_type      = new VerificationType(Long_2nd),
+            double_type     = new VerificationType(Double),
+            boolean_type    = new VerificationType(Boolean),
+            byte_type       = new VerificationType(Byte),
+            char_type       = new VerificationType(Char),
+            short_type      = new VerificationType(Short),
+            double2_type    = new VerificationType(Double_2nd),
             // "check" types are used for queries.    A "check" type is not assignable
             // to anything, but the specified types are assignable to a "check".    For
             // example, any category1 primitive is assignable to category1_check and
@@ -315,27 +317,14 @@ class VerificationType {
         if (equals(from) || is_bogus()) {
             return true;
         } else {
-            switch(_data) {
-                case Category1Query:
-                    return from.is_category1(context);
-                case Category2Query:
-                    return from.is_category2();
-                case Category2_2ndQuery:
-                    return from.is_category2_2nd();
-                case ReferenceQuery:
-                    return from.is_reference() || from.is_uninitialized();
-                case Boolean:
-                case Byte:
-                case Char:
-                case Short:
-                    return from.is_integer();
-                default:
-                    if (is_reference() && from.is_reference()) {
-                        return is_reference_assignable_from(from, context);
-                    } else {
-                        return false;
-                    }
-            }
+            return switch(_data) {
+                case Category1Query             -> from.is_category1(context);
+                case Category2Query             -> from.is_category2();
+                case Category2_2ndQuery         -> from.is_category2_2nd();
+                case ReferenceQuery             -> from.is_reference() || from.is_uninitialized();
+                case Boolean, Byte, Char, Short -> from.is_integer();
+                default -> is_reference() && from.is_reference() ? is_reference_assignable_from(from, context) : false;
+            };
         }
     }
 
@@ -345,15 +334,10 @@ class VerificationType {
         if (equals(from) || is_bogus()) {
             return true;
         } else {
-            switch (_data) {
-                case Boolean:
-                case Byte:
-                case Char:
-                case Short:
-                    return false;
-                default:
-                    return is_assignable_from(from, context);
-            }
+            return switch (_data) {
+                case Boolean, Byte, Char, Short -> false;
+                default -> is_assignable_from(from, context);
+            };
         }
     }
 
@@ -365,17 +349,18 @@ class VerificationType {
     }
 
     static VerificationType from_tag(int tag, VerifierImpl context) {
-        switch (tag) {
-            case ITEM_Top:         return bogus_type;
-            case ITEM_Integer: return integer_type;
-            case ITEM_Float:     return float_type;
-            case ITEM_Double:    return double_type;
-            case ITEM_Long:        return long_type;
-            case ITEM_Null:        return null_type;
-            default:
+        return switch (tag) {
+            case ITEM_Top     -> bogus_type;
+            case ITEM_Integer -> integer_type;
+            case ITEM_Float   -> float_type;
+            case ITEM_Double  -> double_type;
+            case ITEM_Long    -> long_type;
+            case ITEM_Null    -> null_type;
+            default -> {
                 context.verifyError("Should not reach here");
-                return bogus_type;
-        }
+                yield  bogus_type;
+            }
+        };
     }
 
     boolean resolve_and_check_assignability(ClassHierarchyImpl assignResolver, String name, String from_name, boolean from_is_array, boolean from_is_object) {
@@ -416,23 +401,21 @@ class VerificationType {
         if (!(is_array() && name().length() >= 2)) context.verifyError("Must be a valid array");
         var ss = new VerificationSignature(name(), false, context);
         ss.skipArrayPrefix(1);
-        switch (ss.type()) {
-            case T_BOOLEAN: return VerificationType.boolean_type;
-            case T_BYTE:        return VerificationType.byte_type;
-            case T_CHAR:        return VerificationType.char_type;
-            case T_SHORT:     return VerificationType.short_type;
-            case T_INT:         return VerificationType.integer_type;
-            case T_LONG:        return VerificationType.long_type;
-            case T_FLOAT:     return VerificationType.float_type;
-            case T_DOUBLE:    return VerificationType.double_type;
-            case T_ARRAY:
-            case T_OBJECT: {
+        return switch (ss.type()) {
+            case T_BOOLEAN -> VerificationType.boolean_type;
+            case T_BYTE    -> VerificationType.byte_type;
+            case T_CHAR    -> VerificationType.char_type;
+            case T_SHORT   -> VerificationType.short_type;
+            case T_INT     -> VerificationType.integer_type;
+            case T_LONG    -> VerificationType.long_type;
+            case T_FLOAT   -> VerificationType.float_type;
+            case T_DOUBLE  -> VerificationType.double_type;
+            case T_ARRAY, T_OBJECT -> {
                 if (!(ss.isReference())) context.verifyError("Unchecked verifier input");
                 String component = ss.asSymbol();
-                return VerificationType.reference_type(component);
-         }
-         default:
-             return VerificationType.bogus_type;
-        }
+                yield  VerificationType.reference_type(component);
+            }
+            default -> VerificationType.bogus_type;
+        };
     }
 }

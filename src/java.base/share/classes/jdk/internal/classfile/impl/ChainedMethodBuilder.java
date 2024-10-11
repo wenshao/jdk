@@ -24,24 +24,19 @@
  */
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.*;
+import java.lang.classfile.constantpool.ConstantPoolBuilder;
 import java.util.function.Consumer;
 
-import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.CodeModel;
-import java.lang.classfile.CodeTransform;
-import java.lang.classfile.MethodBuilder;
-import java.lang.classfile.MethodElement;
-import java.lang.classfile.constantpool.ConstantPoolBuilder;
-
-public final class ChainedMethodBuilder implements MethodBuilder {
+public final class ChainedMethodBuilder
+        implements MethodBuilder {
     final TerminalMethodBuilder terminal;
     final Consumer<MethodElement> consumer;
 
-    public ChainedMethodBuilder(MethodBuilder downstream,
-                                Consumer<MethodElement> consumer) {
+    public ChainedMethodBuilder(MethodBuilder downstream, Consumer<MethodElement> consumer) {
         this.consumer = consumer;
         this.terminal = switch (downstream) {
-            case ChainedMethodBuilder cb -> cb.terminal;
+            case ChainedMethodBuilder  cb -> cb.terminal;
             case TerminalMethodBuilder tb -> tb;
         };
     }
@@ -55,8 +50,8 @@ public final class ChainedMethodBuilder implements MethodBuilder {
     @Override
     public MethodBuilder withCode(Consumer<? super CodeBuilder> handler) {
         consumer.accept(terminal.bufferedCodeBuilder(null)
-                                       .run(handler)
-                                       .toModel());
+                                .run(handler)
+                                .toModel());
         return this;
     }
 

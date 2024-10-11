@@ -25,10 +25,11 @@
 
 package java.lang.classfile.constantpool;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 import java.lang.classfile.BootstrapMethodEntry;
 import java.lang.classfile.ClassReader;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 import jdk.internal.javac.PreviewFeature;
 
 /**
@@ -40,7 +41,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface ConstantPool extends Iterable<PoolEntry>
+public sealed interface ConstantPool
+        extends Iterable<PoolEntry>
         permits ClassReader, ConstantPoolBuilder {
 
     /**

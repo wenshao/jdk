@@ -29,10 +29,10 @@ import java.lang.classfile.constantpool.ConstantPool;
 import java.lang.classfile.constantpool.ConstantPoolException;
 import java.lang.classfile.constantpool.PoolEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
-import jdk.internal.classfile.impl.ClassReaderImpl;
-
 import java.util.Optional;
 import java.util.function.Function;
+
+import jdk.internal.classfile.impl.ClassReaderImpl;
 import jdk.internal.javac.PreviewFeature;
 
 /**
@@ -45,7 +45,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface ClassReader extends ConstantPool
+public sealed interface ClassReader
+        extends ConstantPool
         permits ClassReaderImpl {
 
     // Processing context

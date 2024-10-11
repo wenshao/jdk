@@ -24,12 +24,12 @@
  */
 package java.lang.classfile.instruction;
 
-import java.util.List;
-
 import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.Instruction;
 import java.lang.classfile.Label;
+import java.util.List;
+
 import jdk.internal.classfile.impl.AbstractInstruction;
 import jdk.internal.javac.PreviewFeature;
 
@@ -41,7 +41,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface LookupSwitchInstruction extends Instruction
+public sealed interface LookupSwitchInstruction
+        extends Instruction
         permits AbstractInstruction.BoundLookupSwitchInstruction,
                 AbstractInstruction.UnboundLookupSwitchInstruction {
     /**

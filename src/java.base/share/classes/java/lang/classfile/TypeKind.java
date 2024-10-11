@@ -29,6 +29,7 @@ import java.lang.classfile.instruction.DiscontinuedInstruction;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.invoke.TypeDescriptor;
+
 import jdk.internal.javac.PreviewFeature;
 import jdk.internal.vm.annotation.Stable;
 
@@ -149,16 +150,16 @@ public enum TypeKind {
 
     private ClassDesc fetchUpperBound() {
         return switch (this) {
-            case BOOLEAN -> ConstantDescs.CD_boolean;
-            case BYTE -> ConstantDescs.CD_byte;
-            case CHAR -> ConstantDescs.CD_char;
-            case SHORT -> ConstantDescs.CD_short;
-            case INT -> ConstantDescs.CD_int;
-            case FLOAT -> ConstantDescs.CD_float;
-            case LONG -> ConstantDescs.CD_long;
-            case DOUBLE -> ConstantDescs.CD_double;
+            case BOOLEAN   -> ConstantDescs.CD_boolean;
+            case BYTE      -> ConstantDescs.CD_byte;
+            case CHAR      -> ConstantDescs.CD_char;
+            case SHORT     -> ConstantDescs.CD_short;
+            case INT       -> ConstantDescs.CD_int;
+            case FLOAT     -> ConstantDescs.CD_float;
+            case LONG      -> ConstantDescs.CD_long;
+            case DOUBLE    -> ConstantDescs.CD_double;
             case REFERENCE -> ConstantDescs.CD_Object;
-            case VOID -> ConstantDescs.CD_void;
+            case VOID      -> ConstantDescs.CD_void;
         };
     }
 
@@ -202,12 +203,12 @@ public enum TypeKind {
      */
     public static TypeKind fromNewarrayCode(int newarrayCode) {
         return switch (newarrayCode) {
-            case 4 -> BOOLEAN;
-            case 5 -> CHAR;
-            case 6 -> FLOAT;
-            case 7 -> DOUBLE;
-            case 8 -> BYTE;
-            case 9 -> SHORT;
+            case 4  -> BOOLEAN;
+            case 5  -> CHAR;
+            case 6  -> FLOAT;
+            case 7  -> DOUBLE;
+            case 8  -> BYTE;
+            case 9  -> SHORT;
             case 10 -> INT;
             case 11 -> LONG;
             default -> throw new IllegalArgumentException("Bad newarray code: " + newarrayCode);
@@ -225,15 +226,15 @@ public enum TypeKind {
         }
         return switch (s.charAt(0)) {
             case '[', 'L' -> REFERENCE;
-            case 'B' -> BYTE;
-            case 'C' -> CHAR;
-            case 'Z' -> BOOLEAN;
-            case 'S' -> SHORT;
-            case 'I' -> INT;
-            case 'F' -> FLOAT;
-            case 'J' -> LONG;
-            case 'D' -> DOUBLE;
-            case 'V' -> VOID;
+            case 'B'      -> BYTE;
+            case 'C'      -> CHAR;
+            case 'Z'      -> BOOLEAN;
+            case 'S'      -> SHORT;
+            case 'I'      -> INT;
+            case 'F'      -> FLOAT;
+            case 'J'      -> LONG;
+            case 'D'      -> DOUBLE;
+            case 'V'      -> VOID;
             default -> throw new IllegalArgumentException("Bad type: " + s);
         };
     }

@@ -31,7 +31,6 @@ import java.util.Arrays;
  * @see <a href="https://raw.githubusercontent.com/openjdk/jdk/master/src/hotspot/share/classfile/stackMapFrame.cpp">hotspot/share/classfile/stackMapFrame.cpp</a>
  */
 class VerificationFrame {
-
     public static final int FLAG_THIS_UNINIT = 0x01;
 
     private int _offset;
@@ -42,7 +41,17 @@ class VerificationFrame {
     private final VerificationType[] _locals, _stack;
     private final VerifierImpl _verifier;
 
-    public VerificationFrame(int offset, int flags, int locals_size, int stack_size, int max_locals, int max_stack, VerificationType[] locals, VerificationType[] stack, VerifierImpl v) {
+    public VerificationFrame(
+            int offset,
+            int flags,
+            int locals_size,
+            int stack_size,
+            int max_locals,
+            int max_stack,
+            VerificationType[] locals,
+            VerificationType[] stack,
+            VerifierImpl v
+    ) {
         this._offset = offset;
         this._locals_size = locals_size;
         this._stack_size = stack_size;
@@ -243,26 +252,22 @@ class VerificationFrame {
             ss.next();
         }
         _locals_size = init_local_num;
-        switch (ss.type()) {
-            case T_OBJECT:
-            case T_ARRAY:
-            {
-                String sig = ss.asSymbol();
-                return VerificationType.reference_type(sig);
-            }
-            case T_INT:         return VerificationType.integer_type;
-            case T_BYTE:        return VerificationType.byte_type;
-            case T_CHAR:        return VerificationType.char_type;
-            case T_SHORT:     return VerificationType.short_type;
-            case T_BOOLEAN: return VerificationType.boolean_type;
-            case T_FLOAT:     return VerificationType.float_type;
-            case T_DOUBLE:    return VerificationType.double_type;
-            case T_LONG:        return VerificationType.long_type;
-            case T_VOID:        return VerificationType.bogus_type;
-            default:
+        return switch (ss.type()) {
+            case T_OBJECT, T_ARRAY -> VerificationType.reference_type(ss.asSymbol());
+            case T_INT             -> VerificationType.integer_type;
+            case T_BYTE            -> VerificationType.byte_type;
+            case T_CHAR            -> VerificationType.char_type;
+            case T_SHORT           -> VerificationType.short_type;
+            case T_BOOLEAN         -> VerificationType.boolean_type;
+            case T_FLOAT           -> VerificationType.float_type;
+            case T_DOUBLE          -> VerificationType.double_type;
+            case T_LONG            -> VerificationType.long_type;
+            case T_VOID            -> VerificationType.bogus_type;
+            default -> {
                 _verifier.verifyError("Should not reach here");
-                return VerificationType.bogus_type;
-        }
+                yield VerificationType.bogus_type;
+            }
+        };
     }
 
     void copy_locals(VerificationFrame src) {
@@ -367,7 +372,7 @@ class VerificationFrame {
         }
         _locals[index] = type;
         if (index >= _locals_size) {
-            for (int i=_locals_size; i<index; i++) {
+            for (int i = _locals_size; i < index; i++) {
                 if (_locals[i] != VerificationType.bogus_type) _verifier.verifyError("holes must be bogus type");
             }
             _locals_size = index + 1;
@@ -391,7 +396,7 @@ class VerificationFrame {
         _locals[index] = type1;
         _locals[index+1] = type2;
         if (index >= _locals_size - 1) {
-            for (int i=_locals_size; i<index; i++) {
+            for (int i = _locals_size; i < index; i++) {
                 if (_locals[i] != VerificationType.bogus_type) _verifier.verifyError("holes must be bogus type");
             }
             _locals_size = index + 2;

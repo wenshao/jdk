@@ -24,8 +24,6 @@
  */
 package java.lang.classfile.instruction;
 
-import java.lang.constant.ClassDesc;
-
 import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.constantpool.ClassEntry;
@@ -34,6 +32,8 @@ import java.lang.classfile.Opcode;
 import java.lang.classfile.constantpool.FieldRefEntry;
 import java.lang.classfile.constantpool.NameAndTypeEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.constant.ClassDesc;
+
 import jdk.internal.classfile.impl.AbstractInstruction;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.Util;
@@ -48,7 +48,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface FieldInstruction extends Instruction
+public sealed interface FieldInstruction
+        extends Instruction
         permits AbstractInstruction.BoundFieldInstruction, AbstractInstruction.UnboundFieldInstruction {
     /**
      * {@return the {@link FieldRefEntry} constant described by this instruction}
@@ -106,10 +107,12 @@ public sealed interface FieldInstruction extends Instruction
      * @param name the name of the field
      * @param type the field descriptor
      */
-    static FieldInstruction of(Opcode op,
-                               ClassEntry owner,
-                               Utf8Entry name,
-                               Utf8Entry type) {
+    static FieldInstruction of(
+            Opcode op,
+            ClassEntry owner,
+            Utf8Entry name,
+            Utf8Entry type
+    ) {
         return of(op, owner, TemporaryConstantPool.INSTANCE.nameAndTypeEntry(name, type));
     }
 
@@ -121,9 +124,11 @@ public sealed interface FieldInstruction extends Instruction
      * @param owner the class holding the field
      * @param nameAndType the name and field descriptor of the field
      */
-    static FieldInstruction of(Opcode op,
-                               ClassEntry owner,
-                               NameAndTypeEntry nameAndType) {
+    static FieldInstruction of(
+            Opcode op,
+            ClassEntry owner,
+            NameAndTypeEntry nameAndType
+    ) {
         return of(op, TemporaryConstantPool.INSTANCE.fieldRefEntry(owner, nameAndType));
     }
 }

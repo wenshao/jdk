@@ -29,12 +29,11 @@ import java.lang.classfile.attribute.RuntimeInvisibleParameterAnnotationsAttribu
 import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
 import java.lang.classfile.attribute.RuntimeVisibleParameterAnnotationsAttribute;
 import java.lang.classfile.constantpool.Utf8Entry;
-import jdk.internal.classfile.impl.AnnotationImpl;
-import jdk.internal.classfile.impl.TemporaryConstantPool;
-
 import java.lang.constant.ClassDesc;
 import java.util.List;
 
+import jdk.internal.classfile.impl.AnnotationImpl;
+import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.Util;
 import jdk.internal.javac.PreviewFeature;
 
@@ -94,8 +93,7 @@ public sealed interface Annotation
      *                        of the annotation interface
      * @param elements the element-value pairs of the annotation
      */
-    static Annotation of(Utf8Entry annotationClass,
-                         List<AnnotationElement> elements) {
+    static Annotation of(Utf8Entry annotationClass, List<AnnotationElement> elements) {
         return new AnnotationImpl(annotationClass, elements);
     }
 
@@ -105,8 +103,7 @@ public sealed interface Annotation
      *                        of the annotation interface
      * @param elements the element-value pairs of the annotation
      */
-    static Annotation of(Utf8Entry annotationClass,
-                         AnnotationElement... elements) {
+    static Annotation of(Utf8Entry annotationClass, AnnotationElement... elements) {
         return of(annotationClass, List.of(elements));
     }
 
@@ -115,8 +112,7 @@ public sealed interface Annotation
      * @param annotationClass the descriptor of the annotation interface
      * @param elements the element-value pairs of the annotation
      */
-    static Annotation of(ClassDesc annotationClass,
-                         List<AnnotationElement> elements) {
+    static Annotation of(ClassDesc annotationClass, List<AnnotationElement> elements) {
         return of(TemporaryConstantPool.INSTANCE.utf8Entry(annotationClass), elements);
     }
 
@@ -125,8 +121,7 @@ public sealed interface Annotation
      * @param annotationClass the descriptor of the annotation interface
      * @param elements the element-value pairs of the annotation
      */
-    static Annotation of(ClassDesc annotationClass,
-                         AnnotationElement... elements) {
+    static Annotation of(ClassDesc annotationClass, AnnotationElement... elements) {
         return of(TemporaryConstantPool.INSTANCE.utf8Entry(annotationClass), elements);
     }
 }

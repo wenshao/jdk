@@ -24,40 +24,25 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.CustomAttribute;
-import java.lang.classfile.FieldBuilder;
-import java.lang.classfile.MethodBuilder;
-import java.lang.classfile.PseudoInstruction;
-import java.lang.classfile.constantpool.PoolEntry;
-import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.classfile.*;
+import java.lang.classfile.attribute.CodeAttribute;
+import java.lang.classfile.components.ClassPrinter;
+import java.lang.classfile.constantpool.*;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
+import java.lang.constant.ModuleDesc;
+import java.lang.reflect.AccessFlag;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
-import java.lang.classfile.Attribute;
-import java.lang.classfile.AttributeMapper;
-import java.lang.classfile.Attributes;
-import java.lang.classfile.BufWriter;
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.Opcode;
-import java.lang.classfile.constantpool.ClassEntry;
-import java.lang.classfile.constantpool.ModuleEntry;
-import java.lang.classfile.constantpool.NameAndTypeEntry;
-import java.lang.constant.ModuleDesc;
-import java.lang.reflect.AccessFlag;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 
 import static java.lang.classfile.ClassFile.ACC_STATIC;
-import java.lang.classfile.attribute.CodeAttribute;
-import java.lang.classfile.components.ClassPrinter;
-import java.util.function.Consumer;
-
 import static jdk.internal.constant.PrimitiveClassDescImpl.CD_double;
 import static jdk.internal.constant.PrimitiveClassDescImpl.CD_long;
 import static jdk.internal.constant.PrimitiveClassDescImpl.CD_void;
@@ -68,12 +53,11 @@ import static jdk.internal.constant.PrimitiveClassDescImpl.CD_void;
  * name strings
  */
 public class Util {
-
-    private Util() {
-    }
+    private Util() { }
 
     public static <T> Consumer<Consumer<T>> writingAll(Iterable<T> container) {
-        record ForEachConsumer<T>(Iterable<T> container) implements Consumer<Consumer<T>> {
+        record ForEachConsumer<T>(Iterable<T> container)
+                implements Consumer<Consumer<T>> {
             @Override
             public void accept(Consumer<T> consumer) {
                 container.forEach(consumer);
@@ -83,7 +67,8 @@ public class Util {
     }
 
     public static Consumer<MethodBuilder> buildingCode(Consumer<? super CodeBuilder> codeHandler) {
-        record WithCodeMethodHandler(Consumer<? super CodeBuilder> codeHandler) implements Consumer<MethodBuilder> {
+        record WithCodeMethodHandler(Consumer<? super CodeBuilder> codeHandler)
+                implements Consumer<MethodBuilder> {
             @Override
             public void accept(MethodBuilder builder) {
                 builder.withCode(codeHandler);
@@ -93,7 +78,8 @@ public class Util {
     }
 
     public static Consumer<FieldBuilder> buildingFlags(int flags) {
-        record WithFlagFieldHandler(int flags) implements Consumer<FieldBuilder> {
+        record WithFlagFieldHandler(int flags)
+                implements Consumer<FieldBuilder> {
             @Override
             public void accept(FieldBuilder builder) {
                 builder.withFlags(flags);
@@ -104,8 +90,7 @@ public class Util {
 
     private static final int ATTRIBUTE_STABILITY_COUNT = AttributeMapper.AttributeStability.values().length;
 
-    public static boolean isAttributeAllowed(final Attribute<?> attr,
-                                             final ClassFileImpl context) {
+    public static boolean isAttributeAllowed(Attribute<?> attr, ClassFileImpl context) {
         return attr instanceof BoundAttribute
                 ? ATTRIBUTE_STABILITY_COUNT - attr.attributeMapper().stability().ordinal() > context.attributesProcessingOption().ordinal()
                 : true;
@@ -271,28 +256,30 @@ public class Util {
         return desc == CD_double || desc == CD_long;
     }
 
-    public static void dumpMethod(SplitConstantPool cp,
-                                  ClassDesc cls,
-                                  String methodName,
-                                  MethodTypeDesc methodDesc,
-                                  int acc,
-                                  RawBytecodeHelper.CodeRange bytecode,
-                                  Consumer<String> dump) {
-
+    public static void dumpMethod(
+            SplitConstantPool cp,
+            ClassDesc cls,
+            String methodName,
+            MethodTypeDesc methodDesc,
+            int acc,
+            RawBytecodeHelper.CodeRange bytecode,
+            Consumer<String> dump
+    ) {
         // try to dump debug info about corrupted bytecode
         try {
             var cc = ClassFile.of();
             var clm = cc.parse(cc.build(cp.classEntry(cls), cp, clb ->
                     clb.withMethod(methodName, methodDesc, acc, mb ->
-                            ((DirectMethodBuilder)mb).writeAttribute(new UnboundAttribute.AdHocAttribute<CodeAttribute>(Attributes.code()) {
-                                @Override
-                                public void writeBody(BufWriterImpl b) {
-                                    b.writeU2U2(-1, -1);//max stack & locals
-                                    b.writeInt(bytecode.length());
-                                    b.writeBytes(bytecode.array(), 0, bytecode.length());
-                                    b.writeU2U2(0, 0);//exception handlers & attributes
-                                }
-                    }))));
+                            ((DirectMethodBuilder)mb).writeAttribute(
+                                    new UnboundAttribute.AdHocAttribute<CodeAttribute>(Attributes.code()) {
+                                        @Override
+                                        public void writeBody(BufWriterImpl b) {
+                                            b.writeU2U2(-1, -1);//max stack & locals
+                                            b.writeInt(bytecode.length());
+                                            b.writeBytes(bytecode.array(), 0, bytecode.length());
+                                            b.writeU2U2(0, 0);//exception handlers & attributes
+                                        }
+                                    }))));
             ClassPrinter.toYaml(clm.methods().get(0).code().get(), ClassPrinter.Verbosity.TRACE_ALL, dump);
         } catch (Error | Exception _) {
             // fallback to bytecode hex dump

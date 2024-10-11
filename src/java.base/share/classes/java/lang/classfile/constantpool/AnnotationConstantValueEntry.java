@@ -45,7 +45,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface AnnotationConstantValueEntry extends PoolEntry
+public sealed interface AnnotationConstantValueEntry
+        extends PoolEntry
         permits DoubleEntry, FloatEntry, IntegerEntry, LongEntry, Utf8Entry {
 
     /**

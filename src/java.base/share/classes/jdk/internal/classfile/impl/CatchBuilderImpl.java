@@ -27,7 +27,6 @@ package jdk.internal.classfile.impl;
 import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.Label;
 import java.lang.classfile.Opcode;
-
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
 import java.util.HashSet;
@@ -36,7 +35,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public final class CatchBuilderImpl implements CodeBuilder.CatchBuilder {
+public final class CatchBuilderImpl
+        implements CodeBuilder.CatchBuilder {
     final CodeBuilder b;
     final BlockCodeBuilderImpl tryBlock;
     final Label tryCatchEnd;
@@ -51,12 +51,18 @@ public final class CatchBuilderImpl implements CodeBuilder.CatchBuilder {
     }
 
     @Override
-    public CodeBuilder.CatchBuilder catching(ClassDesc exceptionType, Consumer<CodeBuilder.BlockCodeBuilder> catchHandler) {
-        return catchingMulti(exceptionType == null ? List.of() : List.of(exceptionType), catchHandler);
+    public CodeBuilder.CatchBuilder catching(
+            ClassDesc exceptionType,
+            Consumer<CodeBuilder.BlockCodeBuilder> catchHandler) {
+        return catchingMulti(
+                exceptionType == null ? List.of() : List.of(exceptionType),
+                catchHandler);
     }
 
     @Override
-    public CodeBuilder.CatchBuilder catchingMulti(List<ClassDesc> exceptionTypes, Consumer<CodeBuilder.BlockCodeBuilder> catchHandler) {
+    public CodeBuilder.CatchBuilder catchingMulti(
+            List<ClassDesc> exceptionTypes,
+            Consumer<CodeBuilder.BlockCodeBuilder> catchHandler) {
         Objects.requireNonNull(exceptionTypes);
         Objects.requireNonNull(catchHandler);
 
@@ -85,8 +91,7 @@ public final class CatchBuilderImpl implements CodeBuilder.CatchBuilder {
         Label tryEnd = tryBlock.endLabel();
         if (exceptionTypes.isEmpty()) {
             catchBlock.exceptionCatchAll(tryStart, tryEnd, catchBlock.startLabel());
-        }
-        else {
+        } else {
             for (var exceptionType : exceptionTypes) {
                 catchBlock.exceptionCatch(tryStart, tryEnd, catchBlock.startLabel(), exceptionType);
             }

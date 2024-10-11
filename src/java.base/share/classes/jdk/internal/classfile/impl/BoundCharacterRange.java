@@ -31,7 +31,6 @@ import java.lang.classfile.instruction.CharacterRange;
 public final class BoundCharacterRange
         extends AbstractElement
         implements CharacterRange {
-
     private final CodeImpl code;
     private final int offset;
 

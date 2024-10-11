@@ -24,13 +24,12 @@
  */
 package java.lang.classfile.attribute;
 
-import java.lang.constant.ClassDesc;
-import java.util.Optional;
-import java.util.Set;
-
 import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.AccessFlag;
+import java.util.Optional;
+import java.util.Set;
 
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.UnboundAttribute;
@@ -91,8 +90,12 @@ public sealed interface InnerClassInfo
      * @param innerName the name of the inner class, if it is not anonymous
      * @param flags the inner class access flags
      */
-    static InnerClassInfo of(ClassEntry innerClass, Optional<ClassEntry> outerClass,
-                             Optional<Utf8Entry> innerName, int flags) {
+    static InnerClassInfo of(
+            ClassEntry innerClass,
+            Optional<ClassEntry> outerClass,
+            Optional<Utf8Entry> innerName,
+            int flags
+    ) {
         return new UnboundAttribute.UnboundInnerClassInfo(innerClass, outerClass, innerName, flags);
     }
 
@@ -105,10 +108,11 @@ public sealed interface InnerClassInfo
      * @throws IllegalArgumentException if {@code innerClass} or {@code outerClass} represents a primitive type
      */
     static InnerClassInfo of(ClassDesc innerClass, Optional<ClassDesc> outerClass, Optional<String> innerName, int flags) {
-        return new UnboundAttribute.UnboundInnerClassInfo(TemporaryConstantPool.INSTANCE.classEntry(innerClass),
-                                                          outerClass.map(TemporaryConstantPool.INSTANCE::classEntry),
-                                                          innerName.map(TemporaryConstantPool.INSTANCE::utf8Entry),
-                                                          flags);
+        return new UnboundAttribute.UnboundInnerClassInfo(
+                TemporaryConstantPool.INSTANCE.classEntry(innerClass),
+                outerClass.map(TemporaryConstantPool.INSTANCE::classEntry),
+                innerName.map(TemporaryConstantPool.INSTANCE::utf8Entry),
+                flags);
     }
 
     /**

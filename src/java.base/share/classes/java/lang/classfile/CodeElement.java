@@ -41,7 +41,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface CodeElement extends ClassFileElement
+public sealed interface CodeElement
+        extends ClassFileElement
         permits Instruction, PseudoInstruction,
                 CustomAttribute, RuntimeVisibleTypeAnnotationsAttribute, RuntimeInvisibleTypeAnnotationsAttribute,
                 StackMapTableAttribute {

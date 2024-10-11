@@ -25,10 +25,10 @@
 
 package java.lang.classfile.attribute;
 
-import java.util.List;
-
 import java.lang.classfile.Attribute;
 import java.lang.classfile.ClassElement;
+import java.util.List;
+
 import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.classfile.impl.UnboundAttribute;
 import jdk.internal.javac.PreviewFeature;
@@ -48,7 +48,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface RecordAttribute extends Attribute<RecordAttribute>, ClassElement
+public sealed interface RecordAttribute
+        extends Attribute<RecordAttribute>, ClassElement
         permits BoundAttribute.BoundRecordAttribute, UnboundAttribute.UnboundRecordAttribute {
 
     /**

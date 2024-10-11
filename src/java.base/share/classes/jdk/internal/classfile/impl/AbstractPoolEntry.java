@@ -24,33 +24,12 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.classfile.constantpool.ConstantPoolException;
 import java.lang.constant.*;
+import java.lang.classfile.constantpool.*;
 import java.lang.invoke.TypeDescriptor;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import java.lang.classfile.constantpool.ClassEntry;
-import java.lang.classfile.constantpool.ConstantDynamicEntry;
-import java.lang.classfile.constantpool.ConstantPool;
-import java.lang.classfile.constantpool.ConstantPoolBuilder;
-import java.lang.classfile.constantpool.DoubleEntry;
-import java.lang.classfile.constantpool.FieldRefEntry;
-import java.lang.classfile.constantpool.FloatEntry;
-import java.lang.classfile.constantpool.IntegerEntry;
-import java.lang.classfile.constantpool.InterfaceMethodRefEntry;
-import java.lang.classfile.constantpool.InvokeDynamicEntry;
-import java.lang.classfile.constantpool.LongEntry;
-import java.lang.classfile.constantpool.MemberRefEntry;
-import java.lang.classfile.constantpool.MethodHandleEntry;
-import java.lang.classfile.constantpool.MethodRefEntry;
-import java.lang.classfile.constantpool.MethodTypeEntry;
-import java.lang.classfile.constantpool.ModuleEntry;
-import java.lang.classfile.constantpool.NameAndTypeEntry;
-import java.lang.classfile.constantpool.PackageEntry;
-import java.lang.classfile.constantpool.PoolEntry;
-import java.lang.classfile.constantpool.StringEntry;
-import java.lang.classfile.constantpool.Utf8Entry;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.ArraysSupport;
@@ -101,7 +80,7 @@ public abstract sealed class AbstractPoolEntry {
     public static <T extends PoolEntry> T maybeClone(ConstantPoolBuilder cp, T entry) {
         if (cp.canWriteDirect(entry.constantPool()))
             return entry;
-        return (T)((AbstractPoolEntry)entry).clone(cp);
+        return (T) ((AbstractPoolEntry) entry).clone(cp);
     }
 
     final ConstantPool constantPool;
@@ -133,7 +112,9 @@ public abstract sealed class AbstractPoolEntry {
 
     abstract PoolEntry clone(ConstantPoolBuilder cp);
 
-    public static final class Utf8EntryImpl extends AbstractPoolEntry implements Utf8Entry {
+    public static final class Utf8EntryImpl
+            extends AbstractPoolEntry
+            implements Utf8Entry {
         // Processing UTF8 from the constant pool is one of the more expensive
         // operations, and often, we don't actually need access to the constant
         // as a string.  So there are multiple layers of laziness in UTF8
@@ -162,8 +143,7 @@ public abstract sealed class AbstractPoolEntry {
         // The descriptor symbol, if this is a descriptor
         @Stable TypeDescriptor typeSym;
 
-        Utf8EntryImpl(ConstantPool cpm, int index,
-                          byte[] rawBytes, int offset, int rawLen) {
+        Utf8EntryImpl(ConstantPool cpm, int index, byte[] rawBytes, int offset, int rawLen) {
             super(cpm, index, 0);
             this.rawBytes = rawBytes;
             this.offset = offset;
@@ -389,12 +369,10 @@ public abstract sealed class AbstractPoolEntry {
         }
 
         public boolean equalsUtf8(Utf8EntryImpl u) {
-            if (hashCode() != u.hashCode()
-                || length() != u.length())
+            if (hashCode() != u.hashCode() || length() != u.length())
                 return false;
             if (rawBytes != null && u.rawBytes != null)
-                return Arrays.equals(rawBytes, offset, offset + rawLen,
-                                     u.rawBytes, u.offset, u.offset + u.rawLen);
+                return Arrays.equals(rawBytes, offset, offset + rawLen, u.rawBytes, u.offset, u.offset + u.rawLen);
             else if ((state == State.STRING && u.state == State.STRING))
                 return stringValue.equals(u.stringValue);
             else
@@ -491,7 +469,8 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    abstract static sealed class AbstractRefEntry<T extends PoolEntry> extends AbstractPoolEntry {
+    abstract static sealed class AbstractRefEntry<T extends PoolEntry>
+            extends AbstractPoolEntry {
         protected final T ref1;
 
         public AbstractRefEntry(ConstantPool constantPool, int tag, int index, T ref1) {
@@ -542,8 +521,8 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    abstract static sealed class AbstractNamedEntry extends AbstractRefEntry<Utf8EntryImpl> {
-
+    abstract static sealed class AbstractNamedEntry
+            extends AbstractRefEntry<Utf8EntryImpl> {
         public AbstractNamedEntry(ConstantPool constantPool, int tag, int index, Utf8EntryImpl ref1) {
             super(constantPool, tag, index, ref1);
         }
@@ -557,8 +536,9 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class ClassEntryImpl extends AbstractNamedEntry implements ClassEntry {
-
+    public static final class ClassEntryImpl
+            extends AbstractNamedEntry
+            implements ClassEntry {
         public @Stable ClassDesc sym;
         private @Stable int hash;
 
@@ -626,8 +606,9 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class PackageEntryImpl extends AbstractNamedEntry implements PackageEntry {
-
+    public static final class PackageEntryImpl
+            extends AbstractNamedEntry
+            implements PackageEntry {
         PackageEntryImpl(ConstantPool cpm, int index, Utf8EntryImpl name) {
             super(cpm, TAG_PACKAGE, index, name);
         }
@@ -657,8 +638,9 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class ModuleEntryImpl extends AbstractNamedEntry implements ModuleEntry {
-
+    public static final class ModuleEntryImpl
+            extends AbstractNamedEntry
+            implements ModuleEntry {
         ModuleEntryImpl(ConstantPool cpm, int index, Utf8EntryImpl name) {
             super(cpm, TAG_MODULE, index, name);
         }
@@ -688,9 +670,9 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class NameAndTypeEntryImpl extends AbstractRefsEntry<Utf8EntryImpl, Utf8EntryImpl>
+    public static final class NameAndTypeEntryImpl
+            extends AbstractRefsEntry<Utf8EntryImpl, Utf8EntryImpl>
             implements NameAndTypeEntry {
-
         NameAndTypeEntryImpl(ConstantPool cpm, int index, Utf8EntryImpl name, Utf8EntryImpl type) {
             super(cpm, TAG_NAME_AND_TYPE, index, name, type);
         }
@@ -728,7 +710,6 @@ public abstract sealed class AbstractPoolEntry {
     public abstract static sealed class AbstractMemberRefEntry
             extends AbstractRefsEntry<ClassEntryImpl, NameAndTypeEntryImpl>
             implements MemberRefEntry {
-
         AbstractMemberRefEntry(ConstantPool cpm, int tag, int index, ClassEntryImpl owner,
                        NameAndTypeEntryImpl nameAndType) {
             super(cpm, tag, index, owner, nameAndType);
@@ -762,10 +743,15 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class FieldRefEntryImpl extends AbstractMemberRefEntry implements FieldRefEntry {
-
-        FieldRefEntryImpl(ConstantPool cpm, int index,
-                              ClassEntryImpl owner, NameAndTypeEntryImpl nameAndType) {
+    public static final class FieldRefEntryImpl
+            extends AbstractMemberRefEntry
+            implements FieldRefEntry {
+        FieldRefEntryImpl(
+                ConstantPool cpm,
+                int index,
+                ClassEntryImpl owner,
+                NameAndTypeEntryImpl nameAndType
+        ) {
             super(cpm, TAG_FIELDREF, index, owner, nameAndType);
         }
 
@@ -780,10 +766,15 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class MethodRefEntryImpl extends AbstractMemberRefEntry implements MethodRefEntry {
-
-        MethodRefEntryImpl(ConstantPool cpm, int index,
-                               ClassEntryImpl owner, NameAndTypeEntryImpl nameAndType) {
+    public static final class MethodRefEntryImpl
+            extends AbstractMemberRefEntry
+            implements MethodRefEntry {
+        MethodRefEntryImpl(
+                ConstantPool cpm,
+                int index,
+                ClassEntryImpl owner,
+                NameAndTypeEntryImpl nameAndType
+        ) {
             super(cpm, TAG_METHODREF, index, owner, nameAndType);
         }
 
@@ -798,10 +789,15 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class InterfaceMethodRefEntryImpl extends AbstractMemberRefEntry implements InterfaceMethodRefEntry {
-
-        InterfaceMethodRefEntryImpl(ConstantPool cpm, int index, ClassEntryImpl owner,
-                                        NameAndTypeEntryImpl nameAndType) {
+    public static final class InterfaceMethodRefEntryImpl
+            extends AbstractMemberRefEntry
+            implements InterfaceMethodRefEntry {
+        InterfaceMethodRefEntryImpl(
+                ConstantPool cpm,
+                int index,
+                ClassEntryImpl owner,
+                NameAndTypeEntryImpl nameAndType
+        ) {
             super(cpm, TAG_INTERFACE_METHODREF, index, owner, nameAndType);
         }
 
@@ -816,22 +812,32 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public abstract static sealed class AbstractDynamicConstantPoolEntry extends AbstractPoolEntry {
-
+    public abstract static sealed class AbstractDynamicConstantPoolEntry
+            extends AbstractPoolEntry {
         private final int bsmIndex;
         private BootstrapMethodEntryImpl bootstrapMethod;
         private final NameAndTypeEntryImpl nameAndType;
 
-        AbstractDynamicConstantPoolEntry(ConstantPool cpm, int index, int hash, BootstrapMethodEntryImpl bootstrapMethod,
-                                         NameAndTypeEntryImpl nameAndType) {
+        AbstractDynamicConstantPoolEntry(
+                ConstantPool cpm,
+                int index,
+                int hash,
+                BootstrapMethodEntryImpl bootstrapMethod,
+                NameAndTypeEntryImpl nameAndType
+        ) {
             super(cpm, index, hash);
             this.bsmIndex = bootstrapMethod.bsmIndex();
             this.bootstrapMethod = bootstrapMethod;
             this.nameAndType = nameAndType;
         }
 
-        AbstractDynamicConstantPoolEntry(ConstantPool cpm, int index, int hash, int bsmIndex,
-                                         NameAndTypeEntryImpl nameAndType) {
+        AbstractDynamicConstantPoolEntry(
+                ConstantPool cpm,
+                int index,
+                int hash,
+                int bsmIndex,
+                NameAndTypeEntryImpl nameAndType
+        ) {
             super(cpm, index, hash);
             this.bsmIndex = bsmIndex;
             this.bootstrapMethod = null;
@@ -887,14 +893,22 @@ public abstract sealed class AbstractPoolEntry {
     public static final class InvokeDynamicEntryImpl
             extends AbstractDynamicConstantPoolEntry
             implements InvokeDynamicEntry {
-
-        InvokeDynamicEntryImpl(ConstantPool cpm, int index, int hash, BootstrapMethodEntryImpl bootstrapMethod,
-                                   NameAndTypeEntryImpl nameAndType) {
+        InvokeDynamicEntryImpl(
+                ConstantPool cpm,
+                int index,
+                int hash,
+                BootstrapMethodEntryImpl bootstrapMethod,
+                NameAndTypeEntryImpl nameAndType
+        ) {
             super(cpm, index, hash, bootstrapMethod, nameAndType);
         }
 
-        InvokeDynamicEntryImpl(ConstantPool cpm, int index, int bsmIndex,
-                                   NameAndTypeEntryImpl nameAndType) {
+        InvokeDynamicEntryImpl(
+                ConstantPool cpm,
+                int index,
+                int bsmIndex,
+                NameAndTypeEntryImpl nameAndType
+        ) {
             super(cpm, index, hash2(TAG_INVOKE_DYNAMIC, bsmIndex, nameAndType.index()),
                   bsmIndex, nameAndType);
         }
@@ -910,16 +924,20 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class ConstantDynamicEntryImpl extends AbstractDynamicConstantPoolEntry
+    public static final class ConstantDynamicEntryImpl
+            extends AbstractDynamicConstantPoolEntry
             implements ConstantDynamicEntry {
-
-        ConstantDynamicEntryImpl(ConstantPool cpm, int index, int hash, BootstrapMethodEntryImpl bootstrapMethod,
-                                     NameAndTypeEntryImpl nameAndType) {
+        ConstantDynamicEntryImpl(
+                ConstantPool cpm,
+                int index,
+                int hash,
+                BootstrapMethodEntryImpl bootstrapMethod,
+                NameAndTypeEntryImpl nameAndType
+        ) {
             super(cpm, index, hash, bootstrapMethod, nameAndType);
         }
 
-        ConstantDynamicEntryImpl(ConstantPool cpm, int index, int bsmIndex,
-                                     NameAndTypeEntryImpl nameAndType) {
+        ConstantDynamicEntryImpl(ConstantPool cpm, int index, int bsmIndex, NameAndTypeEntryImpl nameAndType) {
             super(cpm, index, hash2(TAG_DYNAMIC, bsmIndex, nameAndType.index()),
                   bsmIndex, nameAndType);
         }
@@ -935,21 +953,31 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class MethodHandleEntryImpl extends AbstractPoolEntry
+    public static final class MethodHandleEntryImpl
+            extends AbstractPoolEntry
             implements MethodHandleEntry {
-
         private final int refKind;
         private final AbstractPoolEntry.AbstractMemberRefEntry reference;
 
-        MethodHandleEntryImpl(ConstantPool cpm, int index, int hash, int refKind, AbstractPoolEntry.AbstractMemberRefEntry
-                reference) {
+        MethodHandleEntryImpl(
+                ConstantPool cpm,
+                int index,
+                int hash,
+                int refKind,
+                AbstractPoolEntry.AbstractMemberRefEntry
+                reference
+        ) {
             super(cpm, index, hash);
             this.refKind = refKind;
             this.reference = reference;
         }
 
-        MethodHandleEntryImpl(ConstantPool cpm, int index, int refKind, AbstractPoolEntry.AbstractMemberRefEntry
-                reference) {
+        MethodHandleEntryImpl(
+                ConstantPool cpm,
+                int index,
+                int refKind,
+                AbstractPoolEntry.AbstractMemberRefEntry reference
+        ) {
             super(cpm, index, hash2(TAG_METHOD_HANDLE, refKind, reference.index()));
             this.refKind = refKind;
             this.reference = reference;
@@ -1009,7 +1037,6 @@ public abstract sealed class AbstractPoolEntry {
     public static final class MethodTypeEntryImpl
             extends AbstractRefEntry<Utf8EntryImpl>
             implements MethodTypeEntry {
-
         MethodTypeEntryImpl(ConstantPool cpm, int index, Utf8EntryImpl descriptor) {
             super(cpm, TAG_METHOD_TYPE, index, descriptor);
         }
@@ -1047,7 +1074,6 @@ public abstract sealed class AbstractPoolEntry {
     public static final class StringEntryImpl
             extends AbstractRefEntry<Utf8EntryImpl>
             implements StringEntry {
-
         StringEntryImpl(ConstantPool cpm, int index, Utf8EntryImpl utf8) {
             super(cpm, TAG_STRING, index, utf8);
         }
@@ -1091,12 +1117,11 @@ public abstract sealed class AbstractPoolEntry {
             }
             return false;
         }
-
-
     }
 
-    public static final class IntegerEntryImpl extends AbstractPoolEntry implements IntegerEntry {
-
+    public static final class IntegerEntryImpl
+            extends AbstractPoolEntry
+            implements IntegerEntry {
         private final int val;
 
         IntegerEntryImpl(ConstantPool cpm, int index, int i) {
@@ -1140,9 +1165,9 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class FloatEntryImpl extends AbstractPoolEntry
+    public static final class FloatEntryImpl
+            extends AbstractPoolEntry
             implements FloatEntry {
-
         private final float val;
 
         FloatEntryImpl(ConstantPool cpm, int index, float f) {
@@ -1186,8 +1211,9 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class LongEntryImpl extends AbstractPoolEntry implements LongEntry {
-
+    public static final class LongEntryImpl
+            extends AbstractPoolEntry
+            implements LongEntry {
         private final long val;
 
         LongEntryImpl(ConstantPool cpm, int index, long l) {
@@ -1236,8 +1262,9 @@ public abstract sealed class AbstractPoolEntry {
         }
     }
 
-    public static final class DoubleEntryImpl extends AbstractPoolEntry implements DoubleEntry {
-
+    public static final class DoubleEntryImpl
+            extends AbstractPoolEntry
+            implements DoubleEntry {
         private final double val;
 
         DoubleEntryImpl(ConstantPool cpm, int index, double d) {

@@ -24,15 +24,9 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.CodeElement;
-import java.lang.classfile.CodeModel;
-import java.lang.classfile.TypeKind;
+import java.lang.classfile.*;
 import java.lang.classfile.constantpool.ConstantPoolBuilder;
-import java.lang.classfile.Label;
-import java.lang.classfile.MethodModel;
 import java.lang.classfile.instruction.ExceptionCatch;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -48,10 +42,12 @@ public final class BufferedCodeBuilder
     private boolean finished;
     private int maxLocals;
 
-    public BufferedCodeBuilder(MethodInfo methodInfo,
-                               SplitConstantPool constantPool,
-                               ClassFileImpl context,
-                               CodeModel original) {
+    public BufferedCodeBuilder(
+            MethodInfo methodInfo,
+            SplitConstantPool constantPool,
+            ClassFileImpl context,
+            CodeModel original
+    ) {
         this.constantPool = constantPool;
         this.context = context;
         this.startLabel = new LabelImpl(this, -1);
@@ -146,7 +142,6 @@ public final class BufferedCodeBuilder
     public final class Model
             extends AbstractUnboundModel<CodeElement>
             implements CodeModel {
-
         private Model() {
             super(BufferedCodeBuilder.this.elements);
         }

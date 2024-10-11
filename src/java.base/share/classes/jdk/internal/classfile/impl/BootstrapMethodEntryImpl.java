@@ -24,26 +24,29 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.util.List;
-
-import java.lang.classfile.constantpool.ConstantPool;
 import java.lang.classfile.BootstrapMethodEntry;
+import java.lang.classfile.constantpool.ConstantPool;
 import java.lang.classfile.constantpool.LoadableConstantEntry;
 import java.lang.classfile.constantpool.MethodHandleEntry;
+import java.util.List;
 
 import static jdk.internal.classfile.impl.AbstractPoolEntry.MethodHandleEntryImpl;
 
-public final class BootstrapMethodEntryImpl implements BootstrapMethodEntry {
-
+public final class BootstrapMethodEntryImpl
+        implements BootstrapMethodEntry {
     final int index;
     final int hash;
     private final ConstantPool constantPool;
     private final MethodHandleEntryImpl handle;
     private final List<LoadableConstantEntry> arguments;
 
-    BootstrapMethodEntryImpl(ConstantPool constantPool, int bsmIndex, int hash,
-                                 MethodHandleEntryImpl handle,
-                                 List<LoadableConstantEntry> arguments) {
+    BootstrapMethodEntryImpl(
+            ConstantPool constantPool,
+            int bsmIndex,
+            int hash,
+            MethodHandleEntryImpl handle,
+            List<LoadableConstantEntry> arguments
+    ) {
         this.index = bsmIndex;
         this.hash = hash;
         this.constantPool = constantPool;
@@ -73,8 +76,10 @@ public final class BootstrapMethodEntryImpl implements BootstrapMethodEntry {
                 && e.arguments().equals(arguments);
     }
 
-    static int computeHashCode(MethodHandleEntryImpl handle,
-                               List<? extends LoadableConstantEntry> arguments) {
+    static int computeHashCode(
+            MethodHandleEntryImpl handle,
+            List<? extends LoadableConstantEntry> arguments
+    ) {
         return (31 * handle.hashCode() + arguments.hashCode()) | AbstractPoolEntry.NON_ZERO;
     }
 

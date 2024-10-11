@@ -31,6 +31,7 @@ import java.lang.classfile.Label;
 import java.lang.classfile.PseudoInstruction;
 import java.lang.classfile.attribute.CharacterRangeInfo;
 import java.lang.classfile.attribute.CharacterRangeTableAttribute;
+
 import jdk.internal.classfile.impl.AbstractPseudoInstruction;
 import jdk.internal.classfile.impl.BoundCharacterRange;
 import jdk.internal.javac.PreviewFeature;
@@ -44,7 +45,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface CharacterRange extends PseudoInstruction
+public sealed interface CharacterRange
+        extends PseudoInstruction
         permits AbstractPseudoInstruction.UnboundCharacterRange, BoundCharacterRange {
 
     /** The bit mask of STATEMENT {@link CharacterRangeInfo} kind. */

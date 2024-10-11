@@ -24,15 +24,14 @@
  */
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.*;
+import java.lang.classfile.constantpool.ConstantPoolBuilder;
+import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.reflect.AccessFlag;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-
-import java.lang.classfile.*;
-import java.lang.classfile.constantpool.ConstantPoolBuilder;
-import java.lang.classfile.constantpool.Utf8Entry;
 
 public final class BufferedFieldBuilder
         implements TerminalFieldBuilder {
@@ -43,10 +42,12 @@ public final class BufferedFieldBuilder
     private final List<FieldElement> elements = new ArrayList<>();
     private AccessFlags flags;
 
-    public BufferedFieldBuilder(SplitConstantPool constantPool,
-                                ClassFileImpl context,
-                                Utf8Entry name,
-                                Utf8Entry type) {
+    public BufferedFieldBuilder(
+            SplitConstantPool constantPool,
+            ClassFileImpl context,
+            Utf8Entry name,
+            Utf8Entry type
+    ) {
         this.constantPool = constantPool;
         this.context = context;
         this.name = name;

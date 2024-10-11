@@ -32,7 +32,7 @@ public final class LineNumberImpl
     private static final int INTERN_LIMIT = 1000;
     private static final LineNumber[] internCache = new LineNumber[INTERN_LIMIT];
     static {
-        for (int i=0; i<INTERN_LIMIT; i++)
+        for (int i = 0; i < INTERN_LIMIT; i++)
             internCache[i] = new LineNumberImpl(i);
     }
 

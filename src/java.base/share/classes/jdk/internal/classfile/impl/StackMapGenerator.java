@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
 import jdk.internal.constant.ReferenceClassDescImpl;
 import jdk.internal.constant.PrimitiveClassDescImpl;
 import jdk.internal.util.Preconditions;
@@ -182,9 +183,16 @@ public final class StackMapGenerator {
             ITEM_LONG_2ND = 13,
             ITEM_DOUBLE_2ND = 14;
 
-    private static final Type[] ARRAY_FROM_BASIC_TYPE = {null, null, null, null,
-        Type.BOOLEAN_ARRAY_TYPE, Type.CHAR_ARRAY_TYPE, Type.FLOAT_ARRAY_TYPE, Type.DOUBLE_ARRAY_TYPE,
-        Type.BYTE_ARRAY_TYPE, Type.SHORT_ARRAY_TYPE, Type.INT_ARRAY_TYPE, Type.LONG_ARRAY_TYPE};
+    private static final Type[] ARRAY_FROM_BASIC_TYPE = {
+            null, null, null, null,
+            Type.BOOLEAN_ARRAY_TYPE,
+            Type.CHAR_ARRAY_TYPE,
+            Type.FLOAT_ARRAY_TYPE,
+            Type.DOUBLE_ARRAY_TYPE,
+            Type.BYTE_ARRAY_TYPE,
+            Type.SHORT_ARRAY_TYPE,
+            Type.INT_ARRAY_TYPE,
+            Type.LONG_ARRAY_TYPE};
 
     static record RawExceptionCatch(int start, int end, int handler, Type catchType) {}
 
@@ -221,15 +229,17 @@ public final class StackMapGenerator {
      * @param handlers R/W <code>ExceptionHandler</code> list used to detect mandatory frame offsets as well as to determine stack maps in exception handlers
      * and also to be altered when dead code is detected and must be excluded from exception handlers
      */
-    public StackMapGenerator(LabelContext labelContext,
-                     ClassDesc thisClass,
-                     String methodName,
-                     MethodTypeDesc methodDesc,
-                     boolean isStatic,
-                     RawBytecodeHelper.CodeRange bytecode,
-                     SplitConstantPool cp,
-                     ClassFileImpl context,
-                     List<AbstractPseudoInstruction.ExceptionCatchImpl> handlers) {
+    public StackMapGenerator(
+            LabelContext labelContext,
+            ClassDesc thisClass,
+            String methodName,
+            MethodTypeDesc methodDesc,
+            boolean isStatic,
+            RawBytecodeHelper.CodeRange bytecode,
+            SplitConstantPool cp,
+            ClassFileImpl context,
+            List<AbstractPseudoInstruction.ExceptionCatchImpl> handlers
+    ) {
         this.thisType = Type.referenceType(thisClass);
         this.methodName = methodName;
         this.methodDesc = methodDesc;
@@ -318,16 +328,21 @@ public final class StackMapGenerator {
         var labelContext = this.labelContext;
         for (int i = 0; i < handlers.size(); i++) {
             var exhandler = handlers.get(i);
-            int start_pc = labelContext.labelToBci(exhandler.tryStart());
-            int end_pc = labelContext.labelToBci(exhandler.tryEnd());
-            int handler_pc = labelContext.labelToBci(exhandler.handler());
+            int start_pc   = labelContext.labelToBci(exhandler.tryStart()),
+                end_pc     = labelContext.labelToBci(exhandler.tryEnd()),
+                handler_pc = labelContext.labelToBci(exhandler.handler());
             if (start_pc >= 0 && end_pc >= 0 && end_pc > start_pc && handler_pc >= 0) {
                 if (start_pc < exMin) exMin = start_pc;
                 if (end_pc > exMax) exMax = end_pc;
                 var catchType = exhandler.catchType();
-                rawHandlers.add(new RawExceptionCatch(start_pc, end_pc, handler_pc,
-                        catchType.isPresent() ? cpIndexToType(catchType.get().index(), cp)
-                                : Type.THROWABLE_TYPE));
+                rawHandlers.add(
+                        new RawExceptionCatch(
+                                start_pc,
+                                end_pc,
+                                handler_pc,
+                                catchType.isPresent()
+                                        ? cpIndexToType(catchType.get().index(), cp)
+                                        : Type.THROWABLE_TYPE));
             }
         }
     }
@@ -351,8 +366,8 @@ public final class StackMapGenerator {
         while (it.hasNext()) {
             var e = it.next();
             var labelContext = this.labelContext;
-            int handlerStart = labelContext.labelToBci(e.tryStart());
-            int handlerEnd = labelContext.labelToBci(e.tryEnd());
+            int handlerStart = labelContext.labelToBci(e.tryStart()),
+                handlerEnd   = labelContext.labelToBci(e.tryEnd());
             if (rangeStart >= handlerEnd || rangeEnd <= handlerStart) {
                 //out of range
                 continue;
@@ -924,7 +939,6 @@ public final class StackMapGenerator {
     }
 
     private final class Frame {
-
         int offset;
         int localsSize, stackSize;
         int flags;
@@ -1418,7 +1432,7 @@ public final class StackMapGenerator {
                         out.writeU1(offsetDelta);
                     } else {   //chop, same extended or append frame
                         out.writeU1U2(251 + diffLocalsSize, offsetDelta);
-                        for (int i=commonLocalsSize; i<localsSize; i++) locals[i].writeTo(out, cp);
+                        for (int i = commonLocalsSize; i < localsSize; i++) locals[i].writeTo(out, cp);
                     }
                     return;
                 }
@@ -1433,16 +1447,17 @@ public final class StackMapGenerator {
             }
             //full frame
             out.writeU1U2U2(255, offsetDelta, localsSize);
-            for (int i=0; i<localsSize; i++) locals[i].writeTo(out, cp);
+            for (int i = 0; i < localsSize; i++) locals[i].writeTo(out, cp);
             out.writeU2(stackSize);
-            for (int i=0; i<stackSize; i++) stack[i].writeTo(out, cp);
+            for (int i = 0; i < stackSize; i++) stack[i].writeTo(out, cp);
         }
     }
 
     private static record Type(int tag, ClassDesc sym, int bci) {
 
         //singleton types
-        static final Type TOP_TYPE = simpleType(ITEM_TOP),
+        static final Type
+                TOP_TYPE = simpleType(ITEM_TOP),
                 NULL_TYPE = simpleType(ITEM_NULL),
                 INTEGER_TYPE = simpleType(ITEM_INTEGER),
                 FLOAT_TYPE = simpleType(ITEM_FLOAT),
@@ -1457,20 +1472,21 @@ public final class StackMapGenerator {
                 UNITIALIZED_THIS_TYPE = simpleType(ITEM_UNINITIALIZED_THIS);
 
         //frequently used types to reduce footprint
-        static final Type OBJECT_TYPE = referenceType(CD_Object),
-            THROWABLE_TYPE = referenceType(CD_Throwable),
-            INT_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[I")),
-            BOOLEAN_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[Z")),
-            BYTE_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[B")),
-            CHAR_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[C")),
-            SHORT_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[S")),
-            LONG_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[J")),
-            DOUBLE_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[D")),
-            FLOAT_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[F")),
-            STRING_TYPE = referenceType(CD_String),
-            CLASS_TYPE = referenceType(CD_Class),
-            METHOD_HANDLE_TYPE = referenceType(CD_MethodHandle),
-            METHOD_TYPE = referenceType(CD_MethodType);
+        static final Type
+                OBJECT_TYPE = referenceType(CD_Object),
+                THROWABLE_TYPE = referenceType(CD_Throwable),
+                INT_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[I")),
+                BOOLEAN_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[Z")),
+                BYTE_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[B")),
+                CHAR_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[C")),
+                SHORT_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[S")),
+                LONG_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[J")),
+                DOUBLE_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[D")),
+                FLOAT_ARRAY_TYPE = referenceType(ReferenceClassDescImpl.ofValidated("[F")),
+                STRING_TYPE = referenceType(CD_String),
+                CLASS_TYPE = referenceType(CD_Class),
+                METHOD_HANDLE_TYPE = referenceType(CD_MethodHandle),
+                METHOD_TYPE = referenceType(CD_MethodType);
 
         private static Type simpleType(int tag) {
             return new Type(tag, null, 0);

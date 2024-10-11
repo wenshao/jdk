@@ -44,7 +44,6 @@ import static java.lang.classfile.ClassFile.*;
 import static java.lang.classfile.attribute.StackMapFrameInfo.VerificationTypeInfo.*;
 
 public class StackMapDecoder {
-
     private static final int
                     SAME_LOCALS_1_STACK_ITEM_EXTENDED = 247,
                     SAME_EXTENDED = 251;
@@ -70,7 +69,12 @@ public class StackMapDecoder {
                 method.flags().has(AccessFlag.STATIC));
     }
 
-    public static List<VerificationTypeInfo> initFrameLocals(ClassEntry thisClass, String methodName, MethodTypeDesc methodType, boolean isStatic) {
+    public static List<VerificationTypeInfo> initFrameLocals(
+            ClassEntry thisClass,
+            String methodName,
+            MethodTypeDesc methodType,
+            boolean isStatic
+    ) {
         VerificationTypeInfo vtis[];
         int i = 0;
         if (!isStatic) {
@@ -136,7 +140,7 @@ public class StackMapDecoder {
                     out.writeU1(offsetDelta);
                 } else {   //chop, same extended or append frame
                     out.writeU1U2(251 + diffLocalsSize, offsetDelta);
-                    for (int i=commonLocalsSize; i<fr.locals().size(); i++) writeTypeInfo(out, fr.locals().get(i));
+                    for (int i = commonLocalsSize; i < fr.locals().size(); i++) writeTypeInfo(out, fr.locals().get(i));
                 }
                 return;
             }
@@ -210,10 +214,10 @@ public class StackMapDecoder {
                     stack = List.of();
                 } else {
                     var newLocals = new VerificationTypeInfo[u2()];
-                    for (int i=0; i<newLocals.length; i++)
+                    for (int i = 0; i < newLocals.length; i++)
                         newLocals[i] = readVerificationTypeInfo();
                     var newStack = new VerificationTypeInfo[u2()];
-                    for (int i=0; i<newStack.length; i++)
+                    for (int i = 0; i < newStack.length; i++)
                         newStack[i] = readVerificationTypeInfo();
                     locals = List.of(newLocals);
                     stack = List.of(newStack);
@@ -269,8 +273,8 @@ public class StackMapDecoder {
         }
     }
 
-    public static record UninitializedVerificationTypeInfoImpl(Label newTarget) implements UninitializedVerificationTypeInfo {
-
+    public static record UninitializedVerificationTypeInfoImpl(Label newTarget)
+            implements UninitializedVerificationTypeInfo {
         @Override
         public int tag() { return ITEM_UNINITIALIZED; }
 
@@ -286,11 +290,12 @@ public class StackMapDecoder {
         return v;
     }
 
-    public static record StackMapFrameImpl(int frameType,
-                                           Label target,
-                                           List<VerificationTypeInfo> locals,
-                                           List<VerificationTypeInfo> stack)
-            implements StackMapFrameInfo {
+    public static record StackMapFrameImpl(
+            int frameType,
+            Label target,
+            List<VerificationTypeInfo> locals,
+            List<VerificationTypeInfo> stack
+    ) implements StackMapFrameInfo {
         public StackMapFrameImpl {
             locals = List.copyOf(locals);
             stack = List.copyOf(stack);

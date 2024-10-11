@@ -28,7 +28,8 @@ import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.attribute.CodeAttribute;
 
-public sealed interface TerminalCodeBuilder extends CodeBuilder, LabelContext
+public sealed interface TerminalCodeBuilder
+        extends CodeBuilder, LabelContext
         permits DirectCodeBuilder, BufferedCodeBuilder {
     int curTopLocal();
 

@@ -24,19 +24,21 @@
  */
 package jdk.internal.classfile.impl.verifier;
 
+import java.lang.classfile.ClassHierarchyResolver;
+import java.lang.classfile.ClassModel;
+import java.lang.classfile.components.ClassPrinter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-import java.lang.classfile.ClassHierarchyResolver;
-import java.lang.classfile.ClassModel;
-import java.lang.classfile.components.ClassPrinter;
+
 import jdk.internal.classfile.impl.ClassHierarchyImpl;
 import jdk.internal.classfile.impl.RawBytecodeHelper;
-import static jdk.internal.classfile.impl.RawBytecodeHelper.*;
 import jdk.internal.classfile.impl.verifier.VerificationWrapper.ConstantPoolWrapper;
-import static jdk.internal.classfile.impl.verifier.VerificationSignature.BasicType.*;
 import jdk.internal.classfile.impl.verifier.VerificationSignature.BasicType;
+
+import static jdk.internal.classfile.impl.RawBytecodeHelper.*;
+import static jdk.internal.classfile.impl.verifier.VerificationSignature.BasicType.*;
 import static jdk.internal.classfile.impl.verifier.VerificationFrame.FLAG_THIS_UNINIT;
 
 /**
@@ -71,25 +73,27 @@ public final class VerifierImpl {
             JVM_CONSTANT_Package                = 20,
             JVM_CONSTANT_ExternalMax            = 20;
 
-    static final char JVM_SIGNATURE_SPECIAL = '<',
-            JVM_SIGNATURE_ARRAY = '[',
-            JVM_SIGNATURE_BYTE = 'B',
-            JVM_SIGNATURE_CHAR = 'C',
-            JVM_SIGNATURE_CLASS = 'L',
-            JVM_SIGNATURE_FLOAT = 'F',
-            JVM_SIGNATURE_DOUBLE = 'D',
-            JVM_SIGNATURE_INT = 'I',
-            JVM_SIGNATURE_LONG = 'J',
-            JVM_SIGNATURE_SHORT = 'S',
+    static final char
+            JVM_SIGNATURE_SPECIAL = '<',
+            JVM_SIGNATURE_ARRAY   = '[',
+            JVM_SIGNATURE_BYTE    = 'B',
+            JVM_SIGNATURE_CHAR    = 'C',
+            JVM_SIGNATURE_CLASS   = 'L',
+            JVM_SIGNATURE_FLOAT   = 'F',
+            JVM_SIGNATURE_DOUBLE  = 'D',
+            JVM_SIGNATURE_INT     = 'I',
+            JVM_SIGNATURE_LONG    = 'J',
+            JVM_SIGNATURE_SHORT   = 'S',
             JVM_SIGNATURE_BOOLEAN = 'Z';
 
-    static final String java_lang_String = "java/lang/String";
-    static final String object_initializer_name = "<init>";
-    static final String java_lang_invoke_MethodHandle = "java/lang/invoke/MethodHandle";
-    static final String java_lang_Object = "java/lang/Object";
-    static final String java_lang_invoke_MethodType = "java/lang/invoke/MethodType";
-    static final String java_lang_Throwable = "java/lang/Throwable";
-    static final String java_lang_Class = "java/lang/Class";
+    static final String
+            java_lang_String              = "java/lang/String",
+            object_initializer_name       = "<init>",
+            java_lang_invoke_MethodHandle = "java/lang/invoke/MethodHandle",
+            java_lang_Object              = "java/lang/Object",
+            java_lang_invoke_MethodType   = "java/lang/invoke/MethodType",
+            java_lang_Throwable           = "java/lang/Throwable",
+            java_lang_Class               = "java/lang/Class";
 
     String errorContext = "";
     private int bci;
@@ -102,11 +106,11 @@ public final class VerifierImpl {
         log_info(_logger, messageFormat, args);
     }
 
-
-    static final int STACKMAP_ATTRIBUTE_MAJOR_VERSION = 50;
-    static final int INVOKEDYNAMIC_MAJOR_VERSION = 51;
-    static final int NOFAILOVER_MAJOR_VERSION = 51;
-    static final int MAX_CODE_SIZE = 65535;
+    static final int
+            STACKMAP_ATTRIBUTE_MAJOR_VERSION = 50,
+            INVOKEDYNAMIC_MAJOR_VERSION      = 51,
+            NOFAILOVER_MAJOR_VERSION         = 51,
+            MAX_CODE_SIZE                    = 65535;
 
     public static List<VerifyError> verify(ClassModel classModel, Consumer<String> logger) {
         return verify(classModel, ClassHierarchyResolver.defaultResolver(), logger);
@@ -141,9 +145,9 @@ public final class VerifierImpl {
     public static boolean is_eligible_for_verification(VerificationWrapper klass) {
         String name = klass.thisClassName();
         return !java_lang_Object.equals(name) &&
-                !java_lang_Class.equals(name) &&
-                !java_lang_String.equals(name) &&
-                !java_lang_Throwable.equals(name);
+               !java_lang_Class.equals(name)  &&
+               !java_lang_String.equals(name) &&
+               !java_lang_Throwable.equals(name);
     }
 
     static List<VerifyError> inference_verify(VerificationWrapper klass) {
@@ -231,9 +235,10 @@ public final class VerifierImpl {
         }
     }
 
-    private static final int NONZERO_PADDING_BYTES_IN_SWITCH_MAJOR_VERSION = 51;
-    private static final int STATIC_METHOD_IN_INTERFACE_MAJOR_VERSION = 52;
-    private static final int MAX_ARRAY_DIMENSIONS = 255;
+    private static final int
+            NONZERO_PADDING_BYTES_IN_SWITCH_MAJOR_VERSION = 51,
+            STATIC_METHOD_IN_INTERFACE_MAJOR_VERSION      = 52,
+            MAX_ARRAY_DIMENSIONS                          = 255;
 
     VerifierImpl(VerificationWrapper klass, ClassHierarchyResolver classHierarchyResolver, Consumer<String> logger) {
         _klass = klass;
@@ -339,12 +344,12 @@ public final class VerifierImpl {
                 VerificationType type, type2 = null;
                 VerificationType atype;
                 if (bcs.isWide()) {
-                    if (opcode != IINC && opcode != ILOAD
-                        && opcode != ALOAD && opcode != LLOAD
-                        && opcode != ISTORE && opcode != ASTORE
-                        && opcode != LSTORE && opcode != FLOAD
-                        && opcode != DLOAD && opcode != FSTORE
-                        && opcode != DSTORE) {
+                    if (opcode != IINC   && opcode != ILOAD
+                     && opcode != ALOAD  && opcode != LLOAD
+                     && opcode != ISTORE && opcode != ASTORE
+                     && opcode != LSTORE && opcode != FLOAD
+                     && opcode != DLOAD  && opcode != FSTORE
+                     && opcode != DSTORE) {
                         verifyError("Bad wide instruction");
                     }
                 }
@@ -1368,10 +1373,10 @@ public final class VerifierImpl {
         int tag = cp.tagAt(index);
         int types = 0;
         if (opcode == LDC || opcode == LDC_W) {
-            types = (1 << JVM_CONSTANT_Integer) | (1 << JVM_CONSTANT_Float)
-                    | (1 << JVM_CONSTANT_String) | (1 << JVM_CONSTANT_Class)
-                    | (1 << JVM_CONSTANT_MethodHandle) | (1 << JVM_CONSTANT_MethodType)
-                    | (1 << JVM_CONSTANT_Dynamic);
+            types = (1 << JVM_CONSTANT_Integer)      | (1 << JVM_CONSTANT_Float)
+                  | (1 << JVM_CONSTANT_String)       | (1 << JVM_CONSTANT_Class)
+                  | (1 << JVM_CONSTANT_MethodHandle) | (1 << JVM_CONSTANT_MethodType)
+                  | (1 << JVM_CONSTANT_Dynamic);
             verify_cp_type(bci, index, cp, types);
         } else {
             if (opcode != LDC2_W) verifyError("must be ldc2_w");
@@ -1379,15 +1384,15 @@ public final class VerifierImpl {
             verify_cp_type(bci, index, cp, types);
         }
         switch (tag) {
-            case JVM_CONSTANT_Utf8 -> current_frame.push_stack(object_type());
-            case JVM_CONSTANT_String -> current_frame.push_stack(VerificationType.reference_type(java_lang_String));
-            case JVM_CONSTANT_Class -> current_frame.push_stack(VerificationType.reference_type(java_lang_Class));
-            case JVM_CONSTANT_Integer -> current_frame.push_stack(VerificationType.integer_type);
-            case JVM_CONSTANT_Float -> current_frame.push_stack(VerificationType.float_type);
-            case JVM_CONSTANT_Double -> current_frame.push_stack_2(VerificationType.double_type, VerificationType.double2_type);
-            case JVM_CONSTANT_Long -> current_frame.push_stack_2(VerificationType.long_type, VerificationType.long2_type);
+            case JVM_CONSTANT_Utf8         -> current_frame.push_stack(object_type());
+            case JVM_CONSTANT_String       -> current_frame.push_stack(VerificationType.reference_type(java_lang_String));
+            case JVM_CONSTANT_Class        -> current_frame.push_stack(VerificationType.reference_type(java_lang_Class));
+            case JVM_CONSTANT_Integer      -> current_frame.push_stack(VerificationType.integer_type);
+            case JVM_CONSTANT_Float        -> current_frame.push_stack(VerificationType.float_type);
+            case JVM_CONSTANT_Double       -> current_frame.push_stack_2(VerificationType.double_type, VerificationType.double2_type);
+            case JVM_CONSTANT_Long         -> current_frame.push_stack_2(VerificationType.long_type, VerificationType.long2_type);
             case JVM_CONSTANT_MethodHandle -> current_frame.push_stack(VerificationType.reference_type(java_lang_invoke_MethodHandle));
-            case JVM_CONSTANT_MethodType -> current_frame.push_stack(VerificationType.reference_type(java_lang_invoke_MethodType));
+            case JVM_CONSTANT_MethodType   -> current_frame.push_stack(VerificationType.reference_type(java_lang_invoke_MethodType));
             case JVM_CONSTANT_Dynamic -> {
                 String constant_type = cp.dynamicConstantSignatureAt(index);
                 if (!VerificationSignature.isValidTypeSignature(constant_type)) verifyError("Invalid type for dynamic constant");

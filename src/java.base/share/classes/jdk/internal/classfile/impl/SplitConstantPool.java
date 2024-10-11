@@ -24,26 +24,24 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.constant.ClassDesc;
-import java.lang.constant.MethodTypeDesc;
-import java.util.Arrays;
-import java.util.List;
-
 import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassReader;
 import java.lang.classfile.BootstrapMethodEntry;
 import java.lang.classfile.attribute.BootstrapMethodsAttribute;
 import java.lang.classfile.constantpool.*;
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
+import java.util.Arrays;
+import java.util.List;
 
 import jdk.internal.constant.ConstantUtils;
 
 import static java.lang.classfile.constantpool.PoolEntry.*;
 
-public final class SplitConstantPool implements ConstantPoolBuilder {
-
+public final class SplitConstantPool
+        implements ConstantPoolBuilder {
     private final ClassReaderImpl parent;
     private final int parentSize, parentBsmSize;
-
     private int size, bsmSize;
     private PoolEntry[] myEntries;
     private BootstrapMethodEntryImpl[] myBsmEntries;
@@ -140,7 +138,6 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
         else {
             UnboundAttribute<BootstrapMethodsAttribute> a
                     = new UnboundAttribute.AdHocAttribute<>(Attributes.bootstrapMethods()) {
-
                 @Override
                 public void writeBody(BufWriterImpl b) {
                     buf.writeU2(bsmSize);
@@ -182,7 +179,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
             // So we inflate the map with whatever we've got from the parent, and
             // later, if we miss, we do a one-time full inflation before creating
             // a new entry.
-            for (int i=1; i<parentSize;) {
+            for (int i = 1; i < parentSize; ) {
                 PoolEntry cpi = parent.cp[i];
                 if (cpi == null) {
                     doneFullScan = false;
@@ -202,7 +199,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
     }
 
     private void fullScan() {
-        for (int i=1; i<parentSize;) {
+        for (int i = 1; i < parentSize; ) {
             PoolEntry cpi = parent.entryByIndex(i);
             map.put(cpi.hashCode(), cpi.index());
             i += cpi.width();
@@ -215,7 +212,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
         var bsmMap = this.bsmMap;
         if (bsmMap == null) {
             this.bsmMap = bsmMap = new EntryMap(Math.max(bsmSize, 16), .75f);
-            for (int i=0; i<parentBsmSize; i++) {
+            for (int i = 0; i < parentBsmSize; i++) {
                 BootstrapMethodEntryImpl bsm = parent.bootstrapMethodEntry(i);
                 bsmMap.put(bsm.hash, bsm.index);
             }
@@ -501,7 +498,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
     }
 
     AbstractPoolEntry.Utf8EntryImpl maybeCloneUtf8Entry(Utf8Entry entry) {
-        AbstractPoolEntry.Utf8EntryImpl e = (AbstractPoolEntry.Utf8EntryImpl) entry;
+        var e = (AbstractPoolEntry.Utf8EntryImpl) entry;
         if (e.constantPool == this || e.constantPool == parent)
             return e;
         AbstractPoolEntry.Utf8EntryImpl ce = tryFindUtf8(e.hashCode(), e);
@@ -545,22 +542,22 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
 
     @Override
     public PackageEntry packageEntry(Utf8Entry nameEntry) {
-        AbstractPoolEntry.Utf8EntryImpl ne = maybeCloneUtf8Entry(nameEntry);
+        var ne = maybeCloneUtf8Entry(nameEntry);
         var e = (AbstractPoolEntry.PackageEntryImpl) findEntry(TAG_PACKAGE, ne);
         return e == null ? internalAdd(new AbstractPoolEntry.PackageEntryImpl(this, size, ne)) : e;
     }
 
     @Override
     public ModuleEntry moduleEntry(Utf8Entry nameEntry) {
-        AbstractPoolEntry.Utf8EntryImpl ne = maybeCloneUtf8Entry(nameEntry);
+        var ne = maybeCloneUtf8Entry(nameEntry);
         var e = (AbstractPoolEntry.ModuleEntryImpl) findEntry(TAG_MODULE, ne);
         return e == null ? internalAdd(new AbstractPoolEntry.ModuleEntryImpl(this, size, ne)) : e;
     }
 
     @Override
     public AbstractPoolEntry.NameAndTypeEntryImpl nameAndTypeEntry(Utf8Entry nameEntry, Utf8Entry typeEntry) {
-        AbstractPoolEntry.Utf8EntryImpl ne = maybeCloneUtf8Entry(nameEntry);
-        AbstractPoolEntry.Utf8EntryImpl te = maybeCloneUtf8Entry(typeEntry);
+        var ne = maybeCloneUtf8Entry(nameEntry);
+        var te = maybeCloneUtf8Entry(typeEntry);
         var e = (AbstractPoolEntry.NameAndTypeEntryImpl) findEntry(TAG_NAME_AND_TYPE, ne, te);
         return e == null ? internalAdd(new AbstractPoolEntry.NameAndTypeEntryImpl(this, size, ne, te)) : e;
     }
@@ -596,7 +593,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
 
     @Override
     public MethodTypeEntry methodTypeEntry(Utf8Entry descriptor) {
-        AbstractPoolEntry.Utf8EntryImpl de = maybeCloneUtf8Entry(descriptor);
+        var de = maybeCloneUtf8Entry(descriptor);
         var e = (AbstractPoolEntry.MethodTypeEntryImpl) findEntry(TAG_METHOD_TYPE, de);
         return e == null ? internalAdd(new AbstractPoolEntry.MethodTypeEntryImpl(this, size, de)) : e;
     }
@@ -643,8 +640,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
             return invokeDynamicEntry(bootstrapMethodEntry, nameAndType);
         }
 
-        AbstractPoolEntry.InvokeDynamicEntryImpl ce =
-                new AbstractPoolEntry.InvokeDynamicEntryImpl(this, size, hash,
+        var ce = new AbstractPoolEntry.InvokeDynamicEntryImpl(this, size, hash,
                         (BootstrapMethodEntryImpl) bootstrapMethodEntry,
                         (AbstractPoolEntry.NameAndTypeEntryImpl) nameAndType);
         internalAdd(ce, hash);
@@ -673,8 +669,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
             return constantDynamicEntry(bootstrapMethodEntry, nameAndType);
         }
 
-        AbstractPoolEntry.ConstantDynamicEntryImpl ce =
-                new AbstractPoolEntry.ConstantDynamicEntryImpl(this, size, hash,
+        var ce = new AbstractPoolEntry.ConstantDynamicEntryImpl(this, size, hash,
                         (BootstrapMethodEntryImpl) bootstrapMethodEntry,
                         (AbstractPoolEntry.NameAndTypeEntryImpl) nameAndType);
         internalAdd(ce, hash);
@@ -727,7 +722,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
                 break;
             }
         }
-        AbstractPoolEntry.MethodHandleEntryImpl mre = (AbstractPoolEntry.MethodHandleEntryImpl) methodReference;
+        var mre = (AbstractPoolEntry.MethodHandleEntryImpl) methodReference;
         int hash = BootstrapMethodEntryImpl.computeHashCode(mre, arguments);
         EntryMap map = bsmMap();
         for (int token = map.firstToken(hash); token != -1; token = map.nextToken(hash, token)) {
@@ -736,7 +731,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
                 return e;
             }
         }
-        BootstrapMethodEntryImpl ne = new BootstrapMethodEntryImpl(this, bsmSize, hash, mre, arguments);
+        var ne = new BootstrapMethodEntryImpl(this, bsmSize, hash, mre, arguments);
         return internalAdd(ne, hash);
     }
 }

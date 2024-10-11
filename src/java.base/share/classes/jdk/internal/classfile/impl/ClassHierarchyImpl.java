@@ -25,18 +25,17 @@
  */
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.ClassHierarchyResolver;
+import java.lang.constant.ClassDesc;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.lang.constant.ClassDesc;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-
-import java.lang.classfile.ClassHierarchyResolver;
 
 import static java.lang.constant.ConstantDescs.CD_Object;
 import static java.lang.classfile.ClassFile.*;
@@ -50,8 +49,8 @@ import static jdk.internal.constant.ConstantUtils.referenceClassDesc;
  *
  */
 public final class ClassHierarchyImpl {
-
-    public record ClassHierarchyInfoImpl(ClassDesc superClass, boolean isInterface) implements ClassHierarchyResolver.ClassHierarchyInfo {
+    public record ClassHierarchyInfoImpl(ClassDesc superClass, boolean isInterface)
+            implements ClassHierarchyResolver.ClassHierarchyInfo {
         static final ClassHierarchyResolver.ClassHierarchyInfo OBJECT_INFO = new ClassHierarchyInfoImpl(null, false);
     }
 
@@ -118,7 +117,8 @@ public final class ClassHierarchyImpl {
         return anc == null || thisClass.equals(anc);
     }
 
-    public static final class CachedClassHierarchyResolver implements ClassHierarchyResolver {
+    public static final class CachedClassHierarchyResolver
+            implements ClassHierarchyResolver {
         // this instance should not leak out, appears only in cache in order to utilize Map.computeIfAbsent
         // is already an invalid combination, so it can be compared with equals or as value class safely
         private static final ClassHierarchyResolver.ClassHierarchyInfo NOPE =
@@ -145,7 +145,8 @@ public final class ClassHierarchyImpl {
         }
     }
 
-    public static final class ResourceParsingClassHierarchyResolver implements ClassHierarchyResolver {
+    public static final class ResourceParsingClassHierarchyResolver
+            implements ClassHierarchyResolver {
         public static final Function<ClassDesc, InputStream> SYSTEM_STREAM_PROVIDER = new Function<>() {
             @Override
             public InputStream apply(ClassDesc cd) {
@@ -197,11 +198,14 @@ public final class ClassHierarchyImpl {
         }
     }
 
-    public static final class StaticClassHierarchyResolver implements ClassHierarchyResolver {
-
+    public static final class StaticClassHierarchyResolver
+            implements ClassHierarchyResolver {
         private final Map<ClassDesc, ClassHierarchyInfo> map;
 
-        public StaticClassHierarchyResolver(Collection<ClassDesc> interfaceNames, Map<ClassDesc, ClassDesc> classToSuperClass) {
+        public StaticClassHierarchyResolver(
+                Collection<ClassDesc> interfaceNames,
+                Map<ClassDesc, ClassDesc> classToSuperClass
+        ) {
             map = HashMap.newHashMap(interfaceNames.size() + classToSuperClass.size() + 1);
             map.put(CD_Object, ClassHierarchyInfoImpl.OBJECT_INFO);
             for (var e : classToSuperClass.entrySet())
@@ -216,7 +220,8 @@ public final class ClassHierarchyImpl {
         }
     }
 
-    public static final class ClassLoadingClassHierarchyResolver implements ClassHierarchyResolver {
+    public static final class ClassLoadingClassHierarchyResolver
+            implements ClassHierarchyResolver {
         public static final Function<ClassDesc, Class<?>> SYSTEM_CLASS_PROVIDER = new Function<>() {
             @Override
             public Class<?> apply(ClassDesc cd) {
@@ -246,7 +251,8 @@ public final class ClassHierarchyImpl {
                 return null;
             }
 
-            return cl.isInterface() ? ClassHierarchyInfo.ofInterface()
+            return cl.isInterface()
+                    ? ClassHierarchyInfo.ofInterface()
                     : ClassHierarchyInfo.ofClass(referenceClassDesc(cl.getSuperclass()));
         }
     }

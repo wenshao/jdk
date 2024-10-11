@@ -25,34 +25,27 @@
 
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.*;
+import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.constant.MethodTypeDesc;
 import java.util.function.Consumer;
-
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.CodeModel;
-import java.lang.classfile.CodeTransform;
-import java.lang.classfile.CustomAttribute;
-import java.lang.classfile.MethodBuilder;
-import java.lang.classfile.MethodElement;
-import java.lang.classfile.MethodModel;
-import java.lang.classfile.constantpool.Utf8Entry;
 
 public final class DirectMethodBuilder
         extends AbstractDirectBuilder<MethodModel>
         implements TerminalMethodBuilder, Util.Writable {
-
     final Utf8Entry name;
     final Utf8Entry desc;
     int flags;
     int[] parameterSlots;
 
-    public DirectMethodBuilder(SplitConstantPool constantPool,
-                               ClassFileImpl context,
-                               Utf8Entry nameInfo,
-                               Utf8Entry typeInfo,
-                               int flags,
-                               MethodModel original) {
+    public DirectMethodBuilder(
+            SplitConstantPool constantPool,
+            ClassFileImpl context,
+            Utf8Entry nameInfo,
+            Utf8Entry typeInfo,
+            int flags,
+            MethodModel original
+    ) {
         super(constantPool, context);
         setOriginal(original);
         this.name = nameInfo;
@@ -119,8 +112,7 @@ public final class DirectMethodBuilder
         return this;
     }
 
-    private MethodBuilder withCode(CodeModel original,
-                                  Consumer<? super CodeBuilder> handler) {
+    private MethodBuilder withCode(CodeModel original, Consumer<? super CodeBuilder> handler) {
         var cb = DirectCodeBuilder.build(this, handler, constantPool, context, original);
         writeAttribute(cb);
         return this;

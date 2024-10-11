@@ -24,13 +24,13 @@
  */
 package java.lang.classfile.instruction;
 
-import java.util.Optional;
-
 import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.classfile.Label;
 import java.lang.classfile.PseudoInstruction;
+import java.util.Optional;
+
 import jdk.internal.classfile.impl.AbstractPseudoInstruction;
 import jdk.internal.javac.PreviewFeature;
 
@@ -45,7 +45,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface ExceptionCatch extends PseudoInstruction
+public sealed interface ExceptionCatch
+        extends PseudoInstruction
         permits AbstractPseudoInstruction.ExceptionCatchImpl {
     /**
      * {@return the handler for the exception}
@@ -76,8 +77,12 @@ public sealed interface ExceptionCatch extends PseudoInstruction
      * @param catchTypeEntry the type of exception to catch, or empty if this
      *                       handler is unconditional
      */
-    static ExceptionCatch of(Label handler, Label tryStart, Label tryEnd,
-                             Optional<ClassEntry> catchTypeEntry) {
+    static ExceptionCatch of(
+            Label handler,
+            Label tryStart,
+            Label tryEnd,
+            Optional<ClassEntry> catchTypeEntry
+    ) {
         return new AbstractPseudoInstruction.ExceptionCatchImpl(handler, tryStart, tryEnd, catchTypeEntry.orElse(null));
     }
 

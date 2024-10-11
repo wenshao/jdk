@@ -26,10 +26,12 @@ package java.lang.classfile;
 
 import java.lang.constant.MethodTypeDesc;
 import java.util.List;
+
 import jdk.internal.classfile.impl.SignaturesImpl;
-import static java.util.Objects.requireNonNull;
 import jdk.internal.classfile.impl.Util;
 import jdk.internal.javac.PreviewFeature;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Models the generic signature of a method, as defined by JVMS {@jvms 4.7.9}.
@@ -74,13 +76,12 @@ public sealed interface MethodSignature
      * @param result signature for the return type
      * @param arguments signatures for the method arguments
      */
-    public static MethodSignature of(Signature result,
-                                     Signature... arguments) {
-
-        return new SignaturesImpl.MethodSignatureImpl(List.of(),
-                                                      List.of(),
-                                                      requireNonNull(result),
-                                                      List.of(arguments));
+    public static MethodSignature of(Signature result, Signature... arguments) {
+        return new SignaturesImpl.MethodSignatureImpl(
+                List.of(),
+                List.of(),
+                requireNonNull(result),
+                List.of(arguments));
     }
 
     /**
@@ -90,11 +91,12 @@ public sealed interface MethodSignature
      * @param result signature for the return type
      * @param arguments signatures for the method arguments
      */
-    public static MethodSignature of(List<Signature.TypeParam> typeParameters,
-                                     List<Signature.ThrowableSig> exceptions,
-                                     Signature result,
-                                     Signature... arguments) {
-
+    public static MethodSignature of(
+            List<Signature.TypeParam> typeParameters,
+            List<Signature.ThrowableSig> exceptions,
+            Signature result,
+            Signature... arguments
+    ) {
         return new SignaturesImpl.MethodSignatureImpl(
                 List.copyOf(requireNonNull(typeParameters)),
                 List.copyOf(requireNonNull(exceptions)),

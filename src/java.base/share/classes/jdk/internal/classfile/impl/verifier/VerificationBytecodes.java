@@ -24,9 +24,9 @@
  */
 package jdk.internal.classfile.impl.verifier;
 
-import static jdk.internal.classfile.impl.RawBytecodeHelper.*;
-
 import jdk.internal.classfile.impl.verifier.VerificationSignature.BasicType;
+
+import static jdk.internal.classfile.impl.RawBytecodeHelper.*;
 import static jdk.internal.classfile.impl.verifier.VerificationSignature.BasicType.*;
 
 /**
@@ -34,7 +34,6 @@ import static jdk.internal.classfile.impl.verifier.VerificationSignature.BasicTy
  * @see <a href="https://raw.githubusercontent.com/openjdk/jdk/master/src/hotspot/share/interpreter/bytecodes.cpp">hotspot/share/interpreter/bytecodes.cpp</a>
  */
 final class VerificationBytecodes {
-
     static final int _breakpoint = 202,
             _fast_agetfield = 203,
             _fast_bgetfield = 204,

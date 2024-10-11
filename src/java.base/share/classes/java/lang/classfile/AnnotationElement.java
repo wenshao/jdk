@@ -24,9 +24,9 @@
  */
 package java.lang.classfile;
 
+import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.constant.ClassDesc;
 
-import java.lang.classfile.constantpool.Utf8Entry;
 import jdk.internal.classfile.impl.AnnotationImpl;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.javac.PreviewFeature;
@@ -70,8 +70,7 @@ public sealed interface AnnotationElement
      * @param name the name of the key
      * @param value the associated value
      */
-    static AnnotationElement of(Utf8Entry name,
-                                AnnotationValue value) {
+    static AnnotationElement of(Utf8Entry name, AnnotationValue value) {
         return new AnnotationImpl.AnnotationElementImpl(name, value);
     }
 
@@ -80,8 +79,7 @@ public sealed interface AnnotationElement
      * @param name the name of the key
      * @param value the associated value
      */
-    static AnnotationElement of(String name,
-                                AnnotationValue value) {
+    static AnnotationElement of(String name, AnnotationValue value) {
         return of(TemporaryConstantPool.INSTANCE.utf8Entry(name), value);
     }
 
@@ -91,8 +89,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofClass(ClassDesc) AnnotationValue::ofClass
      */
-    static AnnotationElement ofClass(String name,
-                                     ClassDesc value) {
+    static AnnotationElement ofClass(String name, ClassDesc value) {
         return of(name, AnnotationValue.ofClass(value));
     }
 
@@ -102,8 +99,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofString(String) AnnotationValue::ofString
      */
-    static AnnotationElement ofString(String name,
-                                      String value) {
+    static AnnotationElement ofString(String name, String value) {
         return of(name, AnnotationValue.ofString(value));
     }
 
@@ -113,8 +109,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofLong(long) AnnotationValue::ofLong
      */
-    static AnnotationElement ofLong(String name,
-                                    long value) {
+    static AnnotationElement ofLong(String name, long value) {
         return of(name, AnnotationValue.ofLong(value));
     }
 
@@ -124,8 +119,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofInt(int) AnnotationValue::ofInt
      */
-    static AnnotationElement ofInt(String name,
-                                   int value) {
+    static AnnotationElement ofInt(String name, int value) {
         return of(name, AnnotationValue.ofInt(value));
     }
 
@@ -135,8 +129,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofChar(char) AnnotationValue::ofChar
      */
-    static AnnotationElement ofChar(String name,
-                                    char value) {
+    static AnnotationElement ofChar(String name, char value) {
         return of(name, AnnotationValue.ofChar(value));
     }
 
@@ -146,8 +139,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofShort(short) AnnotationValue::ofShort
      */
-    static AnnotationElement ofShort(String name,
-                                     short value) {
+    static AnnotationElement ofShort(String name, short value) {
         return of(name, AnnotationValue.ofShort(value));
     }
 
@@ -157,8 +149,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofByte(byte) AnnotationValue::ofByte
      */
-    static AnnotationElement ofByte(String name,
-                                    byte value) {
+    static AnnotationElement ofByte(String name, byte value) {
         return of(name, AnnotationValue.ofByte(value));
     }
 
@@ -168,8 +159,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofBoolean(boolean) AnnotationValue::ofBoolean
      */
-    static AnnotationElement ofBoolean(String name,
-                                       boolean value) {
+    static AnnotationElement ofBoolean(String name, boolean value) {
         return of(name, AnnotationValue.ofBoolean(value));
     }
 
@@ -179,8 +169,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofDouble(double) AnnotationValue::ofDouble
      */
-    static AnnotationElement ofDouble(String name,
-                                      double value) {
+    static AnnotationElement ofDouble(String name, double value) {
         return of(name, AnnotationValue.ofDouble(value));
     }
 
@@ -190,8 +179,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofFloat(float) AnnotationValue::ofFloat
      */
-    static AnnotationElement ofFloat(String name,
-                                     float value) {
+    static AnnotationElement ofFloat(String name, float value) {
         return of(name, AnnotationValue.ofFloat(value));
     }
 
@@ -201,8 +189,7 @@ public sealed interface AnnotationElement
      * @param value the associated value
      * @see AnnotationValue#ofAnnotation AnnotationValue::ofAnnotation
      */
-    static AnnotationElement ofAnnotation(String name,
-                                          Annotation value) {
+    static AnnotationElement ofAnnotation(String name, Annotation value) {
         return of(name, AnnotationValue.ofAnnotation(value));
     }
 
@@ -212,8 +199,7 @@ public sealed interface AnnotationElement
      * @param values the associated values
      * @see AnnotationValue#ofArray(AnnotationValue...) AnnotationValue::ofArray
      */
-    static AnnotationElement ofArray(String name,
-                                     AnnotationValue... values) {
+    static AnnotationElement ofArray(String name, AnnotationValue... values) {
         return of(name, AnnotationValue.ofArray(values));
     }
 }

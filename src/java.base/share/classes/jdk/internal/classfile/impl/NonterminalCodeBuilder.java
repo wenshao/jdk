@@ -28,7 +28,8 @@ import java.lang.classfile.CodeBuilder;
 import java.lang.classfile.Label;
 import java.lang.classfile.constantpool.ConstantPoolBuilder;
 
-public abstract sealed class NonterminalCodeBuilder implements CodeBuilder
+public abstract sealed class NonterminalCodeBuilder
+        implements CodeBuilder
     permits ChainedCodeBuilder, BlockCodeBuilderImpl {
     protected final TerminalCodeBuilder terminal;
     protected final CodeBuilder parent;
@@ -37,7 +38,7 @@ public abstract sealed class NonterminalCodeBuilder implements CodeBuilder
         this.parent = parent;
         this.terminal = switch (parent) {
             case NonterminalCodeBuilder cb -> cb.terminal;
-            case TerminalCodeBuilder cb -> cb;
+            case TerminalCodeBuilder    cb -> cb;
         };
     }
 

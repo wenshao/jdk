@@ -24,24 +24,15 @@
  */
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.*;
+import java.lang.classfile.constantpool.ConstantPoolBuilder;
+import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.AccessFlag;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-
-import java.lang.classfile.AccessFlags;
-
-import java.lang.classfile.ClassModel;
-import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.CodeModel;
-import java.lang.classfile.CodeTransform;
-import java.lang.classfile.constantpool.ConstantPoolBuilder;
-import java.lang.classfile.MethodBuilder;
-import java.lang.classfile.MethodElement;
-import java.lang.classfile.MethodModel;
-import java.lang.classfile.constantpool.Utf8Entry;
 
 public final class BufferedMethodBuilder
         implements TerminalMethodBuilder {
@@ -54,12 +45,14 @@ public final class BufferedMethodBuilder
     private final MethodModel original;
     private int[] parameterSlots;
 
-    public BufferedMethodBuilder(SplitConstantPool constantPool,
-                                 ClassFileImpl context,
-                                 Utf8Entry nameInfo,
-                                 Utf8Entry typeInfo,
-                                 int flags,
-                                 MethodModel original) {
+    public BufferedMethodBuilder(
+            SplitConstantPool constantPool,
+            ClassFileImpl context,
+            Utf8Entry nameInfo,
+            Utf8Entry typeInfo,
+            int flags,
+            MethodModel original
+    ) {
         this.elements = new ArrayList<>();
         this.constantPool = constantPool;
         this.context = context;

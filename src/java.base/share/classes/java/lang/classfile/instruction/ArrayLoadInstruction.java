@@ -29,6 +29,7 @@ import java.lang.classfile.CodeModel;
 import java.lang.classfile.Instruction;
 import java.lang.classfile.Opcode;
 import java.lang.classfile.TypeKind;
+
 import jdk.internal.classfile.impl.AbstractInstruction;
 import jdk.internal.classfile.impl.Util;
 import jdk.internal.javac.PreviewFeature;
@@ -42,7 +43,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface ArrayLoadInstruction extends Instruction
+public sealed interface ArrayLoadInstruction
+        extends Instruction
         permits AbstractInstruction.UnboundArrayLoadInstruction {
     /**
      * {@return the component type of the array} The {@link TypeKind#BYTE byte}

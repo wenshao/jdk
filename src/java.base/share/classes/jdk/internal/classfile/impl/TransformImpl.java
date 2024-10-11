@@ -24,28 +24,10 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.classfile.ClassFileBuilder;
-import java.lang.classfile.ClassFileTransform;
+import java.lang.classfile.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-
-import java.lang.classfile.ClassBuilder;
-import java.lang.classfile.ClassElement;
-import java.lang.classfile.ClassTransform;
-import java.lang.classfile.ClassFileElement;
-import java.lang.classfile.CodeBuilder;
-import java.lang.classfile.CodeElement;
-import java.lang.classfile.CodeModel;
-import java.lang.classfile.CodeTransform;
-import java.lang.classfile.FieldBuilder;
-import java.lang.classfile.FieldElement;
-import java.lang.classfile.FieldModel;
-import java.lang.classfile.FieldTransform;
-import java.lang.classfile.MethodBuilder;
-import java.lang.classfile.MethodElement;
-import java.lang.classfile.MethodModel;
-import java.lang.classfile.MethodTransform;
 
 public final class TransformImpl {
     // ClassTransform
@@ -75,7 +57,8 @@ public final class TransformImpl {
         ResolvedTransform<E> resolve(B builder);
     }
 
-    interface UnresolvedClassTransform extends ClassTransform, ResolvableTransform<ClassElement, ClassBuilder> {
+    interface UnresolvedClassTransform
+            extends ClassTransform, ResolvableTransform<ClassElement, ClassBuilder> {
         @Override
         default void accept(ClassBuilder builder, ClassElement element) {
             throw new UnsupportedOperationException("transforms must be resolved before running");
@@ -92,17 +75,17 @@ public final class TransformImpl {
         }
     }
 
-    public record ResolvedTransform<E extends ClassFileElement>(Consumer<E> consumer,
-                                     Runnable endHandler,
-                                     Runnable startHandler) {
-
+    public record ResolvedTransform<E extends ClassFileElement>(
+            Consumer<E> consumer,
+            Runnable endHandler,
+            Runnable startHandler
+    ) {
         public ResolvedTransform(Consumer<E> consumer) {
             this(consumer, NOTHING, NOTHING);
         }
     }
 
-    public record ChainedClassTransform(ClassTransform t,
-                                        ClassTransform next)
+    public record ChainedClassTransform(ClassTransform t, ClassTransform next)
             implements UnresolvedClassTransform {
         @Override
         public ResolvedTransform<ClassElement> resolve(ClassBuilder builder) {
@@ -123,8 +106,7 @@ public final class TransformImpl {
         }
     }
 
-    public record ClassMethodTransform(MethodTransform transform,
-                                       Predicate<MethodModel> filter)
+    public record ClassMethodTransform(MethodTransform transform, Predicate<MethodModel> filter)
             implements UnresolvedClassTransform {
         @Override
         public ResolvedTransform<ClassElement> resolve(ClassBuilder builder) {
@@ -146,8 +128,7 @@ public final class TransformImpl {
         }
     }
 
-    public record ClassFieldTransform(FieldTransform transform,
-                                      Predicate<FieldModel> filter)
+    public record ClassFieldTransform(FieldTransform transform, Predicate<FieldModel> filter)
             implements UnresolvedClassTransform {
         @Override
         public ResolvedTransform<ClassElement> resolve(ClassBuilder builder) {
@@ -171,7 +152,8 @@ public final class TransformImpl {
 
     // MethodTransform
 
-    interface UnresolvedMethodTransform extends MethodTransform, ResolvableTransform<MethodElement, MethodBuilder> {
+    interface UnresolvedMethodTransform
+            extends MethodTransform, ResolvableTransform<MethodElement, MethodBuilder> {
         @Override
         default void accept(MethodBuilder builder, MethodElement element) {
             throw new UnsupportedOperationException("transforms must be resolved before running");
@@ -188,8 +170,7 @@ public final class TransformImpl {
         }
     }
 
-    public record ChainedMethodTransform(MethodTransform t,
-                                         MethodTransform next)
+    public record ChainedMethodTransform(MethodTransform t, MethodTransform next)
             implements TransformImpl.UnresolvedMethodTransform {
         @Override
         public ResolvedTransform<MethodElement> resolve(MethodBuilder builder) {
@@ -235,7 +216,8 @@ public final class TransformImpl {
 
     // FieldTransform
 
-    interface UnresolvedFieldTransform extends FieldTransform, ResolvableTransform<FieldElement, FieldBuilder> {
+    interface UnresolvedFieldTransform
+            extends FieldTransform, ResolvableTransform<FieldElement, FieldBuilder> {
         @Override
         default void accept(FieldBuilder builder, FieldElement element) {
             throw new UnsupportedOperationException("transforms must be resolved before running");
@@ -275,7 +257,8 @@ public final class TransformImpl {
 
     // CodeTransform
 
-    interface UnresolvedCodeTransform extends CodeTransform, ResolvableTransform<CodeElement, CodeBuilder> {
+    interface UnresolvedCodeTransform
+            extends CodeTransform, ResolvableTransform<CodeElement, CodeBuilder> {
         @Override
         default void accept(CodeBuilder builder, CodeElement element) {
             throw new UnsupportedOperationException("transforms must be resolved before running");
@@ -299,9 +282,10 @@ public final class TransformImpl {
             ResolvedTransform<CodeElement> downstream = TransformImpl.resolve(next, builder);
             CodeBuilder chainedBuilder = new ChainedCodeBuilder(builder, downstream.consumer());
             ResolvedTransform<CodeElement> upstream = TransformImpl.resolve(t, chainedBuilder);
-            return new ResolvedTransform<>(upstream.consumer(),
-                                         chainRunnable(upstream.endHandler(), downstream.endHandler()),
-                                         chainRunnable(downstream.startHandler(), upstream.startHandler()));
+            return new ResolvedTransform<>(
+                    upstream.consumer(),
+                    chainRunnable(upstream.endHandler(), downstream.endHandler()),
+                    chainRunnable(downstream.startHandler(), upstream.startHandler()));
         }
     }
 

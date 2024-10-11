@@ -45,7 +45,6 @@ import java.lang.classfile.instruction.LabelTarget;
 public final class LabelImpl
         extends AbstractElement
         implements Label, LabelTarget {
-
     private final LabelContext labelContext;
     private int bci;
 

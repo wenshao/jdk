@@ -24,8 +24,6 @@
  */
 package java.lang.classfile.instruction;
 
-import java.lang.constant.MethodTypeDesc;
-
 import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.constantpool.ClassEntry;
@@ -36,6 +34,8 @@ import java.lang.classfile.constantpool.MemberRefEntry;
 import java.lang.classfile.constantpool.MethodRefEntry;
 import java.lang.classfile.constantpool.NameAndTypeEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.constant.MethodTypeDesc;
+
 import jdk.internal.classfile.impl.AbstractInstruction;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.Util;
@@ -50,8 +50,10 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface InvokeInstruction extends Instruction
-        permits AbstractInstruction.BoundInvokeInterfaceInstruction, AbstractInstruction.BoundInvokeInstruction, AbstractInstruction.UnboundInvokeInstruction {
+public sealed interface InvokeInstruction
+        extends Instruction
+        permits AbstractInstruction.BoundInvokeInterfaceInstruction, AbstractInstruction.BoundInvokeInstruction,
+        AbstractInstruction.UnboundInvokeInstruction {
     /**
      * {@return the {@link MethodRefEntry} or {@link InterfaceMethodRefEntry}
      * constant described by this instruction}
@@ -122,11 +124,13 @@ public sealed interface InvokeInstruction extends Instruction
      * @param type the method descriptor
      * @param isInterface whether the class holding the method is an interface
      */
-    static InvokeInstruction of(Opcode op,
-                                ClassEntry owner,
-                                Utf8Entry name,
-                                Utf8Entry type,
-                                boolean isInterface) {
+    static InvokeInstruction of(
+            Opcode op,
+            ClassEntry owner,
+            Utf8Entry name,
+            Utf8Entry type,
+            boolean isInterface
+    ) {
         return of(op, owner, TemporaryConstantPool.INSTANCE.nameAndTypeEntry(name, type), isInterface);
     }
 
@@ -139,10 +143,12 @@ public sealed interface InvokeInstruction extends Instruction
      * @param nameAndType the name and type of the method
      * @param isInterface whether the class holding the method is an interface
      */
-    static InvokeInstruction of(Opcode op,
-                                ClassEntry owner,
-                                NameAndTypeEntry nameAndType,
-                                boolean isInterface) {
+    static InvokeInstruction of(
+            Opcode op,
+            ClassEntry owner,
+            NameAndTypeEntry nameAndType,
+            boolean isInterface
+    ) {
         return of(op, isInterface
                       ? TemporaryConstantPool.INSTANCE.interfaceMethodRefEntry(owner, nameAndType)
                       : TemporaryConstantPool.INSTANCE.methodRefEntry(owner, nameAndType));

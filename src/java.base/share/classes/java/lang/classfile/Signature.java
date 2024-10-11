@@ -25,13 +25,14 @@
 package java.lang.classfile;
 
 import java.lang.constant.ClassDesc;
-import jdk.internal.classfile.impl.SignaturesImpl;
-
 import java.util.List;
-import static java.util.Objects.requireNonNull;
 import java.util.Optional;
+
+import jdk.internal.classfile.impl.SignaturesImpl;
 import jdk.internal.classfile.impl.Util;
 import jdk.internal.javac.PreviewFeature;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Models generic Java type signatures, as defined in JVMS {@jvms 4.7.9.1}.
@@ -73,7 +74,8 @@ public sealed interface Signature {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    public sealed interface BaseTypeSig extends Signature
+    public sealed interface BaseTypeSig
+            extends Signature
             permits SignaturesImpl.BaseTypeSigImpl {
 
         /** {@return the single-letter descriptor for the base type} */
@@ -196,7 +198,8 @@ public sealed interface Signature {
          * @since 23
          */
         @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-        public sealed interface Unbounded extends TypeArg permits SignaturesImpl.UnboundedTypeArgImpl {
+        public sealed interface Unbounded
+                extends TypeArg permits SignaturesImpl.UnboundedTypeArgImpl {
         }
 
         /**
@@ -204,7 +207,8 @@ public sealed interface Signature {
          * @since 23
          */
         @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-        public sealed interface Bounded extends TypeArg permits SignaturesImpl.TypeArgImpl {
+        public sealed interface Bounded
+                extends TypeArg permits SignaturesImpl.TypeArgImpl {
 
             /**
              * Models a type argument's wildcard indicator.
@@ -400,6 +404,6 @@ public sealed interface Signature {
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    public sealed interface ThrowableSig extends Signature {
-    }
+    public sealed interface ThrowableSig
+            extends Signature { }
 }

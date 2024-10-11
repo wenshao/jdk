@@ -26,13 +26,13 @@ package java.lang.classfile.attribute;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.MethodTypeDesc;
-import java.util.Optional;
-
 import java.lang.classfile.Attribute;
 import java.lang.classfile.ClassElement;
 import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.classfile.constantpool.NameAndTypeEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.util.Optional;
+
 import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.UnboundAttribute;
@@ -101,8 +101,7 @@ public sealed interface EnclosingMethodAttribute
      * @param method the name and type of the enclosing method or {@code empty} if
      *               the class is not immediately enclosed by a method or constructor
      */
-    static EnclosingMethodAttribute of(ClassEntry className,
-                                       Optional<NameAndTypeEntry> method) {
+    static EnclosingMethodAttribute of(ClassEntry className, Optional<NameAndTypeEntry> method) {
         return new UnboundAttribute.UnboundEnclosingMethodAttribute(className, method.orElse(null));
     }
 
@@ -115,9 +114,11 @@ public sealed interface EnclosingMethodAttribute
      *                   the class is not immediately enclosed by a method or constructor
      * @throws IllegalArgumentException if {@code className} represents a primitive type
      */
-    static EnclosingMethodAttribute of(ClassDesc className,
-                                       Optional<String> methodName,
-                                       Optional<MethodTypeDesc> methodType) {
+    static EnclosingMethodAttribute of(
+            ClassDesc className,
+            Optional<String> methodName,
+            Optional<MethodTypeDesc> methodType
+    ) {
         return new UnboundAttribute.UnboundEnclosingMethodAttribute(
                         TemporaryConstantPool.INSTANCE.classEntry(className),
                         methodName.isPresent() && methodType.isPresent()

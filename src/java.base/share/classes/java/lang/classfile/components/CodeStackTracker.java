@@ -24,11 +24,12 @@
  */
 package java.lang.classfile.components;
 
-import java.util.Collection;
-import java.util.Optional;
 import java.lang.classfile.CodeTransform;
 import java.lang.classfile.Label;
 import java.lang.classfile.TypeKind;
+import java.util.Collection;
+import java.util.Optional;
+
 import jdk.internal.classfile.impl.CodeStackTrackerImpl;
 import jdk.internal.javac.PreviewFeature;
 
@@ -53,7 +54,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface CodeStackTracker extends CodeTransform permits CodeStackTrackerImpl {
+public sealed interface CodeStackTracker
+        extends CodeTransform permits CodeStackTrackerImpl {
 
     /**
      * Creates new instance of {@link CodeStackTracker} initialized with provided stack items.

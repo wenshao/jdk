@@ -36,7 +36,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface DynamicConstantPoolEntry extends PoolEntry
+public sealed interface DynamicConstantPoolEntry
+        extends PoolEntry
         permits ConstantDynamicEntry, InvokeDynamicEntry {
 
     /**

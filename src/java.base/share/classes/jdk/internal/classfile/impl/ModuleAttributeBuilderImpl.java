@@ -30,15 +30,13 @@ import java.lang.classfile.attribute.ModuleAttribute.ModuleAttributeBuilder;
 import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.classfile.constantpool.ModuleEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.lang.constant.ClassDesc;
 import java.lang.constant.ModuleDesc;
 import java.lang.constant.PackageDesc;
-
-import java.lang.constant.ClassDesc;
 import java.util.*;
 
 public final class ModuleAttributeBuilderImpl
         implements ModuleAttributeBuilder {
-
     private ModuleEntry moduleEntry;
     private Utf8Entry moduleVersion;
     private int moduleFlags;
@@ -59,14 +57,22 @@ public final class ModuleAttributeBuilderImpl
     }
 
     public ModuleAttribute build() {
-        return new UnboundAttribute.UnboundModuleAttribute(moduleEntry, moduleFlags, moduleVersion,
-                                                            requires, exports, opens, uses, provides);
+        return new UnboundAttribute.UnboundModuleAttribute(
+                moduleEntry,
+                moduleFlags,
+                moduleVersion,
+                requires,
+                exports,
+                opens,
+                uses,
+                provides);
     }
 
     @Override
     public ModuleAttributeBuilder moduleName(ModuleDesc moduleName) {
         Objects.requireNonNull(moduleName);
-        moduleEntry = TemporaryConstantPool.INSTANCE.moduleEntry(TemporaryConstantPool.INSTANCE.utf8Entry(moduleName.name()));
+        moduleEntry = TemporaryConstantPool.INSTANCE.moduleEntry(
+                TemporaryConstantPool.INSTANCE.utf8Entry(moduleName.name()));
         return this;
     }
 
@@ -85,7 +91,11 @@ public final class ModuleAttributeBuilderImpl
     @Override
     public ModuleAttributeBuilder requires(ModuleDesc module, int flags, String version) {
         Objects.requireNonNull(module);
-        return requires(ModuleRequireInfo.of(TemporaryConstantPool.INSTANCE.moduleEntry(TemporaryConstantPool.INSTANCE.utf8Entry(module.name())), flags, version == null ? null : TemporaryConstantPool.INSTANCE.utf8Entry(version)));
+        return requires(
+                ModuleRequireInfo.of(
+                        TemporaryConstantPool.INSTANCE.moduleEntry(TemporaryConstantPool.INSTANCE.utf8Entry(module.name())),
+                        flags,
+                        version == null ? null : TemporaryConstantPool.INSTANCE.utf8Entry(version)));
     }
 
     @Override
@@ -101,7 +111,12 @@ public final class ModuleAttributeBuilderImpl
         var exportsTo = new ArrayList<ModuleEntry>(exportsToModules.length);
         for (var e : exportsToModules)
             exportsTo.add(TemporaryConstantPool.INSTANCE.moduleEntry(TemporaryConstantPool.INSTANCE.utf8Entry(e.name())));
-        return exports(ModuleExportInfo.of(TemporaryConstantPool.INSTANCE.packageEntry(TemporaryConstantPool.INSTANCE.utf8Entry(pkge.internalName())), flags, exportsTo));
+        return exports(
+                ModuleExportInfo.of(
+                        TemporaryConstantPool.INSTANCE.packageEntry(
+                                TemporaryConstantPool.INSTANCE.utf8Entry(pkge.internalName())),
+                        flags,
+                        exportsTo));
     }
 
     @Override
@@ -117,7 +132,12 @@ public final class ModuleAttributeBuilderImpl
         var opensTo = new ArrayList<ModuleEntry>(opensToModules.length);
         for (var e : opensToModules)
             opensTo.add(TemporaryConstantPool.INSTANCE.moduleEntry(TemporaryConstantPool.INSTANCE.utf8Entry(e.name())));
-        return opens(ModuleOpenInfo.of(TemporaryConstantPool.INSTANCE.packageEntry(TemporaryConstantPool.INSTANCE.utf8Entry(pkge.internalName())), flags, opensTo));
+        return opens(
+                ModuleOpenInfo.of(
+                        TemporaryConstantPool.INSTANCE.packageEntry(
+                                TemporaryConstantPool.INSTANCE.utf8Entry(pkge.internalName())),
+                        flags,
+                        opensTo));
     }
 
     @Override

@@ -24,12 +24,12 @@
  */
 package java.lang.classfile;
 
+import java.lang.classfile.attribute.RecordComponentInfo;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import java.lang.classfile.attribute.RecordComponentInfo;
 import jdk.internal.classfile.impl.AbstractUnboundModel;
 import jdk.internal.javac.PreviewFeature;
 
@@ -41,7 +41,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface AttributedElement extends ClassFileElement
+public sealed interface AttributedElement
+        extends ClassFileElement
         permits ClassModel, CodeModel, FieldModel, MethodModel,
                 RecordComponentInfo, AbstractUnboundModel {
 

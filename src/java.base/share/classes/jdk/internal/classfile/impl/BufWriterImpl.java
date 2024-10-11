@@ -25,7 +25,6 @@
  */
 package jdk.internal.classfile.impl;
 
-
 import java.util.Arrays;
 
 import java.lang.classfile.BufWriter;
@@ -42,7 +41,8 @@ import static java.lang.classfile.constantpool.PoolEntry.TAG_UTF8;
 import static jdk.internal.util.ModifiedUtf.putChar;
 import static jdk.internal.util.ModifiedUtf.utfLen;
 
-public final class BufWriterImpl implements BufWriter {
+public final class BufWriterImpl
+        implements BufWriter {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
     private final ConstantPoolBuilder constantPool;
@@ -81,6 +81,7 @@ public final class BufWriterImpl implements BufWriter {
     public void setLabelContext(LabelContext labelContext) {
         this.labelContext = labelContext;
     }
+
     @Override
     public boolean canWriteDirect(ConstantPool other) {
         return constantPool.canWriteDirect(other);

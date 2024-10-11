@@ -50,7 +50,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface LocalVariable extends PseudoInstruction
+public sealed interface LocalVariable
+        extends PseudoInstruction
         permits AbstractPseudoInstruction.UnboundLocalVariable, BoundLocalVariable {
     /**
      * {@return the local variable slot}

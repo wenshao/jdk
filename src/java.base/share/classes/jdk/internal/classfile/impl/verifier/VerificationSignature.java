@@ -25,7 +25,6 @@
 package jdk.internal.classfile.impl.verifier;
 
 final class VerificationSignature {
-
     enum BasicType {
         T_BOOLEAN(4),
         T_CHAR(5),
@@ -53,49 +52,38 @@ final class VerificationSignature {
 
         static BasicType fromSignature(char ch) {
             return switch (ch) {
-                case JVM_SIGNATURE_BOOLEAN ->
-                    T_BOOLEAN;
-                case JVM_SIGNATURE_CHAR ->
-                    T_CHAR;
-                case JVM_SIGNATURE_FLOAT ->
-                    T_FLOAT;
-                case JVM_SIGNATURE_DOUBLE ->
-                    T_DOUBLE;
-                case JVM_SIGNATURE_BYTE ->
-                    T_BYTE;
-                case JVM_SIGNATURE_SHORT ->
-                    T_SHORT;
-                case JVM_SIGNATURE_INT ->
-                    T_INT;
-                case JVM_SIGNATURE_LONG ->
-                    T_LONG;
-                case JVM_SIGNATURE_CLASS ->
-                    T_OBJECT;
-                case JVM_SIGNATURE_ARRAY ->
-                    T_ARRAY;
-                case JVM_SIGNATURE_VOID ->
-                    T_VOID;
-                default ->
-                    throw new IllegalArgumentException("Not a valid type: '" + ch + "'");
+                case JVM_SIGNATURE_BOOLEAN -> T_BOOLEAN;
+                case JVM_SIGNATURE_CHAR    -> T_CHAR;
+                case JVM_SIGNATURE_FLOAT   -> T_FLOAT;
+                case JVM_SIGNATURE_DOUBLE  -> T_DOUBLE;
+                case JVM_SIGNATURE_BYTE    -> T_BYTE;
+                case JVM_SIGNATURE_SHORT   -> T_SHORT;
+                case JVM_SIGNATURE_INT     -> T_INT;
+                case JVM_SIGNATURE_LONG    -> T_LONG;
+                case JVM_SIGNATURE_CLASS   -> T_OBJECT;
+                case JVM_SIGNATURE_ARRAY   -> T_ARRAY;
+                case JVM_SIGNATURE_VOID    -> T_VOID;
+                default -> throw new IllegalArgumentException("Not a valid type: '" + ch + "'");
             };
         }
     }
 
-    static final char JVM_SIGNATURE_DOT = '.',
-            JVM_SIGNATURE_ARRAY = '[',
-            JVM_SIGNATURE_BYTE = 'B',
-            JVM_SIGNATURE_CHAR = 'C',
-            JVM_SIGNATURE_CLASS = 'L',
+    static final char
+            JVM_SIGNATURE_DOT      = '.',
+            JVM_SIGNATURE_ARRAY    = '[',
+            JVM_SIGNATURE_BYTE     = 'B',
+            JVM_SIGNATURE_CHAR     = 'C',
+            JVM_SIGNATURE_CLASS    = 'L',
             JVM_SIGNATURE_ENDCLASS = ';',
-            JVM_SIGNATURE_FLOAT = 'F',
-            JVM_SIGNATURE_DOUBLE = 'D',
-            JVM_SIGNATURE_FUNC = '(',
-            JVM_SIGNATURE_ENDFUNC = ')',
-            JVM_SIGNATURE_INT = 'I',
-            JVM_SIGNATURE_LONG = 'J',
-            JVM_SIGNATURE_SHORT = 'S',
-            JVM_SIGNATURE_VOID = 'V',
-            JVM_SIGNATURE_BOOLEAN = 'Z';
+            JVM_SIGNATURE_FLOAT    = 'F',
+            JVM_SIGNATURE_DOUBLE   = 'D',
+            JVM_SIGNATURE_FUNC     = '(',
+            JVM_SIGNATURE_ENDFUNC  = ')',
+            JVM_SIGNATURE_INT      = 'I',
+            JVM_SIGNATURE_LONG     = 'J',
+            JVM_SIGNATURE_SHORT    = 'S',
+            JVM_SIGNATURE_VOID     = 'V',
+            JVM_SIGNATURE_BOOLEAN  = 'Z';
 
     static boolean isReferenceType(BasicType t) {
         return t == BasicType.T_OBJECT || t == BasicType.T_ARRAY;

@@ -24,11 +24,12 @@
  */
 package java.lang.classfile.components;
 
-import java.lang.constant.MethodTypeDesc;
-import java.lang.reflect.AccessFlag;
 import java.lang.classfile.AccessFlags;
 import java.lang.classfile.CodeTransform;
 import java.lang.classfile.TypeKind;
+import java.lang.constant.MethodTypeDesc;
+import java.lang.reflect.AccessFlag;
+
 import jdk.internal.classfile.impl.CodeLocalsShifterImpl;
 import jdk.internal.javac.PreviewFeature;
 
@@ -41,7 +42,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface CodeLocalsShifter extends CodeTransform permits CodeLocalsShifterImpl {
+public sealed interface CodeLocalsShifter
+        extends CodeTransform permits CodeLocalsShifterImpl {
 
     /**
      * Creates a new instance of {@link CodeLocalsShifter}

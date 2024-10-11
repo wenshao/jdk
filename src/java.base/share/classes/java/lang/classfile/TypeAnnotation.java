@@ -25,10 +25,10 @@
 
 package java.lang.classfile;
 
-import java.util.List;
-
 import java.lang.classfile.attribute.RuntimeInvisibleTypeAnnotationsAttribute;
 import java.lang.classfile.attribute.RuntimeVisibleTypeAnnotationsAttribute;
+import java.util.List;
+
 import jdk.internal.classfile.impl.TargetInfoImpl;
 import jdk.internal.classfile.impl.UnboundAttribute;
 import jdk.internal.javac.PreviewFeature;
@@ -614,7 +614,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface TypeParameterTarget extends TargetInfo
+    sealed interface TypeParameterTarget
+            extends TargetInfo
             permits TargetInfoImpl.TypeParameterTargetImpl {
 
         /**
@@ -633,7 +634,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface SupertypeTarget extends TargetInfo
+    sealed interface SupertypeTarget
+            extends TargetInfo
             permits TargetInfoImpl.SupertypeTargetImpl {
 
         /**
@@ -657,7 +659,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface TypeParameterBoundTarget extends TargetInfo
+    sealed interface TypeParameterBoundTarget
+            extends TargetInfo
             permits TargetInfoImpl.TypeParameterBoundTargetImpl {
 
         /**
@@ -683,7 +686,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface EmptyTarget extends TargetInfo
+    sealed interface EmptyTarget
+            extends TargetInfo
             permits TargetInfoImpl.EmptyTargetImpl {
     }
 
@@ -694,7 +698,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface FormalParameterTarget extends TargetInfo
+    sealed interface FormalParameterTarget
+            extends TargetInfo
             permits TargetInfoImpl.FormalParameterTargetImpl {
 
         /**
@@ -713,7 +718,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface ThrowsTarget extends TargetInfo
+    sealed interface ThrowsTarget
+            extends TargetInfo
             permits TargetInfoImpl.ThrowsTargetImpl {
 
         /**
@@ -733,7 +739,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface LocalVarTarget extends TargetInfo
+    sealed interface LocalVarTarget
+            extends TargetInfo
             permits TargetInfoImpl.LocalVarTargetImpl {
 
         /**
@@ -797,7 +804,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface CatchTarget extends TargetInfo
+    sealed interface CatchTarget
+            extends TargetInfo
             permits TargetInfoImpl.CatchTargetImpl {
 
         /**
@@ -816,7 +824,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface OffsetTarget extends TargetInfo
+    sealed interface OffsetTarget
+            extends TargetInfo
             permits TargetInfoImpl.OffsetTargetImpl {
 
         /**
@@ -838,7 +847,8 @@ public sealed interface TypeAnnotation
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface TypeArgumentTarget extends TargetInfo
+    sealed interface TypeArgumentTarget
+            extends TargetInfo
             permits TargetInfoImpl.TypeArgumentTargetImpl {
 
         /**

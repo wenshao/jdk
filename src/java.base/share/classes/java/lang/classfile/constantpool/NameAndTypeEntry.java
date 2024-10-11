@@ -35,7 +35,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface NameAndTypeEntry extends PoolEntry
+public sealed interface NameAndTypeEntry
+        extends PoolEntry
         permits AbstractPoolEntry.NameAndTypeEntryImpl {
 
     /**

@@ -33,7 +33,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public class ConstantPoolException extends IllegalArgumentException {
+public class ConstantPoolException
+        extends IllegalArgumentException {
 
     @java.io.Serial
     private static final long serialVersionUID = 7245472922409094120L;

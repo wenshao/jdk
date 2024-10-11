@@ -24,10 +24,9 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.constant.MethodTypeDesc;
 import java.lang.classfile.*;
 import java.lang.classfile.constantpool.Utf8Entry;
-
+import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.AccessFlag;
 import java.util.List;
 import java.util.Optional;
@@ -36,7 +35,6 @@ import java.util.function.Consumer;
 public final class MethodImpl
         extends AbstractElement
         implements MethodModel, MethodInfo, Util.Writable {
-
     private final ClassReader reader;
     private final int startPos, endPos, attributesPos;
     private List<Attribute<?>> attributes;
@@ -101,9 +99,9 @@ public final class MethodImpl
     public void writeTo(BufWriterImpl buf) {
         if (buf.canWriteDirect(reader)) {
             reader.copyBytesTo(buf, startPos, endPos - startPos);
-        }
-        else {
-            buf.writeU2U2U2(flags().flagsMask(),
+        } else {
+            buf.writeU2U2U2(
+                    flags().flagsMask(),
                     buf.cpIndex(methodName()),
                     buf.cpIndex(methodType()));
             Util.writeAttributes(buf, attributes());
@@ -130,8 +128,7 @@ public final class MethodImpl
     public void writeTo(DirectClassBuilder builder) {
         if (builder.canWriteDirect(reader)) {
             builder.withMethod(this);
-        }
-        else {
+        } else {
             builder.withMethod(methodName(), methodType(), methodFlags(), Util.writingAll(this));
         }
     }

@@ -28,6 +28,7 @@ package java.lang.classfile.attribute;
 import java.lang.classfile.Attribute;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.Label;
+
 import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.javac.PreviewFeature;
 
@@ -44,7 +45,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface CodeAttribute extends Attribute<CodeAttribute>, CodeModel
+public sealed interface CodeAttribute
+        extends Attribute<CodeAttribute>, CodeModel
         permits BoundAttribute.BoundCodeAttribute {
 
     /**

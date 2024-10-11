@@ -24,25 +24,24 @@
  */
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.ClassSignature;
+import java.lang.classfile.MethodSignature;
+import java.lang.classfile.Signature;
+import java.lang.classfile.Signature.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Collections;
-import java.lang.classfile.ClassSignature;
-import java.lang.classfile.MethodSignature;
-import java.lang.classfile.Signature;
-import java.lang.classfile.Signature.*;
 
 public final class SignaturesImpl {
+    private final String sig;
+    private int sigp;
 
     public SignaturesImpl(String signature) {
         this.sig = Objects.requireNonNull(signature);
         this.sigp = 0;
     }
-
-    private final String sig;
-    private int sigp;
 
     public ClassSignature parseClassSignature() {
         try {
@@ -236,24 +235,24 @@ public final class SignaturesImpl {
         return sigp;
     }
 
-    public static record BaseTypeSigImpl(char baseType) implements Signature.BaseTypeSig {
-
+    public static record BaseTypeSigImpl(char baseType)
+            implements Signature.BaseTypeSig {
         @Override
         public String signatureString() {
             return "" + baseType;
         }
     }
 
-    public static record TypeVarSigImpl(String identifier) implements Signature.TypeVarSig {
-
+    public static record TypeVarSigImpl(String identifier)
+            implements Signature.TypeVarSig {
         @Override
         public String signatureString() {
             return "T" + identifier + ';';
         }
     }
 
-    public static record ArrayTypeSigImpl(int arrayDepth, Signature elemType) implements Signature.ArrayTypeSig {
-
+    public static record ArrayTypeSigImpl(int arrayDepth, Signature elemType)
+            implements Signature.ArrayTypeSig {
         @Override
         public Signature componentSignature() {
             return arrayDepth > 1 ? new ArrayTypeSigImpl(arrayDepth - 1, elemType) : elemType;
@@ -265,9 +264,11 @@ public final class SignaturesImpl {
         }
     }
 
-    public static record ClassTypeSigImpl(Optional<ClassTypeSig> outerType, String className, List<Signature.TypeArg> typeArgs)
-            implements Signature.ClassTypeSig {
-
+    public static record ClassTypeSigImpl(
+            Optional<ClassTypeSig> outerType,
+            String className,
+            List<Signature.TypeArg> typeArgs
+    ) implements Signature.ClassTypeSig {
         @Override
         public String signatureString() {
             String prefix = "L";
@@ -284,7 +285,7 @@ public final class SignaturesImpl {
                     switch (ta) {
                         case TypeArg.Bounded b -> {
                             switch (b.wildcardIndicator()) {
-                                case SUPER -> sb.append('-');
+                                case SUPER   -> sb.append('-');
                                 case EXTENDS -> sb.append('+');
                             }
                             sb.append(b.boundType().signatureString());
@@ -298,16 +299,19 @@ public final class SignaturesImpl {
         }
     }
 
-    public static enum UnboundedTypeArgImpl implements TypeArg.Unbounded {
+    public static enum UnboundedTypeArgImpl
+            implements TypeArg.Unbounded {
         INSTANCE;
     }
 
-    public static record TypeArgImpl(WildcardIndicator wildcardIndicator, RefTypeSig boundType) implements Signature.TypeArg.Bounded {
-    }
+    public static record TypeArgImpl(WildcardIndicator wildcardIndicator, RefTypeSig boundType)
+            implements Signature.TypeArg.Bounded { }
 
-    public static record TypeParamImpl(String identifier, Optional<RefTypeSig> classBound, List<RefTypeSig> interfaceBounds)
-            implements TypeParam {
-    }
+    public static record TypeParamImpl(
+            String identifier,
+            Optional<RefTypeSig> classBound,
+            List<RefTypeSig> interfaceBounds
+    ) implements TypeParam { }
 
     private static StringBuilder printTypeParameters(List<TypeParam> typeParameters) {
         var sb = new StringBuilder();
@@ -325,9 +329,11 @@ public final class SignaturesImpl {
         return sb;
     }
 
-    public static record ClassSignatureImpl(List<TypeParam> typeParameters, ClassTypeSig superclassSignature,
-            List<ClassTypeSig> superinterfaceSignatures) implements ClassSignature {
-
+    public static record ClassSignatureImpl(
+            List<TypeParam> typeParameters,
+            ClassTypeSig superclassSignature,
+            List<ClassTypeSig> superinterfaceSignatures
+    ) implements ClassSignature {
         @Override
         public String signatureString() {
             var sb = printTypeParameters(typeParameters);
@@ -342,8 +348,8 @@ public final class SignaturesImpl {
             List<TypeParam> typeParameters,
             List<ThrowableSig> throwableSignatures,
             Signature result,
-            List<Signature> arguments) implements MethodSignature {
-
+            List<Signature> arguments
+    ) implements MethodSignature {
         @Override
         public String signatureString() {
             var sb = printTypeParameters(typeParameters);

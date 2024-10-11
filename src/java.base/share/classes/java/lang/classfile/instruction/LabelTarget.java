@@ -28,6 +28,7 @@ import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.Label;
 import java.lang.classfile.PseudoInstruction;
+
 import jdk.internal.classfile.impl.LabelImpl;
 import jdk.internal.javac.PreviewFeature;
 
@@ -41,7 +42,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface LabelTarget extends PseudoInstruction
+public sealed interface LabelTarget
+        extends PseudoInstruction
         permits LabelImpl {
 
     /**

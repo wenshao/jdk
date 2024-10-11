@@ -32,9 +32,7 @@ import java.lang.classfile.instruction.LocalVariable;
 
 public final class BoundLocalVariable
         extends AbstractBoundLocalVariable
-        implements LocalVariableInfo,
-                   LocalVariable {
-
+        implements LocalVariableInfo, LocalVariable {
     public BoundLocalVariable(CodeImpl code, int offset) {
         super(code, offset);
     }

@@ -24,11 +24,11 @@
  */
 package java.lang.classfile;
 
+import java.lang.classfile.attribute.CodeAttribute;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import java.lang.classfile.attribute.CodeAttribute;
 import jdk.internal.classfile.impl.TransformImpl;
 import jdk.internal.javac.PreviewFeature;
 
@@ -133,8 +133,7 @@ public non-sealed interface ClassTransform
      * @param xform the code transform
      * @return the class transform
      */
-    static ClassTransform transformingMethodBodies(Predicate<MethodModel> filter,
-                                                   CodeTransform xform) {
+    static ClassTransform transformingMethodBodies(Predicate<MethodModel> filter, CodeTransform xform) {
         return transformingMethods(filter, MethodTransform.transformingCode(xform));
     }
 

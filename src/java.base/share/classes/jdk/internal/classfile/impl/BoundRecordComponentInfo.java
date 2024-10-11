@@ -33,7 +33,6 @@ import java.lang.classfile.constantpool.Utf8Entry;
 
 public final class BoundRecordComponentInfo
         implements RecordComponentInfo {
-
     private final ClassReader reader;
     private final int startPos, attributesPos;
     private List<Attribute<?>> attributes;

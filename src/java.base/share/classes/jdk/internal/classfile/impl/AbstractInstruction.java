@@ -24,19 +24,20 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.lang.classfile.constantpool.PoolEntry;
-import java.lang.constant.ConstantDesc;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.lang.classfile.Instruction;
+import java.lang.classfile.Label;
+import java.lang.classfile.Opcode;
+import java.lang.classfile.TypeKind;
 import java.lang.classfile.constantpool.ClassEntry;
-import java.lang.classfile.instruction.SwitchCase;
 import java.lang.classfile.constantpool.FieldRefEntry;
 import java.lang.classfile.constantpool.InterfaceMethodRefEntry;
 import java.lang.classfile.constantpool.InvokeDynamicEntry;
 import java.lang.classfile.constantpool.LoadableConstantEntry;
 import java.lang.classfile.constantpool.MemberRefEntry;
+import java.lang.classfile.constantpool.PoolEntry;
 import java.lang.classfile.instruction.ArrayLoadInstruction;
 import java.lang.classfile.instruction.ArrayStoreInstruction;
 import java.lang.classfile.instruction.BranchInstruction;
@@ -59,39 +60,37 @@ import java.lang.classfile.instruction.OperatorInstruction;
 import java.lang.classfile.instruction.ReturnInstruction;
 import java.lang.classfile.instruction.StackInstruction;
 import java.lang.classfile.instruction.StoreInstruction;
+import java.lang.classfile.instruction.SwitchCase;
 import java.lang.classfile.instruction.TableSwitchInstruction;
 import java.lang.classfile.instruction.ThrowInstruction;
 import java.lang.classfile.instruction.TypeCheckInstruction;
-import java.lang.classfile.Label;
-import java.lang.classfile.Opcode;
-import java.lang.classfile.TypeKind;
+import java.lang.constant.ConstantDesc;
 
 public abstract sealed class AbstractInstruction
         extends AbstractElement
         implements Instruction {
-
     private static final String
-            FMT_ArgumentConstant = "ArgumentConstant[OP=%s, val=%s]",
-            FMT_Branch = "Branch[OP=%s]",
-            FMT_Field = "Field[OP=%s, field=%s.%s:%s]",
-            FMT_Increment = "Increment[OP=%s, slot=%d, val=%d]",
-            FMT_Invoke = "Invoke[OP=%s, m=%s.%s%s]",
-            FMT_InvokeDynamic = "InvokeDynamic[OP=%s, bsm=%s %s]",
-            FMT_InvokeInterface = "InvokeInterface[OP=%s, m=%s.%s%s]",
-            FMT_Load = "Load[OP=%s, slot=%d]",
-            FMT_LoadConstant = "LoadConstant[OP=%s, val=%s]",
-            FMT_LookupSwitch = "LookupSwitch[OP=%s]",
-            FMT_NewMultiArray = "NewMultiArray[OP=%s, type=%s[%d]]",
-            FMT_NewObj = "NewObj[OP=%s, type=%s]",
+            FMT_ArgumentConstant  = "ArgumentConstant[OP=%s, val=%s]",
+            FMT_Branch            = "Branch[OP=%s]",
+            FMT_Field             = "Field[OP=%s, field=%s.%s:%s]",
+            FMT_Increment         = "Increment[OP=%s, slot=%d, val=%d]",
+            FMT_Invoke            = "Invoke[OP=%s, m=%s.%s%s]",
+            FMT_InvokeDynamic     = "InvokeDynamic[OP=%s, bsm=%s %s]",
+            FMT_InvokeInterface   = "InvokeInterface[OP=%s, m=%s.%s%s]",
+            FMT_Load              = "Load[OP=%s, slot=%d]",
+            FMT_LoadConstant      = "LoadConstant[OP=%s, val=%s]",
+            FMT_LookupSwitch      = "LookupSwitch[OP=%s]",
+            FMT_NewMultiArray     = "NewMultiArray[OP=%s, type=%s[%d]]",
+            FMT_NewObj            = "NewObj[OP=%s, type=%s]",
             FMT_NewPrimitiveArray = "NewPrimitiveArray[OP=%s, type=%s]",
-            FMT_NewRefArray = "NewRefArray[OP=%s, type=%s]",
-            FMT_Return = "Return[OP=%s]",
-            FMT_Store = "Store[OP=%s, slot=%d]",
-            FMT_TableSwitch = "TableSwitch[OP=%s]",
-            FMT_Throw = "Throw[OP=%s]",
-            FMT_TypeCheck = "TypeCheck[OP=%s, type=%s]",
-            FMT_Unbound = "%s[op=%s]",
-            FMT_Discontinued = "Discontinued[OP=%s]";
+            FMT_NewRefArray       = "NewRefArray[OP=%s, type=%s]",
+            FMT_Return            = "Return[OP=%s]",
+            FMT_Store             = "Store[OP=%s, slot=%d]",
+            FMT_TableSwitch       = "TableSwitch[OP=%s]",
+            FMT_Throw             = "Throw[OP=%s]",
+            FMT_TypeCheck         = "TypeCheck[OP=%s, type=%s]",
+            FMT_Unbound           = "%s[op=%s]",
+            FMT_Discontinued      = "Discontinued[OP=%s]";
 
     final Opcode op;
 
@@ -113,7 +112,8 @@ public abstract sealed class AbstractInstruction
     @Override
     public abstract void writeTo(DirectCodeBuilder writer);
 
-    public abstract static sealed class BoundInstruction extends AbstractInstruction {
+    public abstract static sealed class BoundInstruction
+            extends AbstractInstruction {
         final CodeImpl code;
         final int pos;
 
@@ -135,8 +135,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class BoundLoadInstruction
-            extends BoundInstruction implements LoadInstruction {
-
+            extends BoundInstruction
+            implements LoadInstruction {
         public BoundLoadInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -160,12 +160,11 @@ public abstract sealed class AbstractInstruction
                 default -> throw new IllegalArgumentException("Unexpected op size: " + op.sizeIfFixed() + " -- " + op);
             };
         }
-
     }
 
     public static final class BoundStoreInstruction
-            extends BoundInstruction implements StoreInstruction {
-
+            extends BoundInstruction
+            implements StoreInstruction {
         public BoundStoreInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -188,12 +187,11 @@ public abstract sealed class AbstractInstruction
                 default -> throw new IllegalArgumentException("Unexpected op size: " + sizeInBytes() + " -- " + op);
             };
         }
-
     }
 
     public static final class BoundIncrementInstruction
-            extends BoundInstruction implements IncrementInstruction {
-
+            extends BoundInstruction
+            implements IncrementInstruction {
         public BoundIncrementInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -216,8 +214,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class BoundBranchInstruction
-            extends BoundInstruction implements BranchInstruction {
-
+            extends BoundInstruction
+            implements BranchInstruction {
         public BoundBranchInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -246,12 +244,11 @@ public abstract sealed class AbstractInstruction
     }
 
     public record SwitchCaseImpl(int caseValue, Label target)
-            implements SwitchCase {
-    }
+            implements SwitchCase { }
 
     public static final class BoundLookupSwitchInstruction
-            extends BoundInstruction implements LookupSwitchInstruction {
-
+            extends BoundInstruction
+            implements LookupSwitchInstruction {
         // will always need size, cache everything to there
         private final int afterPad;
         private final int npairs;
@@ -299,12 +296,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_LookupSwitch, this.opcode());
         }
-
     }
 
     public static final class BoundTableSwitchInstruction
-            extends BoundInstruction implements TableSwitchInstruction {
-
+            extends BoundInstruction
+            implements TableSwitchInstruction {
         private final int afterPad;
         private final int low;
         private final int high;
@@ -315,7 +311,7 @@ public abstract sealed class AbstractInstruction
             afterPad = code.codeStart + RawBytecodeHelper.align(pos + 1 - code.codeStart);
             low = code.classReader.readInt(afterPad + 4);
             high = code.classReader.readInt(afterPad + 8);
-            if (high < low || (long)high - low > code.codeLength >> 2) {
+            if (high < low || (long) high - low > code.codeLength >> 2) {
                 throw new IllegalArgumentException("Invalid tableswitch values low: " + low + " high: " + high);
             }
             int cnt = high - low + 1;
@@ -370,12 +366,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_TableSwitch, this.opcode());
         }
-
     }
 
     public static final class BoundFieldInstruction
-            extends BoundInstruction implements FieldInstruction {
-
+            extends BoundInstruction
+            implements FieldInstruction {
         private FieldRefEntry fieldEntry;
 
         public BoundFieldInstruction(Opcode op, CodeImpl code, int pos) {
@@ -401,11 +396,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_Field, this.opcode(), owner().asInternalName(), name().stringValue(), type().stringValue());
         }
-
     }
 
     public static final class BoundInvokeInstruction
-            extends BoundInstruction implements InvokeInstruction {
+            extends BoundInstruction
+            implements InvokeInstruction {
         MemberRefEntry methodEntry;
 
         public BoundInvokeInstruction(Opcode op, CodeImpl code, int pos) {
@@ -441,11 +436,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_Invoke, this.opcode(), owner().asInternalName(), name().stringValue(), type().stringValue());
         }
-
     }
 
     public static final class BoundInvokeInterfaceInstruction
-            extends BoundInstruction implements InvokeInstruction {
+            extends BoundInstruction
+            implements InvokeInstruction {
         InterfaceMethodRefEntry methodEntry;
 
         public BoundInvokeInterfaceInstruction(Opcode op, CodeImpl code, int pos) {
@@ -481,11 +476,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_InvokeInterface, this.opcode(), owner().asInternalName(), name().stringValue(), type().stringValue());
         }
-
     }
 
     public static final class BoundInvokeDynamicInstruction
-            extends BoundInstruction implements InvokeDynamicInstruction {
+            extends BoundInstruction
+            implements InvokeDynamicInstruction {
         InvokeDynamicEntry indyEntry;
 
         BoundInvokeDynamicInstruction(Opcode op, CodeImpl code, int pos) {
@@ -511,11 +506,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_InvokeDynamic, this.opcode(), bootstrapMethod(), bootstrapArgs());
         }
-
     }
 
     public static final class BoundNewObjectInstruction
-            extends BoundInstruction implements NewObjectInstruction {
+            extends BoundInstruction
+            implements NewObjectInstruction {
         ClassEntry classEntry;
 
         BoundNewObjectInstruction(CodeImpl code, int pos) {
@@ -541,12 +536,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_NewObj, this.opcode(), className().asInternalName());
         }
-
     }
 
     public static final class BoundNewPrimitiveArrayInstruction
-            extends BoundInstruction implements NewPrimitiveArrayInstruction {
-
+            extends BoundInstruction
+            implements NewPrimitiveArrayInstruction {
         public BoundNewPrimitiveArrayInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -564,8 +558,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class BoundNewReferenceArrayInstruction
-            extends BoundInstruction implements NewReferenceArrayInstruction {
-
+            extends BoundInstruction
+            implements NewReferenceArrayInstruction {
         public BoundNewReferenceArrayInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -590,8 +584,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class BoundNewMultidimensionalArrayInstruction
-            extends BoundInstruction implements NewMultiArrayInstruction {
-
+            extends BoundInstruction
+            implements NewMultiArrayInstruction {
         public BoundNewMultidimensionalArrayInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -618,11 +612,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_NewMultiArray, this.opcode(), arrayType().asInternalName(), dimensions());
         }
-
     }
 
     public static final class BoundTypeCheckInstruction
-            extends BoundInstruction implements TypeCheckInstruction {
+            extends BoundInstruction
+            implements TypeCheckInstruction {
         ClassEntry typeEntry;
 
         public BoundTypeCheckInstruction(Opcode op, CodeImpl code, int pos) {
@@ -648,12 +642,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_TypeCheck, this.opcode(), type().asInternalName());
         }
-
     }
 
     public static final class BoundArgumentConstantInstruction
-            extends BoundInstruction implements ConstantInstruction.ArgumentConstantInstruction {
-
+            extends BoundInstruction
+            implements ConstantInstruction.ArgumentConstantInstruction {
         public BoundArgumentConstantInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -671,12 +664,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_ArgumentConstant, this.opcode(), constantValue());
         }
-
     }
 
     public static final class BoundLoadConstantInstruction
-            extends BoundInstruction implements ConstantInstruction.LoadConstantInstruction {
-
+            extends BoundInstruction
+            implements ConstantInstruction.LoadConstantInstruction {
         public BoundLoadConstantInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -706,12 +698,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_LoadConstant, this.opcode(), constantValue());
         }
-
     }
 
     public static final class BoundJsrInstruction
-            extends BoundInstruction implements DiscontinuedInstruction.JsrInstruction {
-
+            extends BoundInstruction
+            implements DiscontinuedInstruction.JsrInstruction {
         public BoundJsrInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -736,12 +727,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_Discontinued, this.opcode());
         }
-
     }
 
     public static final class BoundRetInstruction
-            extends BoundInstruction implements DiscontinuedInstruction.RetInstruction {
-
+            extends BoundInstruction
+            implements DiscontinuedInstruction.RetInstruction {
         public BoundRetInstruction(Opcode op, CodeImpl code, int pos) {
             super(op, code, pos);
         }
@@ -759,11 +749,10 @@ public abstract sealed class AbstractInstruction
                 default -> throw new IllegalArgumentException("Unexpected op size: " + op.sizeIfFixed() + " -- " + op);
             };
         }
-
     }
 
-    public abstract static sealed class UnboundInstruction extends AbstractInstruction {
-
+    public abstract static sealed class UnboundInstruction
+            extends AbstractInstruction {
         UnboundInstruction(Opcode op) {
             super(op);
         }
@@ -781,7 +770,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundLoadInstruction
-            extends UnboundInstruction implements LoadInstruction {
+            extends UnboundInstruction
+            implements LoadInstruction {
         final int slot;
 
         public UnboundLoadInstruction(Opcode op, int slot) {
@@ -813,11 +803,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_Load, this.opcode(), slot());
         }
-
     }
 
     public static final class UnboundStoreInstruction
-            extends UnboundInstruction implements StoreInstruction {
+            extends UnboundInstruction
+            implements StoreInstruction {
         final int slot;
 
         public UnboundStoreInstruction(Opcode op, int slot) {
@@ -853,7 +843,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundIncrementInstruction
-            extends UnboundInstruction implements IncrementInstruction {
+            extends UnboundInstruction
+            implements IncrementInstruction {
         final int slot;
         final int constant;
 
@@ -887,7 +878,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundBranchInstruction
-            extends UnboundInstruction implements BranchInstruction {
+            extends UnboundInstruction
+            implements BranchInstruction {
         final Label target;
 
         public UnboundBranchInstruction(Opcode op, Label target) {
@@ -912,8 +904,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundLookupSwitchInstruction
-            extends UnboundInstruction implements LookupSwitchInstruction {
-
+            extends UnboundInstruction
+            implements LookupSwitchInstruction {
         private final Label defaultTarget;
         private final List<SwitchCase> cases;
 
@@ -945,8 +937,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundTableSwitchInstruction
-            extends UnboundInstruction implements TableSwitchInstruction {
-
+            extends UnboundInstruction
+            implements TableSwitchInstruction {
         private final int lowValue, highValue;
         private final Label defaultTarget;
         private final List<SwitchCase> cases;
@@ -991,8 +983,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundReturnInstruction
-            extends UnboundInstruction implements ReturnInstruction {
-
+            extends UnboundInstruction
+            implements ReturnInstruction {
         public UnboundReturnInstruction(Opcode op) {
             super(op);
         }
@@ -1006,7 +998,6 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_Return, this.opcode());
         }
-
     }
 
     public static final class UnboundThrowInstruction
@@ -1024,7 +1015,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundFieldInstruction
-            extends UnboundInstruction implements FieldInstruction {
+            extends UnboundInstruction
+            implements FieldInstruction {
         final FieldRefEntry fieldEntry;
 
         public UnboundFieldInstruction(Opcode op,
@@ -1050,7 +1042,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundInvokeInstruction
-            extends UnboundInstruction implements InvokeInstruction {
+            extends UnboundInstruction
+            implements InvokeInstruction {
         final MemberRefEntry methodEntry;
 
         public UnboundInvokeInstruction(Opcode op, MemberRefEntry methodEntry) {
@@ -1090,7 +1083,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundInvokeDynamicInstruction
-            extends UnboundInstruction implements InvokeDynamicInstruction {
+            extends UnboundInstruction
+            implements InvokeDynamicInstruction {
         final InvokeDynamicEntry indyEntry;
 
         public UnboundInvokeDynamicInstruction(InvokeDynamicEntry indyEntry) {
@@ -1115,7 +1109,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundNewObjectInstruction
-            extends UnboundInstruction implements NewObjectInstruction {
+            extends UnboundInstruction
+            implements NewObjectInstruction {
         final ClassEntry classEntry;
 
         public UnboundNewObjectInstruction(ClassEntry classEntry) {
@@ -1140,7 +1135,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundNewPrimitiveArrayInstruction
-            extends UnboundInstruction implements NewPrimitiveArrayInstruction {
+            extends UnboundInstruction
+            implements NewPrimitiveArrayInstruction {
         final TypeKind typeKind;
 
         public UnboundNewPrimitiveArrayInstruction(TypeKind typeKind) {
@@ -1165,7 +1161,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundNewReferenceArrayInstruction
-            extends UnboundInstruction implements NewReferenceArrayInstruction {
+            extends UnboundInstruction
+            implements NewReferenceArrayInstruction {
         final ClassEntry componentTypeEntry;
 
         public UnboundNewReferenceArrayInstruction(ClassEntry componentTypeEntry) {
@@ -1190,12 +1187,12 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundNewMultidimensionalArrayInstruction
-            extends UnboundInstruction implements NewMultiArrayInstruction {
+            extends UnboundInstruction
+            implements NewMultiArrayInstruction {
         final ClassEntry arrayTypeEntry;
         final int dimensions;
 
-        public UnboundNewMultidimensionalArrayInstruction(ClassEntry arrayTypeEntry,
-                                                          int dimensions) {
+        public UnboundNewMultidimensionalArrayInstruction(ClassEntry arrayTypeEntry, int dimensions) {
             super(Opcode.MULTIANEWARRAY);
             this.arrayTypeEntry = arrayTypeEntry;
             this.dimensions = dimensions;
@@ -1220,12 +1217,11 @@ public abstract sealed class AbstractInstruction
         public String toString() {
             return String.format(FMT_NewMultiArray, this.opcode(), arrayType().asInternalName(), dimensions());
         }
-
     }
 
     public static final class UnboundArrayLoadInstruction
-            extends UnboundInstruction implements ArrayLoadInstruction {
-
+            extends UnboundInstruction
+            implements ArrayLoadInstruction {
         public UnboundArrayLoadInstruction(Opcode op) {
             super(op);
         }
@@ -1237,8 +1233,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundArrayStoreInstruction
-            extends UnboundInstruction implements ArrayStoreInstruction {
-
+            extends UnboundInstruction
+            implements ArrayStoreInstruction {
         public UnboundArrayStoreInstruction(Opcode op) {
             super(op);
         }
@@ -1250,7 +1246,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundTypeCheckInstruction
-            extends UnboundInstruction implements TypeCheckInstruction {
+            extends UnboundInstruction
+            implements TypeCheckInstruction {
         final ClassEntry typeEntry;
 
         public UnboundTypeCheckInstruction(Opcode op, ClassEntry typeEntry) {
@@ -1276,16 +1273,14 @@ public abstract sealed class AbstractInstruction
 
     public static final class UnboundStackInstruction
             extends UnboundInstruction implements StackInstruction {
-
         public UnboundStackInstruction(Opcode op) {
             super(op);
         }
-
     }
 
     public static final class UnboundConvertInstruction
-            extends UnboundInstruction implements ConvertInstruction {
-
+            extends UnboundInstruction
+            implements ConvertInstruction {
         public UnboundConvertInstruction(Opcode op) {
             super(op);
         }
@@ -1302,8 +1297,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundOperatorInstruction
-            extends UnboundInstruction implements OperatorInstruction {
-
+            extends UnboundInstruction
+            implements OperatorInstruction {
         public UnboundOperatorInstruction(Opcode op) {
             super(op);
         }
@@ -1315,7 +1310,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundIntrinsicConstantInstruction
-            extends UnboundInstruction implements ConstantInstruction.IntrinsicConstantInstruction {
+            extends UnboundInstruction
+            implements ConstantInstruction.IntrinsicConstantInstruction {
         public UnboundIntrinsicConstantInstruction(Opcode op) {
             super(op);
         }
@@ -1327,7 +1323,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundArgumentConstantInstruction
-            extends UnboundInstruction implements ConstantInstruction.ArgumentConstantInstruction {
+            extends UnboundInstruction
+            implements ConstantInstruction.ArgumentConstantInstruction {
         final int value;
 
         public UnboundArgumentConstantInstruction(Opcode op, int value) {
@@ -1352,7 +1349,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundLoadConstantInstruction
-            extends UnboundInstruction implements ConstantInstruction.LoadConstantInstruction {
+            extends UnboundInstruction
+            implements ConstantInstruction.LoadConstantInstruction {
         final LoadableConstantEntry constant;
 
         public UnboundLoadConstantInstruction(Opcode op, LoadableConstantEntry constant) {
@@ -1382,21 +1380,21 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundMonitorInstruction
-            extends UnboundInstruction implements MonitorInstruction {
+            extends UnboundInstruction
+            implements MonitorInstruction {
 
         public UnboundMonitorInstruction(Opcode op) {
             super(op);
         }
-
     }
 
     public static final class UnboundNopInstruction
-            extends UnboundInstruction implements NopInstruction {
+            extends UnboundInstruction
+            implements NopInstruction {
 
         public UnboundNopInstruction() {
             super(Opcode.NOP);
         }
-
     }
 
     public static final class UnboundJsrInstruction
@@ -1425,7 +1423,8 @@ public abstract sealed class AbstractInstruction
     }
 
     public static final class UnboundRetInstruction
-            extends UnboundInstruction implements DiscontinuedInstruction.RetInstruction {
+            extends UnboundInstruction
+            implements DiscontinuedInstruction.RetInstruction {
         final int slot;
 
         public UnboundRetInstruction(Opcode op, int slot) {

@@ -27,41 +27,47 @@ package jdk.internal.classfile.impl;
 import java.util.Optional;
 
 import java.lang.classfile.BufWriter;
+import java.lang.classfile.Label;
+import java.lang.classfile.PseudoInstruction;
 import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.classfile.instruction.CharacterRange;
 import java.lang.classfile.instruction.ExceptionCatch;
 import java.lang.classfile.instruction.LocalVariable;
 import java.lang.classfile.instruction.LocalVariableType;
-import java.lang.classfile.Label;
-import java.lang.classfile.PseudoInstruction;
 
 public abstract sealed class AbstractPseudoInstruction
         extends AbstractElement
         implements PseudoInstruction {
-
     @Override
     public abstract void writeTo(DirectCodeBuilder writer);
 
     public static final class ExceptionCatchImpl
             extends AbstractPseudoInstruction
             implements ExceptionCatch {
-
         public final ClassEntry catchTypeEntry;
         public final Label handler;
         public final Label tryStart;
         public final Label tryEnd;
 
-        public ExceptionCatchImpl(Label handler, Label tryStart, Label tryEnd,
-                                  ClassEntry catchTypeEntry) {
+        public ExceptionCatchImpl(
+                Label handler,
+                Label tryStart,
+                Label tryEnd,
+                ClassEntry catchTypeEntry
+        ) {
             this.catchTypeEntry = catchTypeEntry;
             this.handler = handler;
             this.tryStart = tryStart;
             this.tryEnd = tryEnd;
         }
 
-        public ExceptionCatchImpl(Label handler, Label tryStart, Label tryEnd,
-                                  Optional<ClassEntry> catchTypeEntry) {
+        public ExceptionCatchImpl(
+                Label handler,
+                Label tryStart,
+                Label tryEnd,
+                Optional<ClassEntry> catchTypeEntry
+        ) {
             this.catchTypeEntry = catchTypeEntry.orElse(null);
             this.handler = handler;
             this.tryStart = tryStart;
@@ -106,15 +112,19 @@ public abstract sealed class AbstractPseudoInstruction
     public static final class UnboundCharacterRange
             extends AbstractPseudoInstruction
             implements CharacterRange {
-
         public final Label startScope;
         public final Label endScope;
         public final int characterRangeStart;
         public final int characterRangeEnd;
         public final int flags;
 
-        public UnboundCharacterRange(Label startScope, Label endScope, int characterRangeStart,
-                                     int characterRangeEnd, int flags) {
+        public UnboundCharacterRange(
+                Label startScope,
+                Label endScope,
+                int characterRangeStart,
+                int characterRangeEnd,
+                int flags
+        ) {
             this.startScope = startScope;
             this.endScope = endScope;
             this.characterRangeStart = characterRangeStart;
@@ -154,7 +164,8 @@ public abstract sealed class AbstractPseudoInstruction
 
     }
 
-    private abstract static sealed class AbstractLocalPseudo extends AbstractPseudoInstruction
+    private abstract static sealed class AbstractLocalPseudo
+            extends AbstractPseudoInstruction
             implements Util.WritableLocalVariable {
         protected final int slot;
         protected final Utf8Entry name;
@@ -206,9 +217,9 @@ public abstract sealed class AbstractPseudoInstruction
         }
     }
 
-    public static final class UnboundLocalVariable extends AbstractLocalPseudo
+    public static final class UnboundLocalVariable
+            extends AbstractLocalPseudo
             implements LocalVariable {
-
         public UnboundLocalVariable(int slot, Utf8Entry name, Utf8Entry descriptor, Label startScope, Label endScope) {
             super(slot, name, descriptor, startScope, endScope);
         }
@@ -232,9 +243,9 @@ public abstract sealed class AbstractPseudoInstruction
         }
     }
 
-    public static final class UnboundLocalVariableType extends AbstractLocalPseudo
+    public static final class UnboundLocalVariableType
+            extends AbstractLocalPseudo
             implements LocalVariableType {
-
         public UnboundLocalVariableType(int slot, Utf8Entry name, Utf8Entry signature, Label startScope, Label endScope) {
             super(slot, name, signature, startScope, endScope);
         }

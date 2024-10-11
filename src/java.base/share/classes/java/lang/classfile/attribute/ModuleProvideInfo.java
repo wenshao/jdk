@@ -24,11 +24,11 @@
  */
 package java.lang.classfile.attribute;
 
+import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.constant.ClassDesc;
 import java.util.Arrays;
 import java.util.List;
 
-import java.lang.classfile.constantpool.ClassEntry;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.UnboundAttribute;
 import jdk.internal.classfile.impl.Util;
@@ -58,8 +58,7 @@ public sealed interface ModuleProvideInfo
      * @param provides the service class interface
      * @param providesWith the service class implementations
      */
-    static ModuleProvideInfo of(ClassEntry provides,
-                                List<ClassEntry> providesWith) {
+    static ModuleProvideInfo of(ClassEntry provides, List<ClassEntry> providesWith) {
         return new UnboundAttribute.UnboundModuleProvideInfo(provides, providesWith);
     }
 
@@ -68,8 +67,7 @@ public sealed interface ModuleProvideInfo
      * @param provides the service class interface
      * @param providesWith the service class implementations
      */
-    static ModuleProvideInfo of(ClassEntry provides,
-                                ClassEntry... providesWith) {
+    static ModuleProvideInfo of(ClassEntry provides, ClassEntry... providesWith) {
         return of(provides, List.of(providesWith));
     }
 
@@ -79,8 +77,7 @@ public sealed interface ModuleProvideInfo
      * @param providesWith the service class implementations
      * @throws IllegalArgumentException if {@code provides} represents a primitive type
      */
-    static ModuleProvideInfo of(ClassDesc provides,
-                                       List<ClassDesc> providesWith) {
+    static ModuleProvideInfo of(ClassDesc provides, List<ClassDesc> providesWith) {
         return of(TemporaryConstantPool.INSTANCE.classEntry(provides), Util.entryList(providesWith));
     }
 
@@ -90,8 +87,7 @@ public sealed interface ModuleProvideInfo
      * @param providesWith the service class implementations
      * @throws IllegalArgumentException if {@code provides} or any of {@code providesWith} represents a primitive type
      */
-    static ModuleProvideInfo of(ClassDesc provides,
-                                       ClassDesc... providesWith) {
+    static ModuleProvideInfo of(ClassDesc provides, ClassDesc... providesWith) {
         // List view, since ref to providesWith is temporary
         return of(provides, Arrays.asList(providesWith));
     }

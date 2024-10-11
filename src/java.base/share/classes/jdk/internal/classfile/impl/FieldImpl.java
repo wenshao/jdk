@@ -24,18 +24,16 @@
  */
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.*;
+import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.reflect.AccessFlag;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import java.lang.classfile.*;
-import java.lang.classfile.constantpool.Utf8Entry;
-
 public final class FieldImpl
         extends AbstractElement
         implements FieldModel, Util.Writable {
-
     private final ClassReader reader;
     private final int startPos, endPos, attributesPos;
     private List<Attribute<?>> attributes;
@@ -82,9 +80,9 @@ public final class FieldImpl
     public void writeTo(BufWriterImpl buf) {
         if (buf.canWriteDirect(reader)) {
             reader.copyBytesTo(buf, startPos, endPos - startPos);
-        }
-        else {
-            buf.writeU2U2U2(flags().flagsMask(),
+        } else {
+            buf.writeU2U2U2(
+                    flags().flagsMask(),
                     buf.cpIndex(fieldName()),
                     buf.cpIndex(fieldType()));
             Util.writeAttributes(buf, attributes());
@@ -97,8 +95,7 @@ public final class FieldImpl
     public void writeTo(DirectClassBuilder builder) {
         if (builder.canWriteDirect(reader)) {
             builder.withField(this);
-        }
-        else {
+        } else {
             builder.withField(fieldName(), fieldType(), Util.writingAll(this));
         }
     }

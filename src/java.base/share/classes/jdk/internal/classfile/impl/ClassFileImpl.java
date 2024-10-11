@@ -25,23 +25,18 @@
 
 package jdk.internal.classfile.impl;
 
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Consumer;
-
-import java.lang.classfile.AttributeMapper;
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.ClassBuilder;
-import java.lang.classfile.ClassHierarchyResolver;
-import java.lang.classfile.ClassModel;
-import java.lang.classfile.ClassTransform;
+import java.lang.classfile.*;
 import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.classfile.constantpool.ConstantPoolBuilder;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import jdk.internal.classfile.impl.verifier.VerifierImpl;
 
-public final class ClassFileImpl implements ClassFile {
-
+public final class ClassFileImpl
+        implements ClassFile {
     private Option stackMapsOption;
     private Option debugElementsOption;
     private Option lineNumbersOption;
@@ -53,16 +48,18 @@ public final class ClassFileImpl implements ClassFile {
     private Option classHierarchyResolverOption;
     private Option attributeMapperOption;
 
-    private ClassFileImpl(Option stackMapsOption,
-                          Option debugElementsOption,
-                          Option lineNumbersOption,
-                          Option attributesProcessingOption,
-                          Option constantPoolSharingOption,
-                          Option shortJumpsOption,
-                          Option deadCodeOption,
-                          Option deadLabelsOption,
-                          Option classHierarchyResolverOption,
-                          Option attributeMapperOption) {
+    private ClassFileImpl(
+            Option stackMapsOption,
+            Option debugElementsOption,
+            Option lineNumbersOption,
+            Option attributesProcessingOption,
+            Option constantPoolSharingOption,
+            Option shortJumpsOption,
+            Option deadCodeOption,
+            Option deadLabelsOption,
+            Option classHierarchyResolverOption,
+            Option attributeMapperOption
+    ) {
         this.stackMapsOption              = stackMapsOption;
         this.debugElementsOption          = debugElementsOption;
         this.lineNumbersOption            = lineNumbersOption;
@@ -135,9 +132,11 @@ public final class ClassFileImpl implements ClassFile {
     }
 
     @Override
-    public byte[] build(ClassEntry thisClassEntry,
-                         ConstantPoolBuilder constantPool,
-                         Consumer<? super ClassBuilder> handler) {
+    public byte[] build(
+            ClassEntry thisClassEntry,
+            ConstantPoolBuilder constantPool,
+            Consumer<? super ClassBuilder> handler
+    ) {
         thisClassEntry = AbstractPoolEntry.maybeClone(constantPool, thisClassEntry);
         DirectClassBuilder builder = new DirectClassBuilder((SplitConstantPool)constantPool, this, thisClassEntry);
         handler.accept(builder);
@@ -234,10 +233,8 @@ public final class ClassFileImpl implements ClassFile {
     }
 
     public record AttributeMapperOptionImpl(Function<Utf8Entry, AttributeMapper<?>> attributeMapper)
-            implements AttributeMapperOption {
-    }
+            implements AttributeMapperOption { }
 
     public record ClassHierarchyResolverOptionImpl(ClassHierarchyResolver classHierarchyResolver)
-            implements ClassHierarchyResolverOption {
-    }
+            implements ClassHierarchyResolverOption { }
 }

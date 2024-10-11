@@ -24,17 +24,16 @@
  */
 package java.lang.classfile.attribute;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
+import java.lang.classfile.ClassFile;
 import java.lang.classfile.constantpool.ModuleEntry;
 import java.lang.classfile.constantpool.PackageEntry;
 import java.lang.constant.ModuleDesc;
 import java.lang.constant.PackageDesc;
 import java.lang.reflect.AccessFlag;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 
-import java.lang.classfile.ClassFile;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
 import jdk.internal.classfile.impl.UnboundAttribute;
 import jdk.internal.classfile.impl.Util;
@@ -89,8 +88,11 @@ public sealed interface ModuleExportInfo
      * @param exportFlags the export flags, as a bitmask
      * @param exportsTo the modules to which this package is exported
      */
-    static ModuleExportInfo of(PackageEntry exports, int exportFlags,
-                               List<ModuleEntry> exportsTo) {
+    static ModuleExportInfo of(
+            PackageEntry exports,
+            int exportFlags,
+            List<ModuleEntry> exportsTo
+    ) {
         return new UnboundAttribute.UnboundModuleExportInfo(exports, exportFlags, exportsTo);
     }
 
@@ -100,8 +102,11 @@ public sealed interface ModuleExportInfo
      * @param exportFlags the export flags
      * @param exportsTo the modules to which this package is exported
      */
-    static ModuleExportInfo of(PackageEntry exports, Collection<AccessFlag> exportFlags,
-                               List<ModuleEntry> exportsTo) {
+    static ModuleExportInfo of(
+            PackageEntry exports,
+            Collection<AccessFlag> exportFlags,
+            List<ModuleEntry> exportsTo
+    ) {
         return of(exports, Util.flagsToBits(AccessFlag.Location.MODULE_EXPORTS, exportFlags), exportsTo);
     }
 
@@ -111,9 +116,11 @@ public sealed interface ModuleExportInfo
      * @param exportFlags the export flags, as a bitmask
      * @param exportsTo the modules to which this package is exported
      */
-    static ModuleExportInfo of(PackageEntry exports,
-                               int exportFlags,
-                               ModuleEntry... exportsTo) {
+    static ModuleExportInfo of(
+            PackageEntry exports,
+            int exportFlags,
+            ModuleEntry... exportsTo
+    ) {
         return of(exports, exportFlags, List.of(exportsTo));
     }
 
@@ -135,8 +142,11 @@ public sealed interface ModuleExportInfo
      * @param exportFlags the export flags, as a bitmask
      * @param exportsTo the modules to which this package is exported
      */
-    static ModuleExportInfo of(PackageDesc exports, int exportFlags,
-                               List<ModuleDesc> exportsTo) {
+    static ModuleExportInfo of(
+            PackageDesc exports,
+            int exportFlags,
+            List<ModuleDesc> exportsTo
+    ) {
         return of(TemporaryConstantPool.INSTANCE.packageEntry(TemporaryConstantPool.INSTANCE.utf8Entry(exports.internalName())),
                 exportFlags,
                 Util.moduleEntryList(exportsTo));
@@ -148,8 +158,11 @@ public sealed interface ModuleExportInfo
      * @param exportFlags the export flags
      * @param exportsTo the modules to which this package is exported
      */
-    static ModuleExportInfo of(PackageDesc exports, Collection<AccessFlag> exportFlags,
-                               List<ModuleDesc> exportsTo) {
+    static ModuleExportInfo of(
+            PackageDesc exports,
+            Collection<AccessFlag> exportFlags,
+            List<ModuleDesc> exportsTo
+    ) {
         return of(exports, Util.flagsToBits(AccessFlag.Location.MODULE_EXPORTS, exportFlags), exportsTo);
     }
 
@@ -159,9 +172,11 @@ public sealed interface ModuleExportInfo
      * @param exportFlags the export flags, as a bitmask
      * @param exportsTo the modules to which this package is exported
      */
-    static ModuleExportInfo of(PackageDesc exports,
-                               int exportFlags,
-                               ModuleDesc... exportsTo) {
+    static ModuleExportInfo of(
+            PackageDesc exports,
+            int exportFlags,
+            ModuleDesc... exportsTo
+    ) {
         return of(exports, exportFlags, List.of(exportsTo));
     }
 
@@ -171,9 +186,11 @@ public sealed interface ModuleExportInfo
      * @param exportFlags the export flags
      * @param exportsTo the modules to which this package is exported
      */
-    static ModuleExportInfo of(PackageDesc exports,
-                               Collection<AccessFlag> exportFlags,
-                               ModuleDesc... exportsTo) {
+    static ModuleExportInfo of(
+            PackageDesc exports,
+            Collection<AccessFlag> exportFlags,
+            ModuleDesc... exportsTo
+    ) {
         return of(exports, Util.flagsToBits(AccessFlag.Location.MODULE_EXPORTS, exportFlags), exportsTo);
     }
 }

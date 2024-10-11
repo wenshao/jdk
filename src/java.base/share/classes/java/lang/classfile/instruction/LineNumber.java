@@ -29,6 +29,7 @@ import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.PseudoInstruction;
 import java.lang.classfile.attribute.LineNumberTableAttribute;
+
 import jdk.internal.classfile.impl.LineNumberImpl;
 import jdk.internal.javac.PreviewFeature;
 
@@ -43,7 +44,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface LineNumber extends PseudoInstruction
+public sealed interface LineNumber
+        extends PseudoInstruction
         permits LineNumberImpl {
 
     /**

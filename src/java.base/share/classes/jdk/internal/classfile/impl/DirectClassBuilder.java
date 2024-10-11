@@ -26,6 +26,9 @@
 
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.*;
+import java.lang.classfile.constantpool.ClassEntry;
+import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
@@ -36,24 +39,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
-import java.lang.classfile.ClassBuilder;
-import java.lang.classfile.ClassElement;
-import java.lang.classfile.ClassModel;
-import java.lang.classfile.ClassFile;
-import java.lang.classfile.CustomAttribute;
-import java.lang.classfile.constantpool.ClassEntry;
-import java.lang.classfile.FieldBuilder;
-import java.lang.classfile.FieldModel;
-import java.lang.classfile.FieldTransform;
-import java.lang.classfile.MethodBuilder;
-import java.lang.classfile.MethodModel;
-import java.lang.classfile.MethodTransform;
-import java.lang.classfile.constantpool.Utf8Entry;
-
 public final class DirectClassBuilder
         extends AbstractDirectBuilder<ClassModel>
         implements ClassBuilder {
-
     /** The value of default class access flags */
     static final int DEFAULT_CLASS_FLAGS = ClassFile.ACC_PUBLIC;
     static final Util.Writable[] EMPTY_WRITABLE_ARRAY = {};
@@ -70,9 +58,11 @@ public final class DirectClassBuilder
     private int flags;
     private int sizeHint;
 
-    public DirectClassBuilder(SplitConstantPool constantPool,
-                              ClassFileImpl context,
-                              ClassEntry thisClass) {
+    public DirectClassBuilder(
+            SplitConstantPool constantPool,
+            ClassFileImpl context,
+            ClassEntry thisClass
+    ) {
         super(constantPool, context);
         this.thisClassEntry = AbstractPoolEntry.maybeClone(constantPool, thisClass);
         this.flags = DEFAULT_CLASS_FLAGS;
@@ -106,9 +96,11 @@ public final class DirectClassBuilder
     }
 
     @Override
-    public ClassBuilder withField(Utf8Entry name,
-                                  Utf8Entry descriptor,
-                                  Consumer<? super FieldBuilder> handler) {
+    public ClassBuilder withField(
+            Utf8Entry name,
+            Utf8Entry descriptor,
+            Consumer<? super FieldBuilder> handler
+    ) {
         return withField(new DirectFieldBuilder(constantPool, context, name, descriptor, 0, null)
                                  .run(handler));
     }
@@ -122,10 +114,12 @@ public final class DirectClassBuilder
     }
 
     @Override
-    public ClassBuilder withMethod(Utf8Entry name,
-                                   Utf8Entry descriptor,
-                                   int flags,
-                                   Consumer<? super MethodBuilder> handler) {
+    public ClassBuilder withMethod(
+            Utf8Entry name,
+            Utf8Entry descriptor,
+            int flags,
+            Consumer<? super MethodBuilder> handler
+    ) {
         return withMethod(new DirectMethodBuilder(constantPool, context, name, descriptor, flags, null)
                                   .run(handler));
     }
@@ -180,7 +174,6 @@ public final class DirectClassBuilder
     public void setSizeHint(int sizeHint) {
         this.sizeHint = sizeHint;
     }
-
 
     public byte[] build() {
 

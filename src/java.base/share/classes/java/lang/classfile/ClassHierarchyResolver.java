@@ -24,9 +24,9 @@
  */
 package java.lang.classfile;
 
-import java.io.InputStream;
 import java.lang.constant.ClassDesc;
 import java.lang.invoke.MethodHandles;
+import java.io.InputStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -197,8 +197,7 @@ public interface ClassHierarchyResolver {
      * @param classToSuperClass a map from classes to their super classes
      * @return the {@linkplain ClassHierarchyResolver}
      */
-    static ClassHierarchyResolver of(Collection<ClassDesc> interfaces,
-                                            Map<ClassDesc, ClassDesc> classToSuperClass) {
+    static ClassHierarchyResolver of(Collection<ClassDesc> interfaces, Map<ClassDesc, ClassDesc> classToSuperClass) {
         return new StaticClassHierarchyResolver(interfaces, classToSuperClass);
     }
 

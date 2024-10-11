@@ -47,8 +47,7 @@ public record AnnotationImpl(Utf8Entry className, List<AnnotationElement> elemen
         return sb.toString();
     }
 
-    public record AnnotationElementImpl(Utf8Entry name,
-                                        AnnotationValue value)
+    public record AnnotationElementImpl(Utf8Entry name, AnnotationValue value)
             implements AnnotationElement {
         @Override
         public String toString() {

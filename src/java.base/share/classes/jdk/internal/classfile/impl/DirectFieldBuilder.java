@@ -25,13 +25,9 @@
 
 package jdk.internal.classfile.impl;
 
-import java.util.function.Consumer;
-
-import java.lang.classfile.CustomAttribute;
-import java.lang.classfile.FieldBuilder;
-import java.lang.classfile.FieldElement;
-import java.lang.classfile.FieldModel;
+import java.lang.classfile.*;
 import java.lang.classfile.constantpool.Utf8Entry;
+import java.util.function.Consumer;
 
 public final class DirectFieldBuilder
         extends AbstractDirectBuilder<FieldModel>
@@ -40,12 +36,14 @@ public final class DirectFieldBuilder
     private final Utf8Entry desc;
     private int flags;
 
-    public DirectFieldBuilder(SplitConstantPool constantPool,
-                              ClassFileImpl context,
-                              Utf8Entry name,
-                              Utf8Entry type,
-                              int flags,
-                              FieldModel original) {
+    public DirectFieldBuilder(
+            SplitConstantPool constantPool,
+            ClassFileImpl context,
+            Utf8Entry name,
+            Utf8Entry type,
+            int flags,
+            FieldModel original
+    ) {
         super(constantPool, context);
         setOriginal(original);
         this.name = name;

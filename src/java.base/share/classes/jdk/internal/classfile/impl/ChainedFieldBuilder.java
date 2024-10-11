@@ -24,21 +24,20 @@
  */
 package jdk.internal.classfile.impl;
 
-import java.util.function.Consumer;
-
 import java.lang.classfile.FieldBuilder;
 import java.lang.classfile.FieldElement;
 import java.lang.classfile.constantpool.ConstantPoolBuilder;
+import java.util.function.Consumer;
 
-public final class ChainedFieldBuilder implements FieldBuilder {
+public final class ChainedFieldBuilder
+        implements FieldBuilder {
     private final TerminalFieldBuilder terminal;
     private final Consumer<FieldElement> consumer;
 
-    public ChainedFieldBuilder(FieldBuilder downstream,
-                               Consumer<FieldElement> consumer) {
+    public ChainedFieldBuilder(FieldBuilder downstream, Consumer<FieldElement> consumer) {
         this.consumer = consumer;
         this.terminal = switch (downstream) {
-            case ChainedFieldBuilder cb -> cb.terminal;
+            case ChainedFieldBuilder  cb -> cb.terminal;
             case TerminalFieldBuilder tb -> tb;
         };
     }

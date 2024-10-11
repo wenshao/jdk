@@ -28,6 +28,7 @@ import java.lang.classfile.CodeElement;
 import java.lang.classfile.CodeModel;
 import java.lang.classfile.constantpool.ClassEntry;
 import java.lang.classfile.Instruction;
+
 import jdk.internal.classfile.impl.AbstractInstruction;
 import jdk.internal.classfile.impl.BytecodeHelpers;
 import jdk.internal.javac.PreviewFeature;
@@ -40,7 +41,8 @@ import jdk.internal.javac.PreviewFeature;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface NewMultiArrayInstruction extends Instruction
+public sealed interface NewMultiArrayInstruction
+        extends Instruction
         permits AbstractInstruction.BoundNewMultidimensionalArrayInstruction,
                 AbstractInstruction.UnboundNewMultidimensionalArrayInstruction {
 
@@ -61,8 +63,7 @@ public sealed interface NewMultiArrayInstruction extends Instruction
      * @param dimensions the number of dimensions of the array
      * @throws IllegalArgumentException if {@code dimensions} is out of range
      */
-    static NewMultiArrayInstruction of(ClassEntry arrayTypeEntry,
-                                       int dimensions) {
+    static NewMultiArrayInstruction of(ClassEntry arrayTypeEntry, int dimensions) {
         BytecodeHelpers.validateMultiArrayDimensions(dimensions);
         return new AbstractInstruction.UnboundNewMultidimensionalArrayInstruction(arrayTypeEntry, dimensions);
     }

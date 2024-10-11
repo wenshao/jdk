@@ -24,10 +24,11 @@
  */
 package java.lang.classfile.constantpool;
 
+import java.lang.constant.MethodTypeDesc;
+
 import jdk.internal.classfile.impl.AbstractPoolEntry;
 import jdk.internal.classfile.impl.Util;
 import jdk.internal.javac.PreviewFeature;
-import java.lang.constant.MethodTypeDesc;
 
 /**
  * Models a {@code CONSTANT_MethodRef_info} constant in the constant pool of a
@@ -37,7 +38,8 @@ import java.lang.constant.MethodTypeDesc;
  * @since 22
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-public sealed interface MethodRefEntry extends MemberRefEntry
+public sealed interface MethodRefEntry
+        extends MemberRefEntry
         permits AbstractPoolEntry.MethodRefEntryImpl {
 
     /**

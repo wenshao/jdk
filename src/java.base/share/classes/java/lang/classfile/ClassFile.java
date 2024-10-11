@@ -24,28 +24,29 @@
  */
 package java.lang.classfile;
 
-import java.io.IOException;
-import java.lang.constant.ClassDesc;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.function.Consumer;
-import java.util.function.Function;
-
 import java.lang.classfile.attribute.ModuleAttribute;
-import java.lang.classfile.constantpool.ClassEntry;
-import java.lang.classfile.constantpool.ConstantPoolBuilder;
-import java.lang.classfile.constantpool.Utf8Entry;
-import jdk.internal.classfile.impl.ClassFileImpl;
-import jdk.internal.classfile.impl.TemporaryConstantPool;
-import java.lang.reflect.AccessFlag;
 import java.lang.classfile.attribute.CharacterRangeInfo;
 import java.lang.classfile.attribute.LocalVariableInfo;
 import java.lang.classfile.attribute.LocalVariableTypeInfo;
+import java.lang.classfile.constantpool.ClassEntry;
+import java.lang.classfile.constantpool.ConstantPoolBuilder;
+import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.classfile.instruction.ExceptionCatch;
+import java.lang.constant.ClassDesc;
+import java.lang.reflect.AccessFlag;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
+
+import jdk.internal.classfile.impl.ClassFileImpl;
+import jdk.internal.classfile.impl.TemporaryConstantPool;
+import jdk.internal.javac.PreviewFeature;
+
 import static java.util.Objects.requireNonNull;
 import static jdk.internal.constant.ConstantUtils.CD_module_info;
-import jdk.internal.javac.PreviewFeature;
 
 /**
  * Represents a context for parsing, transforming, and generating classfiles.
@@ -96,7 +97,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface AttributeMapperOption extends Option
+    sealed interface AttributeMapperOption
+            extends Option
             permits ClassFileImpl.AttributeMapperOptionImpl {
 
         /**
@@ -121,7 +123,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    sealed interface ClassHierarchyResolverOption extends Option
+    sealed interface ClassHierarchyResolverOption
+            extends Option
             permits ClassFileImpl.ClassHierarchyResolverOptionImpl {
 
         /**
@@ -152,7 +155,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    enum ConstantPoolSharingOption implements Option {
+    enum ConstantPoolSharingOption
+            implements Option {
 
         /** Preserves the original constant pool when transforming classfile */
         SHARED_POOL,
@@ -169,7 +173,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    enum DeadCodeOption implements Option {
+    enum DeadCodeOption
+            implements Option {
 
         /** Patch unreachable code */
         PATCH_DEAD_CODE,
@@ -190,7 +195,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    enum DeadLabelsOption implements Option {
+    enum DeadLabelsOption
+            implements Option {
 
         /** Fail on unresolved labels */
         FAIL_ON_DEAD_LABELS,
@@ -209,7 +215,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    enum DebugElementsOption implements Option {
+    enum DebugElementsOption
+            implements Option {
 
         /** Process debug elements */
         PASS_DEBUG,
@@ -227,7 +234,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    enum LineNumbersOption implements Option {
+    enum LineNumbersOption
+            implements Option {
 
         /** Process line numbers */
         PASS_LINE_NUMBERS,
@@ -245,7 +253,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    enum ShortJumpsOption implements Option {
+    enum ShortJumpsOption
+            implements Option {
 
         /** Automatically convert short jumps to long when necessary */
         FIX_SHORT_JUMPS,
@@ -264,7 +273,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    enum StackMapsOption implements Option {
+    enum StackMapsOption implements
+            Option {
 
         /** Generate stack maps when required */
         STACK_MAPS_WHEN_REQUIRED,
@@ -286,7 +296,8 @@ public sealed interface ClassFile
      * @since 22
      */
     @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
-    enum AttributesProcessingOption implements Option {
+    enum AttributesProcessingOption
+            implements Option {
 
         /** Process all original attributes during transformation */
         PASS_ALL_ATTRIBUTES,
@@ -326,8 +337,7 @@ public sealed interface ClassFile
      * @return the classfile bytes
      * @throws IllegalArgumentException if {@code thisClass} represents a primitive type
      */
-    default byte[] build(ClassDesc thisClass,
-                         Consumer<? super ClassBuilder> handler) {
+    default byte[] build(ClassDesc thisClass, Consumer<? super ClassBuilder> handler) {
         ConstantPoolBuilder pool = ConstantPoolBuilder.of();
         return build(pool.classEntry(thisClass), pool, handler);
     }
@@ -341,9 +351,10 @@ public sealed interface ClassFile
      * @param handler a handler that receives a {@link ClassBuilder}
      * @return the classfile bytes
      */
-    byte[] build(ClassEntry thisClassEntry,
-                 ConstantPoolBuilder constantPool,
-                 Consumer<? super ClassBuilder> handler);
+    byte[] build(
+            ClassEntry thisClassEntry,
+            ConstantPoolBuilder constantPool,
+            Consumer<? super ClassBuilder> handler);
 
     /**
      * Build a classfile into a file.
@@ -352,9 +363,11 @@ public sealed interface ClassFile
      * @param handler a handler that receives a {@link ClassBuilder}
      * @throws java.io.IOException if an I/O error occurs
      */
-    default void buildTo(Path path,
-                         ClassDesc thisClass,
-                         Consumer<ClassBuilder> handler) throws IOException {
+    default void buildTo(
+            Path path,
+            ClassDesc thisClass,
+            Consumer<ClassBuilder> handler
+    ) throws IOException {
         Files.write(path, build(thisClass, handler));
     }
 
@@ -368,10 +381,12 @@ public sealed interface ClassFile
      * @param handler a handler that receives a {@link ClassBuilder}
      * @throws java.io.IOException if an I/O error occurs
      */
-    default void buildTo(Path path,
-                         ClassEntry thisClassEntry,
-                         ConstantPoolBuilder constantPool,
-                         Consumer<? super ClassBuilder> handler) throws IOException {
+    default void buildTo(
+            Path path,
+            ClassEntry thisClassEntry,
+            ConstantPoolBuilder constantPool,
+            Consumer<? super ClassBuilder> handler
+    ) throws IOException {
         Files.write(path, build(thisClassEntry, constantPool, handler));
     }
 
@@ -390,8 +405,7 @@ public sealed interface ClassFile
      * @param handler a handler that receives a {@link ClassBuilder}
      * @return the classfile bytes
      */
-    default byte[] buildModule(ModuleAttribute moduleAttribute,
-                                     Consumer<? super ClassBuilder> handler) {
+    default byte[] buildModule(ModuleAttribute moduleAttribute, Consumer<? super ClassBuilder> handler) {
         return build(CD_module_info, clb -> {
             clb.withFlags(AccessFlag.MODULE);
             clb.with(moduleAttribute);
@@ -405,8 +419,7 @@ public sealed interface ClassFile
      * @param moduleAttribute the {@code Module} attribute
      * @throws java.io.IOException if an I/O error occurs
      */
-    default void buildModuleTo(Path path,
-                                     ModuleAttribute moduleAttribute) throws IOException {
+    default void buildModuleTo(Path path, ModuleAttribute moduleAttribute) throws IOException {
         buildModuleTo(path, moduleAttribute, clb -> {});
     }
 
@@ -417,9 +430,11 @@ public sealed interface ClassFile
      * @param handler a handler that receives a {@link ClassBuilder}
      * @throws java.io.IOException if an I/O error occurs
      */
-    default void buildModuleTo(Path path,
-                                     ModuleAttribute moduleAttribute,
-                                     Consumer<? super ClassBuilder> handler) throws IOException {
+    default void buildModuleTo(
+            Path path,
+            ModuleAttribute moduleAttribute,
+            Consumer<? super ClassBuilder> handler
+    ) throws IOException {
         Files.write(path, buildModule(moduleAttribute, handler));
     }
 
