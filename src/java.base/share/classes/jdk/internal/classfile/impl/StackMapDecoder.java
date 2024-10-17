@@ -137,7 +137,7 @@ public class StackMapDecoder {
                     out.writeU1(offsetDelta);
                 } else {   //chop, same extended or append frame
                     out.writeU1U2(251 + diffLocalsSize, offsetDelta);
-                    for (int i=commonLocalsSize; i<fr.locals().size(); i++) writeTypeInfo(out, fr.locals().get(i));
+                    for (int i = commonLocalsSize; i < fr.locals().size(); i++) writeTypeInfo(out, fr.locals().get(i));
                 }
                 return;
             }
@@ -211,10 +211,10 @@ public class StackMapDecoder {
                     stack = List.of();
                 } else {
                     var newLocals = new VerificationTypeInfo[u2()];
-                    for (int i=0; i<newLocals.length; i++)
+                    for (int i = 0; i < newLocals.length; i++)
                         newLocals[i] = readVerificationTypeInfo();
                     var newStack = new VerificationTypeInfo[u2()];
-                    for (int i=0; i<newStack.length; i++)
+                    for (int i = 0; i < newStack.length; i++)
                         newStack[i] = readVerificationTypeInfo();
                     locals = List.of(newLocals);
                     stack = List.of(newStack);

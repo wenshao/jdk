@@ -189,7 +189,7 @@ class VerificationTable {
         int chop(VerificationType[] locals, int length, int chops) {
             if (locals == null) return -1;
             int pos = length - 1;
-            for (int i=0; i<chops; i++) {
+            for (int i = 0; i < chops; i++) {
                 if (locals[pos].is_category2_2nd()) {
                     pos -= 2;
                 } else {
@@ -313,7 +313,7 @@ class VerificationTable {
                     new_length = chop(locals, length, chops);
                     check_verification_type_array_size(new_length, max_locals);
                     flags = 0;
-                    for (int i=0; i<new_length; i++) {
+                    for (int i = 0; i < new_length; i++) {
                         if (locals[i].is_uninitialized_this(_verifier)) {
                             flags |= VerificationFrame.FLAG_THIS_UNINIT;
                             break;
@@ -342,11 +342,11 @@ class VerificationTable {
                 locals = new VerificationType[new_length];
                 VerificationType[] pre_locals = pre_frame.locals();
                 int i;
-                for (i=0; i<pre_frame.locals_size(); i++) {
+                for (i = 0; i < pre_frame.locals_size(); i++) {
                     locals[i] = pre_locals[i];
                 }
                 int[] flags = new int[]{pre_frame.flags()};
-                for (i=0; i<appends; i++) {
+                for (i = 0; i < appends; i++) {
                     locals[real_length] = parse_verification_type(flags);
                     if (locals[real_length].is_category2()) {
                         locals[real_length + 1] = locals[real_length].to_category2_2nd(_verifier);
@@ -371,7 +371,7 @@ class VerificationTable {
                     locals = new VerificationType[locals_size*2];
                 }
                 int i;
-                for (i=0; i<locals_size; i++) {
+                for (i = 0; i < locals_size; i++) {
                     locals[real_locals_size] = parse_verification_type(flags);
                     if (locals[real_locals_size].is_category2()) {
                         locals[real_locals_size + 1] =
@@ -387,7 +387,7 @@ class VerificationTable {
                 if (stack_size > 0) {
                     stack = new VerificationType[stack_size*2];
                 }
-                for (i=0; i<stack_size; i++) {
+                for (i = 0; i < stack_size; i++) {
                     stack[real_stack_size] = parse_verification_type(null);
                     if (stack[real_stack_size].is_category2()) {
                         stack[real_stack_size + 1] = stack[real_stack_size].to_category2_2nd(_verifier);

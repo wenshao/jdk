@@ -445,7 +445,7 @@ public abstract sealed class AbstractPoolEntry {
                 case CHAR:
                     if (charLen != s.length() || contentHash != s.hashCode())
                         return false;
-                    for (int i=0; i<charLen; i++)
+                    for (int i = 0; i < charLen; i++)
                         if (chars[i] != s.charAt(i))
                             return false;
                     stringValue = s;
@@ -454,7 +454,7 @@ public abstract sealed class AbstractPoolEntry {
                 case BYTE:
                     if (rawLen != s.length() || contentHash != s.hashCode())
                         return false;
-                    for (int i=0; i<rawLen; i++)
+                    for (int i = 0; i < rawLen; i++)
                         if (rawBytes[offset+i] != s.charAt(i))
                             return false;
                     stringValue = s;

@@ -1418,7 +1418,7 @@ public final class StackMapGenerator {
                         out.writeU1(offsetDelta);
                     } else {   //chop, same extended or append frame
                         out.writeU1U2(251 + diffLocalsSize, offsetDelta);
-                        for (int i=commonLocalsSize; i<localsSize; i++) locals[i].writeTo(out, cp);
+                        for (int i = commonLocalsSize; i < localsSize; i++) locals[i].writeTo(out, cp);
                     }
                     return;
                 }
@@ -1433,9 +1433,9 @@ public final class StackMapGenerator {
             }
             //full frame
             out.writeU1U2U2(255, offsetDelta, localsSize);
-            for (int i=0; i<localsSize; i++) locals[i].writeTo(out, cp);
+            for (int i = 0; i < localsSize; i++) locals[i].writeTo(out, cp);
             out.writeU2(stackSize);
-            for (int i=0; i<stackSize; i++) stack[i].writeTo(out, cp);
+            for (int i = 0; i < stackSize; i++) stack[i].writeTo(out, cp);
         }
     }
 

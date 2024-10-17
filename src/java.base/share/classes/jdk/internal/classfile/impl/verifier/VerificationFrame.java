@@ -367,7 +367,7 @@ class VerificationFrame {
         }
         _locals[index] = type;
         if (index >= _locals_size) {
-            for (int i=_locals_size; i<index; i++) {
+            for (int i = _locals_size; i < index; i++) {
                 if (_locals[i] != VerificationType.bogus_type) _verifier.verifyError("holes must be bogus type");
             }
             _locals_size = index + 1;
@@ -391,7 +391,7 @@ class VerificationFrame {
         _locals[index] = type1;
         _locals[index+1] = type2;
         if (index >= _locals_size - 1) {
-            for (int i=_locals_size; i<index; i++) {
+            for (int i = _locals_size; i < index; i++) {
                 if (_locals[i] != VerificationType.bogus_type) _verifier.verifyError("holes must be bogus type");
             }
             _locals_size = index + 2;
