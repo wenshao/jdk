@@ -640,10 +640,11 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         int count = this.count;
         byte[] val = this.value;
         if (isLatin1()) {
-            val[count++] = 'n';
-            val[count++] = 'u';
-            val[count++] = 'l';
-            val[count++] = 'l';
+            val[count] = 'n';
+            val[count + 1] = 'u';
+            val[count + 2] = 'l';
+            val[count + 3] = 'l';
+            count += 4;
         } else {
             count = StringUTF16.putCharsAt(val, count, 'n', 'u', 'l', 'l');
         }
