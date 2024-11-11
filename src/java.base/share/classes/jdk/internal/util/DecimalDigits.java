@@ -25,6 +25,8 @@
 
 package jdk.internal.util;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.Stable;
 
@@ -36,6 +38,7 @@ import static jdk.internal.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
  * @since 21
  */
 public final class DecimalDigits {
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
     private static final Unsafe UNSAFE = Unsafe.getUnsafe();
 
     /**
@@ -275,11 +278,11 @@ public final class DecimalDigits {
             charPos -= 2;
             putPairUTF16(buf, charPos, -i);
         } else {
-            putCharUTF16(buf, --charPos, '0' - i);
+            JLA.putCharUTF16(buf, --charPos, '0' - i);
         }
 
         if (negative) {
-            putCharUTF16(buf, --charPos, '-');
+            JLA.putCharUTF16(buf, --charPos, '-');
         }
         return charPos;
     }
@@ -327,11 +330,11 @@ public final class DecimalDigits {
             charPos -= 2;
             putPairUTF16(buf, charPos, -i2);
         } else {
-            putCharUTF16(buf, --charPos, '0' - i2);
+            JLA.putCharUTF16(buf, --charPos, '0' - i2);
         }
 
         if (negative) {
-            putCharUTF16(buf, --charPos, '-');
+            JLA.putCharUTF16(buf, --charPos, '-');
         }
         return charPos;
     }
@@ -422,15 +425,11 @@ public final class DecimalDigits {
      */
     public static void putPairUTF16(byte[] buf, int charPos, int v) {
         int packed = DIGITS[v];
-        putCharUTF16(buf, charPos, packed & 0xFF);
-        putCharUTF16(buf, charPos + 1, packed >> 8);
+        JLA.putCharUTF16(buf, charPos, packed & 0xFF);
+        JLA.putCharUTF16(buf, charPos + 1, packed >> 8);
     }
 
     private static void putCharLatin1(byte[] buf, int charPos, int c) {
         UNSAFE.putByte(buf, ARRAY_BYTE_BASE_OFFSET + charPos, (byte) c);
-    }
-
-    private static void putCharUTF16(byte[] buf, int charPos, int c) {
-        UNSAFE.putChar(buf, ARRAY_BYTE_BASE_OFFSET + (charPos << 1), (char) c);
     }
 }
