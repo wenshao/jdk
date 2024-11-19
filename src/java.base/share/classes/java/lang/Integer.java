@@ -43,6 +43,7 @@ import static java.lang.Character.digit;
 import static java.lang.String.COMPACT_STRINGS;
 import static java.lang.String.LATIN1;
 import static java.lang.String.UTF16;
+import static java.lang.StringConcatHelper.newArray;
 
 /**
  * The {@code Integer} class is the {@linkplain
@@ -367,11 +368,11 @@ public final class Integer extends Number
         int mag = Integer.SIZE - Integer.numberOfLeadingZeros(val);
         int chars = Math.max(((mag + (shift - 1)) / shift), 1);
         if (COMPACT_STRINGS) {
-            byte[] buf = new byte[chars];
+            byte[] buf = newArray(chars);
             formatUnsignedInt(val, shift, buf, chars);
             return new String(buf, LATIN1);
         } else {
-            byte[] buf = new byte[chars * 2];
+            byte[] buf = newArray(chars << 1);
             formatUnsignedIntUTF16(val, shift, buf, chars);
             return new String(buf, UTF16);
         }
@@ -431,11 +432,11 @@ public final class Integer extends Number
     public static String toString(int i) {
         int size = DecimalDigits.stringSize(i);
         if (COMPACT_STRINGS) {
-            byte[] buf = new byte[size];
+            byte[] buf = newArray(size);
             DecimalDigits.getCharsLatin1(i, size, buf);
             return new String(buf, LATIN1);
         } else {
-            byte[] buf = new byte[size * 2];
+            byte[] buf = newArray(size << 1);
             DecimalDigits.getCharsUTF16(i, size, buf);
             return new String(buf, UTF16);
         }
