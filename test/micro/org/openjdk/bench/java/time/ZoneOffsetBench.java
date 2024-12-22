@@ -34,6 +34,7 @@ import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 @BenchmarkMode(Mode.AverageTime)
 @State(Scope.Benchmark)
@@ -44,9 +45,9 @@ import org.openjdk.jmh.annotations.Warmup;
 public class ZoneOffsetBench {
 
     @Benchmark
-    public void ofTotalSeconds() {
+    public void ofTotalSeconds(Blackhole bh) {
         for (int i = 0; i < 1_000; i++) {
-            ZoneOffset.ofTotalSeconds(0);
+            bh.consume(ZoneOffset.ofTotalSeconds((i % 37 - 18) * 60 * 15));
         }
     }
 }
