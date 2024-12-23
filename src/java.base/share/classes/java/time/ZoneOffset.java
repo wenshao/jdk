@@ -133,9 +133,10 @@ import jdk.internal.vm.annotation.Stable;
 public final class ZoneOffset
         extends ZoneId
         implements TemporalAccessor, TemporalAdjuster, Comparable<ZoneOffset>, Serializable {
+    private static final int MINUTES_15_SECONDS = 15 * SECONDS_PER_MINUTE;
+    @Stable
+    private static final ZoneOffset[] MINUTES_15_CACHE = new ZoneOffset[256];
 
-    /** Cache of time-zone offset by offset in seconds. */
-    private static final ConcurrentMap<Integer, ZoneOffset> SECONDS_CACHE = new ConcurrentHashMap<>(16, 0.75f, 4);
     /** Cache of time-zone offset by ID. */
     private static final ConcurrentMap<String, ZoneOffset> ID_CACHE = new ConcurrentHashMap<>(16, 0.75f, 4);
 
@@ -423,15 +424,13 @@ public final class ZoneOffset
         if (totalSeconds < -MAX_SECONDS || totalSeconds > MAX_SECONDS) {
             throw new DateTimeException("Zone offset not in valid range: -18:00 to +18:00");
         }
-        if (totalSeconds % (15 * SECONDS_PER_MINUTE) == 0) {
-            Integer totalSecs = totalSeconds;
-            ZoneOffset result = SECONDS_CACHE.get(totalSecs);
+        int minutes15Rem = totalSeconds / MINUTES_15_SECONDS;
+        if (totalSeconds - minutes15Rem * MINUTES_15_SECONDS == 0) {
+            int cacheIndex = minutes15Rem & 0xff;
+            ZoneOffset result = MINUTES_15_CACHE[cacheIndex];
             if (result == null) {
                 result = new ZoneOffset(totalSeconds);
-                var existing = SECONDS_CACHE.putIfAbsent(totalSecs, result);
-                if (existing != null) {
-                    result = existing;
-                }
+                MINUTES_15_CACHE[cacheIndex] = result;
                 ID_CACHE.putIfAbsent(result.getId(), result);
             }
             return result;
