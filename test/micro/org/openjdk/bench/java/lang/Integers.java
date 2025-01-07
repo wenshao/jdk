@@ -114,6 +114,27 @@ public class Integers {
         }
     }
 
+    @Benchmark
+    public void toHexStringTiny(Blackhole bh) {
+        for (int i : intsTiny) {
+            bh.consume(Integer.toHexString(i));
+        }
+    }
+
+    @Benchmark
+    public void toHexStringSmall(Blackhole bh) {
+        for (int i : intsSmall) {
+            bh.consume(Integer.toHexString(i));
+        }
+    }
+
+    @Benchmark
+    public void toHexStringBig(Blackhole bh) {
+        for (int i : intsBig) {
+            bh.consume(Integer.toHexString(i));
+        }
+    }
+
     /** Performs expand on small values */
     @Benchmark
     public void expand(Blackhole bh) {
