@@ -1339,12 +1339,15 @@ public final class String
             sp++;
         }
         while (sp < sl) {
+            int x;
             char c = StringUTF16.getChar(val, sp++);
             if (c < 0x80) {
                 dst[dp++] = (byte)c;
             } else if (c < 0x800) {
-                dst[dp++] = (byte)(0xc0 | (c >> 6));
-                dst[dp++] = (byte)(0x80 | (c & 0x3f));
+                x = ((c & 0x3f) << 8) | ((c & 0xFF) >> 6) | 0x80C0;
+                dst[dp    ] = (byte) x;
+                dst[dp + 1] = (byte)(x >>> 8);
+                dp += 2;
             } else if (Character.isSurrogate(c)) {
                 int uc = -1;
                 char c2;
@@ -1359,17 +1362,21 @@ public final class String
                         throwUnmappable(sp - 1);
                     }
                 } else {
-                    dst[dp++] = (byte)(0xf0 | ((uc >> 18)));
-                    dst[dp++] = (byte)(0x80 | ((uc >> 12) & 0x3f));
-                    dst[dp++] = (byte)(0x80 | ((uc >>  6) & 0x3f));
-                    dst[dp++] = (byte)(0x80 | (uc & 0x3f));
+                    x = 0x808080F0 | (uc >> 18) | ((uc & 0x3f000) >> 4) | ((uc & 0xFC0) << 10) | ((uc & 0x3f) << 24);
+                    dst[dp    ] = (byte) x;
+                    dst[dp + 1] = (byte)(x >> 8);
+                    dst[dp + 2] = (byte)(x >> 16);
+                    dst[dp + 3] = (byte)(x >> 24);
+                    dp += 4;
                     sp++;  // 2 chars
                 }
             } else {
                 // 3 bytes, 16 bits
-                dst[dp++] = (byte)(0xe0 | ((c >> 12)));
-                dst[dp++] = (byte)(0x80 | ((c >>  6) & 0x3f));
-                dst[dp++] = (byte)(0x80 | (c & 0x3f));
+                x = ((c & 0xF000) >> 12) | ((c & 0xFC0) << 2) | 0x80e0;
+                dst[dp    ] = (byte) (x);
+                dst[dp + 1] = (byte) (x >> 8);
+                dst[dp + 2] = (byte) (0x80 | (c & 0x3f));
+                dp += 3;
             }
         }
         if (dp == dst.length) {
