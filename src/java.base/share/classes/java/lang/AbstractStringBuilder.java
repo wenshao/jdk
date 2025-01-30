@@ -813,6 +813,17 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         return this;
     }
 
+    void appendPair(int i) {
+        int count = this.count;
+        ensureCapacityInternal(count + 2);
+        if (isLatin1()) {
+            DecimalDigits.putPairLatin1(value, count, i);
+        } else {
+            DecimalDigits.putPairUTF16(value, count, i);
+        }
+        this.count = count + 2;
+    }
+
     /**
      * Appends the string representation of the {@code int}
      * argument to this sequence.

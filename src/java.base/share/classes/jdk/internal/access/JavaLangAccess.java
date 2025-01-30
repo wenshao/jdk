@@ -369,6 +369,8 @@ public interface JavaLangAccess {
      */
     void putCharUTF16(byte[] bytes, int index, int ch);
 
+    void appendPair(StringBuilder buf, int v);
+
     /**
      * Encode the given string into a sequence of bytes using utf8.
      *

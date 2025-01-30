@@ -29,10 +29,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+
 /**
  * Helper for java.time
  */
 public class DateTimeHelper {
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+
     /**
      * Prints the toString result to the given buf, avoiding extra string allocations.
      */
@@ -60,11 +65,16 @@ public class DateTimeHelper {
         } else {
             if (year > 9999) {
                 buf.append('+');
+                buf.append(year);
+            } else {
+                JLA.appendPair(buf, year / 100);
+                JLA.appendPair(buf, year % 100);
             }
-            buf.append(year);
         }
-        buf.append(month < 10 ? "-0" : "-").append(month)
-           .append(day < 10 ? "-0" : "-").append(day);
+        buf.append('-');
+        JLA.appendPair(buf, month);
+        buf.append('-');
+        JLA.appendPair(buf, day);
     }
 
     /**
@@ -76,10 +86,12 @@ public class DateTimeHelper {
             minute = time.getMinute(),
             second = time.getSecond(),
             nano   = time.getNano();
-        buf.append(hour < 10 ? "0" : "").append(hour)
-           .append(minute < 10 ? ":0" : ":").append(minute);
+        JLA.appendPair(buf, hour);
+        buf.append(':');
+        JLA.appendPair(buf, minute);
         if ((second | nano) > 0) {
-            buf.append(second < 10 ? ":0" : ":").append(second);
+            buf.append(':');
+            JLA.appendPair(buf, second);
             if (nano > 0) {
                 buf.append('.');
                 int zeros = 9 - DecimalDigits.stringSize(nano);
