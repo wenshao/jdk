@@ -4328,12 +4328,13 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
     private static String scale2(int intCompact) {
         int highInt = intCompact / 100;
         int lowInt = intCompact - highInt * 100;
-        int highIntSize = DecimalDigits.stringSize(highInt);
-        byte[] buf = new byte[highIntSize + 3];
-        DecimalDigits.putPairLatin1(buf, highIntSize + 1, lowInt);
-        buf[highIntSize] = '.';
-        DecimalDigits.getCharsLatin1(highInt, highIntSize, buf);
-        return newStringNoRepl(buf);
+        short packed = DecimalDigits.digitPair(lowInt);
+        return new StringBuilder()
+                .append(highInt)
+                .append('.')
+                .append((char) (packed & 0xFF))
+                .append((char) (packed >> 8))
+                .toString();
     }
 
     private static String newStringNoRepl(byte[] buf) {

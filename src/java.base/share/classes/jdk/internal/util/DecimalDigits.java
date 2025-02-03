@@ -82,6 +82,15 @@ public final class DecimalDigits {
     }
 
     /**
+     * For values from 0 to 99 return a short encoding a pair of ASCII-encoded digit characters in little-endian
+     * @param i value to convert
+     * @return a short encoding a pair of ASCII-encoded digit characters
+     */
+    public static short digitPair(int i) {
+        return DIGITS[i & 0x7f];
+    }
+
+    /**
      * Returns the string representation size for a given int value.
      *
      * @param x int value
