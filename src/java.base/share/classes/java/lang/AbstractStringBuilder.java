@@ -241,11 +241,26 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      */
     private void ensureCapacityInternal(int minimumCapacity) {
         // overflow-conscious code
+        ensureCapacityInternal(minimumCapacity, coder);
+    }
+
+    /**
+     * For positive values of {@code minimumCapacity}, this method
+     * behaves like {@code ensureCapacity}, however it is never
+     * synchronized.
+     * If {@code minimumCapacity} is non positive due to numeric
+     * overflow, this method throws {@code OutOfMemoryError}.
+     */
+    private byte[] ensureCapacityInternal(int minimumCapacity, byte coder) {
+        // overflow-conscious code
+        byte[] value = this.value;
         int oldCapacity = value.length >> coder;
         if (minimumCapacity - oldCapacity > 0) {
             value = Arrays.copyOf(value,
-                    newCapacity(minimumCapacity) << coder);
+                    newCapacity(minimumCapacity, value, coder) << coder);
+            this.value = value;
         }
+        return value;
     }
 
     /**
@@ -260,7 +275,7 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @throws OutOfMemoryError if minCapacity is less than zero or
      *         greater than (Integer.MAX_VALUE >> coder)
      */
-    private int newCapacity(int minCapacity) {
+    private static int newCapacity(int minCapacity, byte[] value, byte coder) {
         int oldLength = value.length;
         int newLength = minCapacity << coder;
         int growth = newLength - oldLength;
@@ -636,10 +651,10 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
     }
 
     private AbstractStringBuilder appendNull() {
-        ensureCapacityInternal(count + 4);
         int count = this.count;
-        byte[] val = this.value;
-        if (isLatin1()) {
+        byte coder = this.coder;
+        byte[] val = ensureCapacityInternal(count + 4, coder);
+        if (coder == LATIN1) {
             StringLatin1.putCharsAt(val, count, 'n', 'u', 'l', 'l');
         } else {
             StringUTF16.putCharsAt(val, count, 'n', 'u', 'l', 'l');
@@ -764,10 +779,10 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(boolean b) {
-        ensureCapacityInternal(count + (b ? 4 : 5));
         int count = this.count;
-        byte[] val = this.value;
-        if (isLatin1()) {
+        byte coder = this.coder;
+        byte[] val = ensureCapacityInternal(count + (b ? 4 : 5), coder);
+        if (coder == LATIN1) {
             if (b) {
                 StringLatin1.putCharsAt(val, count, 't', 'r', 'u', 'e');
             } else {
