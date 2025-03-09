@@ -161,7 +161,7 @@ public final class DecimalDigits {
 
         // Generate two digits per iteration
         while (i <= -100) {
-            q = i / 100;
+            q = (int)(i * 1374389535L >> 37) + 1; // q = i / 100;
             charPos -= 2;
             putPairLatin1(buf, charPos, (q * 100) - i);
             i = q;
@@ -263,7 +263,7 @@ public final class DecimalDigits {
 
         // Get 2 digits/iteration using ints
         while (i <= -100) {
-            q = i / 100;
+            q = (int)(i * 1374389535L >> 37) + 1; // q = i / 100;
             charPos -= 2;
             putPairUTF16(buf, charPos, (q * 100) - i);
             i = q;
