@@ -31,7 +31,6 @@ import java.security.*;
 
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
-import jdk.internal.util.ByteArrayLittleEndian;
 
 /**
  * A class that represents an immutable universally unique identifier (UUID).
@@ -466,26 +465,38 @@ public final class UUID implements java.io.Serializable, Comparable<UUID> {
         buf[13] = '-';
         buf[18] = '-';
         buf[23] = '-';
+        setLong(buf, 0, hex8(mostSigBits >>> 32));
+        long x0 = hex8(mostSigBits);
+        setInt(buf, 9, x0);
+        setInt(buf, 14, x0 >>> 32);
 
-        long x  = mostSigBits,
-             x0 = hex8(x >>> 32),
-             x1 = hex8(x);
-        ByteArrayLittleEndian.setLong(buf, 0, x0);
-        ByteArrayLittleEndian.setInt(buf, 9, (int) x1);
-        ByteArrayLittleEndian.setInt(buf, 14, (int) (x1 >>> 32));
-
-        x  = leastSigBits;
-        x0 = hex8(x >>> 32);
-        x1 = hex8(x);
-        ByteArrayLittleEndian.setInt(buf, 19, (int) (x0));
-        ByteArrayLittleEndian.setInt(buf, 24, (int) (x0 >>> 32));
-        ByteArrayLittleEndian.setLong(buf, 28, x1);
-
+        long x1 = hex8(leastSigBits >>> 32);
+        setInt(buf, 19, x1);
+        setInt(buf, 24, x1 >>> 32);
+        setLong(buf, 28, hex8(leastSigBits));
         try {
             return jla.newStringNoRepl(buf, StandardCharsets.ISO_8859_1);
         } catch (CharacterCodingException cce) {
             throw new AssertionError(cce);
         }
+    }
+
+    private static void setInt(byte[] buf, int pos, long v) {
+        buf[pos    ] = (byte)  v;
+        buf[pos + 1] = (byte) (v >>> 8);
+        buf[pos + 2] = (byte) (v >>> 16);
+        buf[pos + 3] = (byte) (v >>> 24);
+    }
+
+    private static void setLong(byte[] buf, int pos, long v) {
+        buf[pos    ] = (byte)  v;
+        buf[pos + 1] = (byte) (v >>> 8);
+        buf[pos + 2] = (byte) (v >>> 16);
+        buf[pos + 3] = (byte) (v >>> 24);
+        buf[pos + 4] = (byte) (v >>> 32);
+        buf[pos + 5] = (byte) (v >>> 40);
+        buf[pos + 6] = (byte) (v >>> 48);
+        buf[pos + 7] = (byte) (v >>> 56);
     }
 
     /**
