@@ -262,6 +262,10 @@ public class StreamDecoder extends Reader {
         bb.flip();
     }
 
+    public String readString() throws IOException {
+        return new String(in.readAllBytes(), decoder.charset());
+    }
+
     private int readBytes() throws IOException {
         bb.compact();
         try {

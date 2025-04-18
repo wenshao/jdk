@@ -189,4 +189,9 @@ public class InputStreamReader extends Reader {
     public void close() throws IOException {
         sd.close();
     }
+
+    @Override
+    public String readString() throws IOException {
+        return sd.readString();
+    }
 }
