@@ -358,15 +358,21 @@ public final class StackTraceElement implements java.io.Serializable {
      */
     @Override
     public String toString() {
-        int estimatedLength = length(classLoaderName) + 1
+        StringBuilder sb = new StringBuilder(estimatedLength());
+        return appendTo(sb).toString();
+    }
+
+    final int estimatedLength() {
+        return length(classLoaderName) + 1
                 + length(moduleName) + 1
                 + length(moduleVersion) + 1
                 + declaringClass.length() + 1
                 + methodName.length() + 1
                 + Math.max(UNKNOWN_SOURCE.length(), length(fileName)) + 1
                 + 12;
+    }
 
-        StringBuilder sb = new StringBuilder(estimatedLength);
+    final StringBuilder appendTo(StringBuilder sb) {
         if (!dropClassLoaderName() && classLoaderName != null && !classLoaderName.isEmpty()) {
             sb.append(classLoaderName).append('/');
         }
@@ -394,8 +400,7 @@ public final class StackTraceElement implements java.io.Serializable {
             }
         }
         sb.append(')');
-
-        return sb.toString();
+        return sb;
     }
 
     private static int length(String s) {
