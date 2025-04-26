@@ -32,7 +32,7 @@ import jdk.internal.module.ServicesCatalog;
  * Used to archive the built-in class loaders, their services catalogs, and the
  * package-to-module map used by the built-in class loaders.
  */
-class ArchivedClassLoaders {
+final class ArchivedClassLoaders {
     private static ArchivedClassLoaders archivedClassLoaders;
 
     private final ClassLoader bootLoader;

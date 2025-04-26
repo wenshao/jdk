@@ -141,7 +141,7 @@ public final class RawNativeLibraries {
         nl.close();
     }
 
-    static class RawNativeLibraryImpl extends NativeLibrary {
+    static final class RawNativeLibraryImpl extends NativeLibrary {
         // the name of the raw native library.
         final String name;
         // opaque handle to raw native library, used in native code.

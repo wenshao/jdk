@@ -50,7 +50,7 @@ import jdk.internal.util.StaticProperty;
  * resources and packages on the "boot class path" specified via -Xbootclasspath/a.
  */
 
-public class BootLoader {
+public final class BootLoader {
     private BootLoader() { }
 
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
@@ -213,7 +213,7 @@ public class BootLoader {
      * Helper class to define {@code Package} objects for packages in modules
      * defined to the boot loader.
      */
-    static class PackageHelper {
+    static final class PackageHelper {
         private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
         /**

@@ -71,7 +71,7 @@ import sun.net.www.ParseUtil;
  *
  * @author  David Connelly
  */
-public class URLClassPath {
+public final class URLClassPath {
     private static final String USER_AGENT_JAVA_VERSION = "UA-Java-Version";
     private static final String JAVA_VERSION;
     private static final boolean DEBUG;
@@ -489,7 +489,7 @@ public class URLClassPath {
      * Nested class used to represent a loader of resources and classes
      * from a base URL.
      */
-    private static class Loader implements Closeable {
+    private static sealed class Loader implements Closeable permits JarLoader, FileLoader {
         private final URL base;
         private JarFile jarfile; // if this points to a jar file
 
@@ -603,7 +603,7 @@ public class URLClassPath {
     /*
      * Nested class used to represent a Loader of resources from a JAR URL.
      */
-    private static class JarLoader extends Loader {
+    private static final class JarLoader extends Loader {
         private JarFile jar;
         private final URL csu;
         private boolean closed = false;
@@ -894,7 +894,7 @@ public class URLClassPath {
      * Nested class used to represent a loader of classes and resources
      * from a file URL that refers to a directory.
      */
-    private static class FileLoader extends Loader {
+    private static final class FileLoader extends Loader {
         /* Canonicalized File */
         private final File dir;
         private final URL normalizedBase;

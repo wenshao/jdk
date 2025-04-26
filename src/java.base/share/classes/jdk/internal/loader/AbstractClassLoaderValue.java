@@ -42,7 +42,8 @@ import java.util.function.Supplier;
  * @param <CLV> the type of concrete ClassLoaderValue (this type)
  * @param <V>   the type of values associated with ClassLoaderValue
  */
-public abstract class AbstractClassLoaderValue<CLV extends AbstractClassLoaderValue<CLV, V>, V> {
+public abstract sealed class AbstractClassLoaderValue<CLV extends AbstractClassLoaderValue<CLV, V>, V>
+        permits AbstractClassLoaderValue.Sub, ClassLoaderValue {
 
     /**
      * Sole constructor.

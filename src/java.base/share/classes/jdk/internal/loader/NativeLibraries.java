@@ -271,7 +271,7 @@ public final class NativeLibraries {
      * the VM when it loads the library, and used by the VM to pass the correct
      * version of JNI to the native methods.
      */
-    static class NativeLibraryImpl extends NativeLibrary {
+    static final class NativeLibraryImpl extends NativeLibrary {
         // the class from which the library is loaded, also indicates
         // the loader this native library belongs.
         final Class<?> fromClass;
@@ -342,7 +342,7 @@ public final class NativeLibraries {
      * The run() method will be invoked when this class loader becomes
      * phantom reachable to unload the native library.
      */
-    static class Unloader implements Runnable {
+    static final class Unloader implements Runnable {
         // This represents the context when a native library is unloaded
         // and getFromClass() will return null,
         static final NativeLibraryImpl UNLOADER =
@@ -389,7 +389,7 @@ public final class NativeLibraries {
      * properties. The system properties are eagerly read at bootstrap, then
      * lazily parsed on first use to avoid initialization ordering issues.
      */
-    static class LibraryPaths {
+    static final class LibraryPaths {
         // The paths searched for libraries
         static final String[] SYS_PATHS = ClassLoaderHelper.parsePath(StaticProperty.sunBootLibraryPath());
         static final String[] USER_PATHS = ClassLoaderHelper.parsePath(StaticProperty.javaLibraryPath());

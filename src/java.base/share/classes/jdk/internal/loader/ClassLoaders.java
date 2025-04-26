@@ -42,7 +42,7 @@ import jdk.internal.module.ServicesCatalog;
  * in modules defined to the boot class loader.
  */
 
-public class ClassLoaders {
+public final class ClassLoaders {
 
     private ClassLoaders() { }
 
@@ -128,7 +128,7 @@ public class ClassLoaders {
      * The class loader that is used to find resources in modules defined to
      * the boot class loader. It is not used for class loading.
      */
-    private static class BootClassLoader extends BuiltinClassLoader {
+    static final class BootClassLoader extends BuiltinClassLoader {
         BootClassLoader(URLClassPath bcp) {
             super(null, null, bcp);
         }
@@ -143,7 +143,7 @@ public class ClassLoaders {
      * The platform class loader, a unique type to make it easier to distinguish
      * from the application class loader.
      */
-    private static class PlatformClassLoader extends BuiltinClassLoader {
+    static final class PlatformClassLoader extends BuiltinClassLoader {
         static {
             if (!ClassLoader.registerAsParallelCapable())
                 throw new InternalError();
@@ -158,7 +158,7 @@ public class ClassLoaders {
      * The application class loader that is a {@code BuiltinClassLoader} with
      * customizations to be compatible with long standing behavior.
      */
-    private static class AppClassLoader extends BuiltinClassLoader {
+    static final class AppClassLoader extends BuiltinClassLoader {
         static {
             if (!ClassLoader.registerAsParallelCapable())
                 throw new InternalError();

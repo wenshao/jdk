@@ -28,7 +28,7 @@ package jdk.internal.loader;
 /**
  * NativeLibrary represents a loaded native library instance.
  */
-public abstract class NativeLibrary {
+public sealed abstract class NativeLibrary permits RawNativeLibraries.RawNativeLibraryImpl, NativeLibraries.NativeLibraryImpl {
     public abstract String name();
 
     /**

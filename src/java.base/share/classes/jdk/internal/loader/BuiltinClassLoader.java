@@ -86,8 +86,9 @@ import jdk.internal.vm.annotation.Stable;
  * upgraded modules defined to the platform class loader.
  */
 
-public class BuiltinClassLoader
+public sealed class BuiltinClassLoader
     extends SecureClassLoader
+    permits ClassLoaders.BootClassLoader, ClassLoaders.PlatformClassLoader, ClassLoaders.AppClassLoader
 {
     static {
         if (!ClassLoader.registerAsParallelCapable())
