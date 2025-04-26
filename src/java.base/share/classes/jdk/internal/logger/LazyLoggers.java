@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -72,7 +72,7 @@ public final class LazyLoggers {
 
     }
 
-    static interface LoggerAccessor {
+    static sealed interface LoggerAccessor permits LazyLoggerAccessor {
         /**
          * The logger name.
          * @return The name of the logger that is / will be lazily created.
@@ -308,8 +308,8 @@ public final class LazyLoggers {
      * An implementation of {@link Logger} that redirects all calls to a wrapped
      * instance of {@code Logger}.
      */
-    private static class LazyLoggerWrapper
-        extends AbstractLoggerWrapper<Logger> {
+    sealed static class LazyLoggerWrapper
+        extends AbstractLoggerWrapper<Logger> permits JdkLazyLogger {
 
         final LoggerAccessor loggerAccessor;
 

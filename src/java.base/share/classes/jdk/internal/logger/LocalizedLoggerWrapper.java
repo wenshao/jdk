@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -48,7 +48,7 @@ import java.lang.System.Logger.Level;
  * @param <L> Type of the wrapped Logger: {@code Logger} or an
  *        extension of the {@code Logger} interface.
  */
-public class LocalizedLoggerWrapper<L extends Logger> extends LoggerWrapper<L> {
+public final class LocalizedLoggerWrapper<L extends Logger> extends LoggerWrapper<L> {
 
     private final ResourceBundle bundle;
 

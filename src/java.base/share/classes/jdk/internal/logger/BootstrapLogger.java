@@ -78,7 +78,7 @@ public final class BootstrapLogger implements Logger, PlatformLogger.Bridge,
     // to an independent InnocuousThread which will ensure that
     // delayed log events will be clearly identified as messages that have
     // been delayed during the boot sequence.
-    private static class BootstrapExecutors implements ThreadFactory {
+    private static final class BootstrapExecutors implements ThreadFactory {
 
         // Maybe that should be made configurable with system properties.
         static final long KEEP_EXECUTOR_ALIVE_SECONDS = 30;
