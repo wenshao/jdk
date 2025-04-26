@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,7 +27,7 @@ package jdk.internal.misc;
 /**
  * Defines static methods to test if preview features are enabled at run-time.
  */
-public class PreviewFeatures {
+public final class PreviewFeatures {
     private static final boolean ENABLED = isPreviewEnabled();
 
     private PreviewFeatures() {

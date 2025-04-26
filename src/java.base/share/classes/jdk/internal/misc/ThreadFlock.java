@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -80,7 +80,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * <p> Unless otherwise specified, passing a {@code null} argument to a method
  * in this class will cause a {@link NullPointerException} to be thrown.
  */
-public class ThreadFlock implements AutoCloseable {
+public final class ThreadFlock implements AutoCloseable {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
     private static final VarHandle THREAD_COUNT;
     private static final VarHandle PERMIT;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * A thread invokes the {@code begin} or {@code tryBegin} methods at the start
  * of a block, and the {@code end} method at the end of a block.
  */
-public class ThreadTracker {
+public final class ThreadTracker {
 
     /**
      * A reference to a Thread that is suitable for use as a key in a collection.

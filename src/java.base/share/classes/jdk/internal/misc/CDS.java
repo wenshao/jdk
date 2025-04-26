@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.StaticProperty;
 
-public class CDS {
+public final class CDS {
     // Must be in sync with cdsConfig.hpp
     private static final int IS_DUMPING_ARCHIVE              = 1 << 0;
     private static final int IS_DUMPING_METHOD_HANDLES       = 1 << 1;

@@ -38,7 +38,7 @@ import jdk.internal.access.SharedSecrets;
 import jdk.internal.vm.annotation.Stable;
 import sun.nio.ch.FileChannelImpl;
 
-public class VM {
+public final class VM {
 
     // the init level when the VM is fully initialized
     private static final int JAVA_LANG_SYSTEM_INITED     = 1;
