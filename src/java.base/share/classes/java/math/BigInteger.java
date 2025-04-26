@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1996, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1996, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -1395,7 +1395,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * Package private methods used by BigDecimal code to add a BigInteger
      * with a long. Assumes val is not equal to INFLATED.
      */
-    BigInteger add(long val) {
+    final BigInteger add(long val) {
         if (val == 0)
             return this;
         if (signum == 0)
@@ -1786,7 +1786,7 @@ public class BigInteger extends Number implements Comparable<BigInteger> {
      * Package private methods used by BigDecimal code to multiply a BigInteger
      * with a long. Assumes v is not equal to INFLATED.
      */
-    BigInteger multiply(long v) {
+    final BigInteger multiply(long v) {
         if (v == 0 || signum == 0)
           return ZERO;
         if (v == BigDecimal.INFLATED)

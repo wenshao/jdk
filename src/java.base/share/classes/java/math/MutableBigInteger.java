@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -46,7 +46,7 @@ import java.util.Arrays;
  * @since   1.3
  */
 
-class MutableBigInteger {
+sealed class MutableBigInteger permits SignedMutableBigInteger{
     /**
      * Holds the magnitude of this MutableBigInteger in big endian order.
      * The magnitude may start at an offset into the value array, and it may
@@ -202,7 +202,7 @@ class MutableBigInteger {
     /**
      * Convert this MutableBigInteger to a BigInteger object.
      */
-    BigInteger toBigInteger(int sign) {
+    final BigInteger toBigInteger(int sign) {
         if (intLen == 0 || sign == 0)
             return BigInteger.ZERO;
         return new BigInteger(getMagnitudeArray(), sign);
@@ -211,7 +211,7 @@ class MutableBigInteger {
     /**
      * Converts this number to a nonnegative {@code BigInteger}.
      */
-    BigInteger toBigInteger() {
+    final BigInteger toBigInteger() {
         normalize();
         return toBigInteger(isZero() ? 0 : 1);
     }
@@ -220,7 +220,7 @@ class MutableBigInteger {
      * Convert this MutableBigInteger to BigDecimal object with the specified sign
      * and scale.
      */
-    BigDecimal toBigDecimal(int sign, int scale) {
+    final BigDecimal toBigDecimal(int sign, int scale) {
         if (intLen == 0 || sign == 0)
             return BigDecimal.zeroValueOf(scale);
         int[] mag = getMagnitudeArray();
@@ -241,7 +241,7 @@ class MutableBigInteger {
      * object into a long value given a specified sign.
      * returns INFLATED if value is not fit into long
      */
-    long toCompactValue(int sign) {
+    final long toCompactValue(int sign) {
         if (intLen == 0 || sign == 0)
             return 0L;
         int[] mag = getMagnitudeArray();
@@ -260,7 +260,7 @@ class MutableBigInteger {
     /**
      * Clear out a MutableBigInteger for reuse.
      */
-    void clear() {
+    final void clear() {
         offset = intLen = 0;
         for (int index=0, n=value.length; index < n; index++)
             value[index] = 0;
@@ -269,7 +269,7 @@ class MutableBigInteger {
     /**
      * Set a MutableBigInteger to zero, removing its offset.
      */
-    void reset() {
+    final void reset() {
         offset = intLen = 0;
     }
 
@@ -442,7 +442,7 @@ class MutableBigInteger {
      * Convert this MutableBigInteger into an int array with no leading
      * zeros, of a length that is equal to this MutableBigInteger's intLen.
      */
-    int[] toIntArray() {
+    final int[] toIntArray() {
         int[] result = new int[intLen];
         for(int i=0; i < intLen; i++)
             result[i] = value[offset+i];
@@ -454,7 +454,7 @@ class MutableBigInteger {
      * This does not get inlined on all platforms so it is not used
      * as often as originally intended.
      */
-    void setInt(int index, int val) {
+    final void setInt(int index, int val) {
         value[offset + index] = val;
     }
 
@@ -462,7 +462,7 @@ class MutableBigInteger {
      * Sets this MutableBigInteger's value array to the specified array.
      * The intLen is set to the specified length.
      */
-    void setValue(int[] val, int length) {
+    final void setValue(int[] val, int length) {
         value = val;
         intLen = length;
         offset = 0;
@@ -472,7 +472,7 @@ class MutableBigInteger {
      * Sets this MutableBigInteger's value array to a copy of the specified
      * array. The intLen is set to the length of the new array.
      */
-    void copyValue(MutableBigInteger src) {
+    final void copyValue(MutableBigInteger src) {
         int len = src.intLen;
         if (value.length < len)
             value = new int[len];
@@ -485,7 +485,7 @@ class MutableBigInteger {
      * Sets this MutableBigInteger's value array to a copy of the specified
      * array. The intLen is set to the length of the specified array.
      */
-    void copyValue(int[] val) {
+    final void copyValue(int[] val) {
         int len = val.length;
         if (value.length < len)
             value = new int[len];
@@ -497,28 +497,28 @@ class MutableBigInteger {
     /**
      * Returns true iff this MutableBigInteger has a value of one.
      */
-    boolean isOne() {
+    final boolean isOne() {
         return (intLen == 1) && (value[offset] == 1);
     }
 
     /**
      * Returns true iff this MutableBigInteger has a value of zero.
      */
-    boolean isZero() {
+    final boolean isZero() {
         return (intLen == 0);
     }
 
     /**
      * Returns true iff this MutableBigInteger is even.
      */
-    boolean isEven() {
+    final boolean isEven() {
         return (intLen == 0) || ((value[offset + intLen - 1] & 1) == 0);
     }
 
     /**
      * Returns true iff this MutableBigInteger is odd.
      */
-    boolean isOdd() {
+    final boolean isOdd() {
         return isZero() ? false : ((value[offset + intLen - 1] & 1) == 1);
     }
 
@@ -527,7 +527,7 @@ class MutableBigInteger {
      * MutableBigInteger is in normal form if it has no leading zeros
      * after the offset, and intLen + offset <= value.length.
      */
-    boolean isNormal() {
+    final boolean isNormal() {
         if (intLen + offset > value.length)
             return false;
         if (intLen == 0)
@@ -546,7 +546,7 @@ class MutableBigInteger {
     /**
      * Like {@link #rightShift(int)} but {@code n} can be greater than the length of the number.
      */
-    void safeRightShift(int n) {
+    final void safeRightShift(int n) {
         if (n/32 >= intLen) {
             reset();
         } else {
@@ -559,7 +559,7 @@ class MutableBigInteger {
      * in normal form.
      * Assumes {@code Math.ceilDiv(n, 32) <= intLen || intLen == 0}
      */
-    void rightShift(int n) {
+    final void rightShift(int n) {
         if (intLen == 0)
             return;
         int nInts = n >>> 5;
@@ -579,7 +579,7 @@ class MutableBigInteger {
     /**
      * Like {@link #leftShift(int)} but {@code n} can be zero.
      */
-    void safeLeftShift(int n) {
+    final void safeLeftShift(int n) {
         if (n > 0) {
             leftShift(n);
         }
@@ -588,7 +588,7 @@ class MutableBigInteger {
     /**
      * Left shift this MutableBigInteger n bits.
      */
-    void leftShift(int n) {
+    final void leftShift(int n) {
         /*
          * If there is enough storage space in this MutableBigInteger already
          * the available space will be used. Space to the right of the used
@@ -797,7 +797,7 @@ class MutableBigInteger {
      * is placed within this MutableBigInteger.
      * The contents of the addend are not changed.
      */
-    void add(MutableBigInteger addend) {
+    final void add(MutableBigInteger addend) {
         int x = intLen;
         int y = addend.intLen;
         int resultLen = (intLen > addend.intLen ? intLen : addend.intLen);
@@ -856,7 +856,7 @@ class MutableBigInteger {
      * Has the same effect as {@code addend.leftShift(32*ints); add(addend);}
      * but doesn't change the value of {@code addend}.
      */
-    void addShifted(MutableBigInteger addend, int n) {
+    final void addShifted(MutableBigInteger addend, int n) {
         if (addend.isZero()) {
             return;
         }
@@ -922,7 +922,7 @@ class MutableBigInteger {
      * not be greater than {@code n}. In other words, concatenates {@code this}
      * and {@code addend}.
      */
-    void addDisjoint(MutableBigInteger addend, int n) {
+    final void addDisjoint(MutableBigInteger addend, int n) {
         if (addend.isZero())
             return;
 
@@ -959,7 +959,7 @@ class MutableBigInteger {
     /**
      * Adds the low {@code n} ints of {@code addend}.
      */
-    void addLower(MutableBigInteger addend, int n) {
+    final void addLower(MutableBigInteger addend, int n) {
         MutableBigInteger a = new MutableBigInteger(addend);
         if (a.offset + a.intLen >= n) {
             a.offset = a.offset + a.intLen - n;
@@ -973,7 +973,7 @@ class MutableBigInteger {
      * Shifts {@code this} of {@code n} ints to the left and adds {@code addend}.
      * Assumes {@code n > 0} for speed.
      */
-    void shiftAdd(MutableBigInteger addend, int n) {
+    final void shiftAdd(MutableBigInteger addend, int n) {
         // Fast cases
         if (addend.intLen <= n) {
             shiftAddDisjoint(addend, n);
@@ -989,7 +989,7 @@ class MutableBigInteger {
      * Shifts {@code this} of {@code n} ints to the left and adds {@code addend}.
      * Assumes {@code addend.intLen <= n}.
      */
-    void shiftAddDisjoint(MutableBigInteger addend, int n) {
+    final void shiftAddDisjoint(MutableBigInteger addend, int n) {
         if (intLen == 0) { // Avoid unnormal values
             copyValue(addend);
             return;
@@ -1025,7 +1025,7 @@ class MutableBigInteger {
      * Subtracts the smaller of this and b from the larger and places the
      * result into this MutableBigInteger.
      */
-    int subtract(MutableBigInteger b) {
+    final int subtract(MutableBigInteger b) {
         MutableBigInteger a = this;
 
         int[] result = value;
@@ -1115,7 +1115,7 @@ class MutableBigInteger {
      * placed into MutableBigInteger z. The contents of y are not changed.
      * Assume {@code intLen > 0}
      */
-    void multiply(MutableBigInteger y, MutableBigInteger z) {
+    final void multiply(MutableBigInteger y, MutableBigInteger z) {
         int xLen = intLen;
         int yLen = y.intLen;
         int newLen = xLen + yLen;
@@ -1157,7 +1157,7 @@ class MutableBigInteger {
      * Multiply the contents of this MutableBigInteger by the word y. The
      * result is placed into z.
      */
-    void mul(int y, MutableBigInteger z) {
+    final void mul(int y, MutableBigInteger z) {
         if (y == 1) {
             z.copyValue(this);
             return;
@@ -1198,7 +1198,7 @@ class MutableBigInteger {
      * @return the remainder of the division is returned.
      *
      */
-    int divideOneWord(int divisor, MutableBigInteger quotient) {
+    final int divideOneWord(int divisor, MutableBigInteger quotient) {
         long divisorLong = divisor & LONG_MASK;
 
         // Special case of one word dividend
@@ -1235,11 +1235,11 @@ class MutableBigInteger {
      * provided MutableBigInteger objects and the remainder object is returned.
      *
      */
-    MutableBigInteger divide(MutableBigInteger b, MutableBigInteger quotient) {
+    final MutableBigInteger divide(MutableBigInteger b, MutableBigInteger quotient) {
         return divide(b,quotient,true);
     }
 
-    MutableBigInteger divide(MutableBigInteger b, MutableBigInteger quotient, boolean needRemainder) {
+    final MutableBigInteger divide(MutableBigInteger b, MutableBigInteger quotient, boolean needRemainder) {
         if (b.intLen < BigInteger.BURNIKEL_ZIEGLER_THRESHOLD ||
                 intLen - b.intLen < BigInteger.BURNIKEL_ZIEGLER_OFFSET) {
             return divideKnuth(b, quotient, needRemainder);
@@ -1251,7 +1251,7 @@ class MutableBigInteger {
     /**
      * @see #divideKnuth(MutableBigInteger, MutableBigInteger, boolean)
      */
-    MutableBigInteger divideKnuth(MutableBigInteger b, MutableBigInteger quotient) {
+    final MutableBigInteger divideKnuth(MutableBigInteger b, MutableBigInteger quotient) {
         return divideKnuth(b,quotient,true);
     }
 
@@ -1266,7 +1266,7 @@ class MutableBigInteger {
      * changed.
      *
      */
-    MutableBigInteger divideKnuth(MutableBigInteger b, MutableBigInteger quotient, boolean needRemainder) {
+    final MutableBigInteger divideKnuth(MutableBigInteger b, MutableBigInteger quotient, boolean needRemainder) {
         if (b.intLen == 0)
             throw new ArithmeticException("BigInteger divide by zero");
 
@@ -1330,7 +1330,7 @@ class MutableBigInteger {
      * @param quotient output parameter for {@code this/b}
      * @return the remainder
      */
-    MutableBigInteger divideAndRemainderBurnikelZiegler(MutableBigInteger b, MutableBigInteger quotient) {
+    final MutableBigInteger divideAndRemainderBurnikelZiegler(MutableBigInteger b, MutableBigInteger quotient) {
         int r = intLen;
         int s = b.intLen;
 
@@ -1514,7 +1514,7 @@ class MutableBigInteger {
     }
 
     /** @see BigInteger#bitLength() */
-    long bitLength() {
+    final long bitLength() {
         if (intLen == 0)
             return 0;
         return intLen*32L - Integer.numberOfLeadingZeros(value[offset]);
@@ -1527,7 +1527,7 @@ class MutableBigInteger {
      *
      * @return the remainder of the division will be returned.
      */
-    long divide(long v, MutableBigInteger quotient) {
+    final long divide(long v, MutableBigInteger quotient) {
         if (v == 0)
             throw new ArithmeticException("BigInteger divide by zero");
 
@@ -1900,7 +1900,7 @@ class MutableBigInteger {
      *
      * @return the integer square root of {@code this} and the remainder if needed
      */
-    MutableBigInteger[] sqrtRem(boolean needRemainder) {
+    final MutableBigInteger[] sqrtRem(boolean needRemainder) {
         // Special cases.
         if (this.intLen <= 2) {
             final long x = this.toLong(); // unsigned
@@ -2061,7 +2061,7 @@ class MutableBigInteger {
     /**
      * Calculate GCD of this and b. This and b are changed by the computation.
      */
-    MutableBigInteger hybridGCD(MutableBigInteger b) {
+    final MutableBigInteger hybridGCD(MutableBigInteger b) {
         // Use Euclid's algorithm until the numbers are approximately the
         // same length, then use the binary GCD algorithm to find the GCD.
         MutableBigInteger a = this;
@@ -2168,7 +2168,7 @@ class MutableBigInteger {
      * Returns the modInverse of this mod p. This and p are not affected by
      * the operation.
      */
-    MutableBigInteger mutableModInverse(MutableBigInteger p) {
+    final MutableBigInteger mutableModInverse(MutableBigInteger p) {
         // Modulus is odd, use Schroeppel's algorithm
         if (p.isOdd())
             return modInverse(p);
@@ -2215,7 +2215,7 @@ class MutableBigInteger {
     /*
      * Calculate the multiplicative inverse of this mod 2^k.
      */
-    MutableBigInteger modInverseMP2(int k) {
+    final MutableBigInteger modInverseMP2(int k) {
         if (isEven())
             throw new ArithmeticException("Non-invertible. (GCD != 1)");
 
@@ -2395,7 +2395,7 @@ class MutableBigInteger {
      * Uses the extended Euclidean algorithm to compute the modInverse of base
      * mod a modulus that is a power of 2. The modulus is 2^k.
      */
-    MutableBigInteger euclidModInverse(int k) {
+    final MutableBigInteger euclidModInverse(int k) {
         MutableBigInteger b = new MutableBigInteger(1);
         b.leftShift(k);
         MutableBigInteger mod = new MutableBigInteger(b);

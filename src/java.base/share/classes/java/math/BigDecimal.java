@@ -3486,7 +3486,7 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
     /**
      * @return {@code true} if and only if {@code this == this.toBigInteger()}
      */
-    boolean isInteger() {
+    final boolean isInteger() {
         if (scale <= 0 || signum() == 0)
             return true;
 
