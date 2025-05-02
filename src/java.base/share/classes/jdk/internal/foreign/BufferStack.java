@@ -134,7 +134,11 @@ public final class BufferStack {
             return new PerThread(new ReentrantLock(),
                     arena,
                     new SlicingAllocator(arena.allocate(byteSize, byteAlignment)),
-                    (MemorySegment _) -> Reference.reachabilityFence(arena));
+                    new Consumer<MemorySegment>() {
+                        @Override
+                        public void accept(MemorySegment memorySegment) {
+                            Reference.reachabilityFence(arena);
+                        }});
         }
     }
 
