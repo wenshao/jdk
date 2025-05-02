@@ -103,8 +103,9 @@ public final class BufferStack {
     private record PerThread(ReentrantLock lock,
                              Arena arena,
                              SlicingAllocator stack,
-                             CleanupAction cleanupAction) {
+                             Consumer<MemorySegment> cleanupAction) {
 
+        @SuppressWarnings("restricted")
         @ForceInline
         public Arena pushFrame(long size, long byteAlignment) {
             boolean needsLock = Thread.currentThread().isVirtual() && !lock.isHeldByCurrentThread();
@@ -116,7 +117,16 @@ public final class BufferStack {
                 if (needsLock) lock.unlock();
                 return Arena.ofConfined();
             }
-            return new Frame(needsLock, size, byteAlignment);
+
+            long parentOffset = stack.currentOffset();
+            final MemorySegment frameSegment = stack.allocate(size, byteAlignment);
+            long topOfStack = stack.currentOffset();
+            Arena confinedArena = Arena.ofConfined();
+            // return new Frame(needsLock, size, byte
+            // The cleanup action will keep the original automatic `arena` (from which
+            // the reusable segment is first allocated) alive even if this Frame
+            // becomes unreachable but there are reachable segments still alive.
+            return new Frame(this, needsLock, parentOffset, topOfStack, confinedArena, new SlicingAllocator(frameSegment.reinterpret(confinedArena, cleanupAction)));
         }
 
         static PerThread of(long byteSize, long byteAlignment) {
@@ -124,71 +134,44 @@ public final class BufferStack {
             return new PerThread(new ReentrantLock(),
                     arena,
                     new SlicingAllocator(arena.allocate(byteSize, byteAlignment)),
-                    new CleanupAction(arena));
+                    (MemorySegment _) -> Reference.reachabilityFence(arena));
+        }
+    }
+
+    private record Frame(PerThread thead, boolean locked, long parentOffset, long topOfStack, Arena confinedArena, SegmentAllocator frame) implements Arena {
+
+        @ForceInline
+        private void assertOrder() {
+            if (topOfStack != thead.stack.currentOffset())
+                throw new IllegalStateException("Out of order access: frame not top-of-stack");
         }
 
-        private record CleanupAction(Arena arena) implements Consumer<MemorySegment> {
-            @Override
-            public void accept(MemorySegment memorySegment) {
-                Reference.reachabilityFence(arena);
-            }
+        @ForceInline
+        @Override
+        @SuppressWarnings("restricted")
+        public MemorySegment allocate(long byteSize, long byteAlignment) {
+            // Make sure we are on the right thread and not closed
+            MemorySessionImpl.toMemorySession(confinedArena).checkValidState();
+            return frame.allocate(byteSize, byteAlignment);
         }
 
-        private final class Frame implements Arena {
+        @ForceInline
+        @Override
+        public MemorySegment.Scope scope() {
+            return confinedArena.scope();
+        }
 
-            private final boolean locked;
-            private final long parentOffset;
-            private final long topOfStack;
-            private final Arena confinedArena;
-            private final SegmentAllocator frame;
-
-            @SuppressWarnings("restricted")
-            @ForceInline
-            public Frame(boolean locked, long byteSize, long byteAlignment) {
-                this.locked = locked;
-                this.parentOffset = stack.currentOffset();
-                final MemorySegment frameSegment = stack.allocate(byteSize, byteAlignment);
-                this.topOfStack = stack.currentOffset();
-                this.confinedArena = Arena.ofConfined();
-                // The cleanup action will keep the original automatic `arena` (from which
-                // the reusable segment is first allocated) alive even if this Frame
-                // becomes unreachable but there are reachable segments still alive.
-                this.frame = new SlicingAllocator(frameSegment.reinterpret(confinedArena, cleanupAction));
-            }
-
-            @ForceInline
-            private void assertOrder() {
-                if (topOfStack != stack.currentOffset())
-                    throw new IllegalStateException("Out of order access: frame not top-of-stack");
-            }
-
-            @ForceInline
-            @Override
-            @SuppressWarnings("restricted")
-            public MemorySegment allocate(long byteSize, long byteAlignment) {
-                // Make sure we are on the right thread and not closed
-                MemorySessionImpl.toMemorySession(confinedArena).checkValidState();
-                return frame.allocate(byteSize, byteAlignment);
-            }
-
-            @ForceInline
-            @Override
-            public MemorySegment.Scope scope() {
-                return confinedArena.scope();
-            }
-
-            @ForceInline
-            @Override
-            public void close() {
-                assertOrder();
-                // the Arena::close method is called "early" as it checks thread
-                // confinement and crucially before any mutation of the internal
-                // state takes place.
-                confinedArena.close();
-                stack.resetTo(parentOffset);
-                if (locked) {
-                    lock.unlock();
-                }
+        @ForceInline
+        @Override
+        public void close() {
+            assertOrder();
+            // the Arena::close method is called "early" as it checks thread
+            // confinement and crucially before any mutation of the internal
+            // state takes place.
+            confinedArena.close();
+            thead.stack.resetTo(parentOffset);
+            if (locked) {
+                thead.lock.unlock();
             }
         }
     }
