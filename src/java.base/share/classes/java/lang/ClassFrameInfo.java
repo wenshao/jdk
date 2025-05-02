@@ -41,7 +41,7 @@ class ClassFrameInfo implements StackFrame {
     static final JavaLangInvokeAccess JLIA = SharedSecrets.getJavaLangInvokeAccess();
 
     Object classOrMemberName;    // Class or ResolvedMemberName initialized by VM
-    int flags;                   // updated by VM to set hidden and caller-sensitive bits
+    final int flags;             // updated by VM to set hidden and caller-sensitive bits
 
     /*
      * Construct an empty ClassFrameInfo object that will be filled by the VM
