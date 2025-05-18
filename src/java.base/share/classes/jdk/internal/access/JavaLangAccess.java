@@ -379,6 +379,14 @@ public interface JavaLangAccess {
     void uncheckedPutCharUTF16(byte[] bytes, int index, int ch);
 
     /**
+     * Append an integer. If the size of the numeric part is less than width, fill it with 0.
+     *
+     * @param   i   an {@code int}.
+     * @param   width   Specify the width. If the size of the numeric part excluding the sign is smaller than the width, fill it with 0.
+     */
+    void append(StringBuilder buf, int i, int width);
+
+    /**
      * Encode the given string into a sequence of bytes using utf8.
      *
      * @param s the string to encode

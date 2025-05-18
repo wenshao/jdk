@@ -933,6 +933,52 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         return this;
     }
 
+    AbstractStringBuilder append(int i, int width) {
+        if (width == 2 && i >= 0 && i < 100) {
+            appendWidth2(i);
+            return this;
+        }
+        byte coder = this.coder;
+        int count = this.count;
+        int stringSize = DecimalDigits.stringSize(i);
+        int padding = width - stringSize;
+        if (i < 0) {
+            i = -i;
+            padding--;
+        }
+        padding = Math.max(padding, 0);
+
+        int spaceNeeded = count + stringSize + padding;
+        byte[] value = ensureCapacitySameCoder(this.value, coder, spaceNeeded);
+        if (isLatin1(coder)) {
+            for (int j = 0; j < padding; j++) {
+                value[count + j] = (byte) '0';
+            }
+            DecimalDigits.getCharsLatin1(i, spaceNeeded, value);
+        } else {
+            for (int j = 0; j < padding; j++) {
+                StringUTF16.putChar(value, count + j, '0');
+            }
+            DecimalDigits.getCharsUTF16(i, spaceNeeded, value);
+        }
+        this.value = value;
+        this.count = spaceNeeded;
+        return this;
+    }
+
+    void appendWidth2(int i) {
+        byte coder = this.coder;
+        int count = this.count;
+        byte[] value = ensureCapacitySameCoder(this.value, coder, count + 2);
+        if (isLatin1(coder)) {
+            DecimalDigits.putPairLatin1(value, count, i);
+        } else {
+            DecimalDigits.putPairUTF16(value, count, i);
+        }
+        this.value = value;
+        this.count = count + 2;
+    }
+
     /**
      * Appends the string representation of the {@code long}
      * argument to this sequence.

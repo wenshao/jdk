@@ -2136,6 +2136,9 @@ public final class System {
             public byte[] uncheckedGetBytesNoRepl(String s, Charset cs) throws CharacterCodingException {
                 return String.getBytesNoRepl(s, cs);
             }
+            public void append(StringBuilder buf, int i, int width) {
+                buf.append(i, width);
+            }
 
             public String newStringUTF8NoRepl(byte[] bytes, int off, int len) {
                 return String.newStringUTF8NoRepl(bytes, off, len, true);

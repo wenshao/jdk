@@ -29,10 +29,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+
 /**
  * Helper for java.time
  */
 public final class DateTimeHelper {
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+
     private DateTimeHelper() {
     }
     /**
@@ -65,8 +70,10 @@ public final class DateTimeHelper {
             }
             buf.append(year);
         }
-        buf.append(month < 10 ? "-0" : "-").append(month)
-           .append(day < 10 ? "-0" : "-").append(day);
+        buf.append('-');
+        JLA.append(buf, month, 2);
+        buf.append('-');
+        JLA.append(buf, day, 2);
     }
 
     /**
@@ -78,10 +85,12 @@ public final class DateTimeHelper {
             minute = time.getMinute(),
             second = time.getSecond(),
             nano   = time.getNano();
-        buf.append(hour < 10 ? "0" : "").append(hour)
-           .append(minute < 10 ? ":0" : ":").append(minute);
+        JLA.append(buf, hour, 2);
+        buf.append(':');
+        JLA.append(buf, minute, 2);
         if ((second | nano) > 0) {
-            buf.append(second < 10 ? ":0" : ":").append(second);
+            buf.append(':');
+            JLA.append(buf, second, 2);
             if (nano > 0) {
                 buf.append('.');
                 int zeros = 9 - DecimalDigits.stringSize(nano);
