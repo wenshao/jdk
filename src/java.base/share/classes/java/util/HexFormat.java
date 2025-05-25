@@ -437,10 +437,7 @@ public final class HexFormat {
             // Allocate the byte array and fill in the hex pairs for each byte
             rep = new byte[checkMaxArraySize(length * 2L)];
             for (int i = 0; i < length; i++) {
-                short pair = HexDigits.digitPair(bytes[fromIndex + i], ucase);
-                int pos = i * 2;
-                rep[pos] = (byte)pair;
-                rep[pos + 1] = (byte)(pair >>> 8);
+                HexDigits.putPair(rep, i * 2, bytes[fromIndex + i], ucase);
             }
         } else if (delimiter.length() == 1 && (sep = delimiter.charAt(0)) < 256) {
             // Allocate the byte array and fill in the characters for the first byte
@@ -451,10 +448,8 @@ public final class HexFormat {
             rep[1] = (byte)(pair >>> 8);
             for (int i = 1; i < length; i++) {
                 int pos = i * 3;
-                pair = HexDigits.digitPair(bytes[fromIndex + i], ucase);
                 rep[pos - 1] = (byte) sep;
-                rep[pos] = (byte)pair;
-                rep[pos + 1] = (byte)(pair >>> 8);
+                HexDigits.putPair(rep, pos, bytes[fromIndex + i], ucase);
             }
         } else {
             // Delimiter formatting not to a single byte
@@ -693,8 +688,7 @@ public final class HexFormat {
      */
     public String toHexDigits(byte value) {
         byte[] rep = new byte[2];
-        rep[0] = (byte)toHighHexDigit(value);
-        rep[1] = (byte)toLowHexDigit(value);
+        HexDigits.putPair(rep, 0, value, ucase);
         try {
             return jla.uncheckedNewStringNoRepl(rep, StandardCharsets.ISO_8859_1);
         } catch (CharacterCodingException cce) {
@@ -726,11 +720,8 @@ public final class HexFormat {
      */
     public String toHexDigits(short value) {
         byte[] rep = new byte[4];
-        rep[0] = (byte)toHighHexDigit((byte)(value >> 8));
-        rep[1] = (byte)toLowHexDigit((byte)(value >> 8));
-        rep[2] = (byte)toHighHexDigit((byte)value);
-        rep[3] = (byte)toLowHexDigit((byte)value);
-
+        HexDigits.putPair(rep, 0, value >> 8, ucase);
+        HexDigits.putPair(rep, 2, value     , ucase);
         try {
             return jla.uncheckedNewStringNoRepl(rep, StandardCharsets.ISO_8859_1);
         } catch (CharacterCodingException cce) {
@@ -750,15 +741,11 @@ public final class HexFormat {
      */
     public String toHexDigits(int value) {
         byte[] rep = new byte[8];
-        rep[0] = (byte)toHighHexDigit((byte)(value >> 24));
-        rep[1] = (byte)toLowHexDigit((byte)(value >> 24));
-        rep[2] = (byte)toHighHexDigit((byte)(value >> 16));
-        rep[3] = (byte)toLowHexDigit((byte)(value >> 16));
-        rep[4] = (byte)toHighHexDigit((byte)(value >> 8));
-        rep[5] = (byte)toLowHexDigit((byte)(value >> 8));
-        rep[6] = (byte)toHighHexDigit((byte)value);
-        rep[7] = (byte)toLowHexDigit((byte)value);
-
+        boolean ucase = this.ucase;
+        HexDigits.putPair(rep, 0, value >> 24, ucase);
+        HexDigits.putPair(rep, 2, value >> 16, ucase);
+        HexDigits.putPair(rep, 4, value >> 8 , ucase);
+        HexDigits.putPair(rep, 6, value      , ucase);
         try {
             return jla.uncheckedNewStringNoRepl(rep, StandardCharsets.ISO_8859_1);
         } catch (CharacterCodingException cce) {
@@ -778,23 +765,15 @@ public final class HexFormat {
      */
     public String toHexDigits(long value) {
         byte[] rep = new byte[16];
-        rep[0] = (byte)toHighHexDigit((byte)(value >>> 56));
-        rep[1] = (byte)toLowHexDigit((byte)(value >>> 56));
-        rep[2] = (byte)toHighHexDigit((byte)(value >>> 48));
-        rep[3] = (byte)toLowHexDigit((byte)(value >>> 48));
-        rep[4] = (byte)toHighHexDigit((byte)(value >>> 40));
-        rep[5] = (byte)toLowHexDigit((byte)(value >>> 40));
-        rep[6] = (byte)toHighHexDigit((byte)(value >>> 32));
-        rep[7] = (byte)toLowHexDigit((byte)(value >>> 32));
-        rep[8] = (byte)toHighHexDigit((byte)(value >>> 24));
-        rep[9] = (byte)toLowHexDigit((byte)(value >>> 24));
-        rep[10] = (byte)toHighHexDigit((byte)(value >>> 16));
-        rep[11] = (byte)toLowHexDigit((byte)(value >>> 16));
-        rep[12] = (byte)toHighHexDigit((byte)(value >>> 8));
-        rep[13] = (byte)toLowHexDigit((byte)(value >>> 8));
-        rep[14] = (byte)toHighHexDigit((byte)value);
-        rep[15] = (byte)toLowHexDigit((byte)value);
-
+        boolean ucase = this.ucase;
+        HexDigits.putPair(rep, 0 , (int) (value >> 56), ucase);
+        HexDigits.putPair(rep, 2 , (int) (value >> 48), ucase);
+        HexDigits.putPair(rep, 4 , (int) (value >> 40), ucase);
+        HexDigits.putPair(rep, 6 , (int) (value >> 32), ucase);
+        HexDigits.putPair(rep, 8 , (int) (value >> 24), ucase);
+        HexDigits.putPair(rep, 10, (int) (value >> 16), ucase);
+        HexDigits.putPair(rep, 12, (int) (value >> 8 ), ucase);
+        HexDigits.putPair(rep, 14, (int)  value       , ucase);
         try {
             return jla.uncheckedNewStringNoRepl(rep, StandardCharsets.ISO_8859_1);
         } catch (CharacterCodingException cce) {

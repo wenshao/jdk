@@ -109,4 +109,27 @@ public final class HexDigits {
                 ? (short) (v - ((v & 0b0100_0000_0100_0000) >> 1))
                 : v;
     }
+
+    /**
+     * Converts the lower 8 bits of an integer into a pair of ASCII characters
+     * representing its hexadecimal value and writes them into a byte buffer.
+     * The output characters can be forced to uppercase if specified.
+     *
+     * <p>The conversion uses a lookup table ({@code DIGITS}) which must contain
+     * precomputed ASCII pairs for each possible byte value. Each entry in
+     * {@code DIGITS} is treated as a big-endian pair of ASCII characters
+     * (e.g., the value for 0x0A is '0a' or '0A' depending on uppercase flag).
+     *
+     * @param buf     The target byte array to write characters into.
+     * @param offset  Starting position in the buffer. Must have at least 2 bytes
+     *                remaining to avoid overflow.
+     * @param i       The integer whose lower 8 bits will be converted to hex.
+     * @param ucase   {@code true} to force uppercase letters (A-F),
+     *                {@code false} to use lowercase (a-f).
+     */
+    public static void putPair(byte[] buf, int offset, int i, boolean ucase) {
+        short pair = digitPair(i, ucase);
+        buf[offset    ] = (byte) pair;
+        buf[offset + 1] = (byte)(pair >>> 8);
+    }
 }
