@@ -919,9 +919,8 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(int i) {
+        int spaceNeeded = this.count + DecimalDigits.stringSize(i);
         byte coder = this.coder;
-        int count = this.count;
-        int spaceNeeded = count + DecimalDigits.stringSize(i);
         byte[] value = ensureCapacitySameCoder(this.value, coder, spaceNeeded);
         if (isLatin1(coder)) {
             DecimalDigits.getCharsLatin1(i, spaceNeeded, value);
