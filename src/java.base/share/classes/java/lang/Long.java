@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 1994, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2025, Alibaba Group Holding Limited. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -128,7 +129,7 @@ public final class Long extends Number
      * are used as radix-<var>N</var> digits in the order shown. Thus,
      * the digits for hexadecimal (radix 16) are
      * {@code 0123456789abcdef}. If uppercase letters are
-     * desired, the {@link java.lang.String#toUpperCase()} method may
+     * desired, the {@link String#toUpperCase()} method may
      * be called on the result:
      *
      * <blockquote>
@@ -138,8 +139,8 @@ public final class Long extends Number
      * @param   i       a {@code long} to be converted to a string.
      * @param   radix   the radix to use in the string representation.
      * @return  a string representation of the argument in the specified radix.
-     * @see     java.lang.Character#MAX_RADIX
-     * @see     java.lang.Character#MIN_RADIX
+     * @see     Character#MAX_RADIX
+     * @see     Character#MIN_RADIX
      */
     public static String toString(long i, int radix) {
         if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX)
@@ -287,7 +288,7 @@ public final class Long extends Number
      * These are the characters {@code '\u005Cu0030'} through
      * {@code '\u005Cu0039'} and  {@code '\u005Cu0061'} through
      * {@code '\u005Cu0066'}.  If uppercase letters are desired,
-     * the {@link java.lang.String#toUpperCase()} method may be called
+     * the {@link String#toUpperCase()} method may be called
      * on the result:
      *
      * <blockquote>
@@ -493,7 +494,7 @@ public final class Long extends Number
      * Parses the string argument as a signed {@code long} in the
      * radix specified by the second argument. The characters in the
      * string must all be digits of the specified radix (as determined
-     * by whether {@link java.lang.Character#digit(char, int)} returns
+     * by whether {@link Character#digit(char, int)} returns
      * a nonnegative value), except that the first character may be an
      * ASCII minus sign {@code '-'} ({@code '\u005Cu002D'}) to
      * indicate a negative value or an ASCII plus sign {@code '+'}
@@ -516,8 +517,8 @@ public final class Long extends Number
      * length zero.
      *
      * <li>The {@code radix} is either smaller than {@link
-     * java.lang.Character#MIN_RADIX} or larger than {@link
-     * java.lang.Character#MAX_RADIX}.
+     * Character#MIN_RADIX} or larger than {@link
+     * Character#MAX_RADIX}.
      *
      * <li>Any character of the string is not a digit of the specified
      * radix, except that the first character may be a minus sign
@@ -552,46 +553,49 @@ public final class Long extends Number
      */
     public static long parseLong(String s, int radix)
                 throws NumberFormatException {
+        int len;
+        byte[] value;
+        if (s == null || radix != 10 || (len = (value = s.value()).length) == 0 || !s.isLatin1()) {
+            return parseLong0(s, radix);
+        }
+        /* Accumulating negatively avoids surprises near MAX_VALUE */
+        int fc = value[0];
+        long result = Integer.isDigitLatin1(fc)
+                ? '0' - fc
+                : len != 1 && (fc == '-' || fc == '+')
+                ? 0
+                : 1;  // or any value > 0
+        int i = 1;
+        int d;
+        while (i + 1 < len
+                && (d = DecimalDigits.digit2(value, i)) != -1
+                && MIN_VALUE / 100 <= result & result <= 0) {
+            result = result * 100 - d;  // overflow from d => result > 0
+            i += 2;
+        }
+        if (i < len
+                && Integer.isDigitLatin1(d = value[i])
+                && MIN_VALUE / 10 <= result & result <= 0) {
+            result = result * 10 + '0' - d;  // overflow from '0' - d => result > 0
+            i += 1;
+        }
+        if (i == len
+                & result <= 0
+                & (MIN_VALUE < result || fc == '-')) {
+            return fc == '-' ? result : -result;
+        }
+        throw NumberFormatException.forInputString(s);
+    }
+
+    private static long parseLong0(String s, int radix) {
         if (s == null) {
-            throw new NumberFormatException("Cannot parse null string");
+            throw NumberFormatException.nullInput();
         }
-
-        if (radix < Character.MIN_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s less than Character.MIN_RADIX", radix));
+        int len;
+        if ((len = s.length()) == 0) {
+            throw NumberFormatException.forInputString(s);
         }
-
-        if (radix > Character.MAX_RADIX) {
-            throw new NumberFormatException(String.format(
-                "radix %s greater than Character.MAX_RADIX", radix));
-        }
-
-        int len = s.length();
-        if (len == 0) {
-            throw NumberFormatException.forInputString("", radix);
-        }
-        int digit = ~0xFF;
-        int i = 0;
-        char firstChar = s.charAt(i++);
-        if (firstChar != '-' && firstChar != '+') {
-            digit = digit(firstChar, radix);
-        }
-        if (digit >= 0 || digit == ~0xFF && len > 1) {
-            long limit = firstChar != '-' ? MIN_VALUE + 1 : MIN_VALUE;
-            long multmin = limit / radix;
-            long result = -(digit & 0xFF);
-            boolean inRange = true;
-            /* Accumulating negatively avoids surprises near MAX_VALUE */
-            while (i < len && (digit = digit(s.charAt(i++), radix)) >= 0
-                    && (inRange = result > multmin
-                        || result == multmin && digit <= (int) (radix * multmin - limit))) {
-                result = radix * result - digit;
-            }
-            if (inRange && i == len && digit >= 0) {
-                return firstChar != '-' ? -result : result;
-            }
-        }
-        throw NumberFormatException.forInputString(s, radix);
+        return parseLong(s, 0, len, radix);
     }
 
     /**
@@ -617,8 +621,8 @@ public final class Long extends Number
      * @throws     NumberFormatException  if the {@code CharSequence} does not
      *             contain a parsable {@code long} in the specified
      *             {@code radix}, or if {@code radix} is either smaller than
-     *             {@link java.lang.Character#MIN_RADIX} or larger than
-     *             {@link java.lang.Character#MAX_RADIX}.
+     *             {@link Character#MIN_RADIX} or larger than
+     *             {@link Character#MAX_RADIX}.
      * @since  9
      */
     public static long parseLong(CharSequence s, int beginIndex, int endIndex, int radix)
@@ -679,7 +683,7 @@ public final class Long extends Number
      * indicate a positive value. The resulting {@code long} value is
      * returned, exactly as if the argument and the radix {@code 10}
      * were given as arguments to the {@link
-     * #parseLong(java.lang.String, int)} method.
+     * #parseLong(String, int)} method.
      *
      * <p>Note that neither the character {@code L}
      * ({@code '\u005Cu004C'}) nor {@code l}
@@ -706,7 +710,7 @@ public final class Long extends Number
      *
      * The characters in the string must all be digits of the
      * specified radix (as determined by whether {@link
-     * java.lang.Character#digit(char, int)} returns a nonnegative
+     * Character#digit(char, int)} returns a nonnegative
      * value), except that the first character may be an ASCII plus
      * sign {@code '+'} ({@code '\u005Cu002B'}). The resulting
      * integer value is returned.
@@ -718,8 +722,8 @@ public final class Long extends Number
      * length zero.
      *
      * <li>The radix is either smaller than
-     * {@link java.lang.Character#MIN_RADIX} or
-     * larger than {@link java.lang.Character#MAX_RADIX}.
+     * {@link Character#MIN_RADIX} or
+     * larger than {@link Character#MAX_RADIX}.
      *
      * <li>Any character of the string is not a digit of the specified
      * radix, except that the first character may be a plus sign
@@ -814,8 +818,8 @@ public final class Long extends Number
      * @throws     NumberFormatException  if the {@code CharSequence} does not
      *             contain a parsable unsigned {@code long} in the specified
      *             {@code radix}, or if {@code radix} is either smaller than
-     *             {@link java.lang.Character#MIN_RADIX} or larger than
-     *             {@link java.lang.Character#MAX_RADIX}.
+     *             {@link Character#MIN_RADIX} or larger than
+     *             {@link Character#MAX_RADIX}.
      * @since  9
      */
     public static long parseUnsignedLong(CharSequence s, int beginIndex, int endIndex, int radix)
@@ -880,7 +884,7 @@ public final class Long extends Number
      * '+'} ({@code '\u005Cu002B'}). The resulting integer value
      * is returned, exactly as if the argument and the radix 10 were
      * given as arguments to the {@link
-     * #parseUnsignedLong(java.lang.String, int)} method.
+     * #parseUnsignedLong(String, int)} method.
      *
      * @param s   a {@code String} containing the unsigned {@code long}
      *            representation to be parsed
@@ -900,7 +904,7 @@ public final class Long extends Number
      * argument is interpreted as representing a signed
      * {@code long} in the radix specified by the second
      * argument, exactly as if the arguments were given to the {@link
-     * #parseLong(java.lang.String, int)} method. The result is a
+     * #parseLong(String, int)} method. The result is a
      * {@code Long} object that represents the {@code long}
      * value specified by the string.
      *
@@ -928,7 +932,7 @@ public final class Long extends Number
      * of the specified {@code String}. The argument is
      * interpreted as representing a signed decimal {@code long},
      * exactly as if the argument were given to the {@link
-     * #parseLong(java.lang.String)} method. The result is a
+     * #parseLong(String)} method. The result is a
      * {@code Long} object that represents the integer value
      * specified by the string.
      *
@@ -1040,7 +1044,7 @@ public final class Long extends Number
      *            value represented by {@code nm}
      * @throws    NumberFormatException  if the {@code String} does not
      *            contain a parsable {@code long}.
-     * @see java.lang.Long#parseLong(String, int)
+     * @see Long#parseLong(String, int)
      * @since 1.2
      */
     public static Long decode(String nm) throws NumberFormatException {
@@ -1196,7 +1200,7 @@ public final class Long extends Number
      * {@code Long}'s value.  The value is converted to signed
      * decimal representation and returned as a string, exactly as if
      * the {@code long} value were given as an argument to the
-     * {@link java.lang.Long#toString(long)} method.
+     * {@link Long#toString(long)} method.
      *
      * @return  a string representation of the value of this object in
      *          base&nbsp;10.
@@ -1257,7 +1261,7 @@ public final class Long extends Number
      *
      * <p>The first argument is treated as the name of a system
      * property.  System properties are accessible through the {@link
-     * java.lang.System#getProperty(java.lang.String)} method. The
+     * System#getProperty(String)} method. The
      * string value of this property is then interpreted as a {@code
      * long} value using the grammar supported by {@link Long#decode decode}
      * and a {@code Long} object representing this value is returned.
@@ -1276,8 +1280,8 @@ public final class Long extends Number
      *
      * @param   nm   property name.
      * @return  the {@code Long} value of the property.
-     * @see     java.lang.System#getProperty(java.lang.String)
-     * @see     java.lang.System#getProperty(java.lang.String, java.lang.String)
+     * @see     System#getProperty(String)
+     * @see     System#getProperty(String, String)
      */
     public static Long getLong(String nm) {
         return getLong(nm, null);
@@ -1289,7 +1293,7 @@ public final class Long extends Number
      *
      * <p>The first argument is treated as the name of a system
      * property.  System properties are accessible through the {@link
-     * java.lang.System#getProperty(java.lang.String)} method. The
+     * System#getProperty(String)} method. The
      * string value of this property is then interpreted as a {@code
      * long} value using the grammar supported by {@link Long#decode decode}
      * and a {@code Long} object representing this value is returned.
@@ -1319,8 +1323,8 @@ public final class Long extends Number
      * @param   nm    property name.
      * @param   val   default value.
      * @return  the {@code Long} value of the property.
-     * @see     java.lang.System#getProperty(java.lang.String)
-     * @see     java.lang.System#getProperty(java.lang.String, java.lang.String)
+     * @see     System#getProperty(String)
+     * @see     System#getProperty(String, String)
      */
     public static Long getLong(String nm, long val) {
         Long result = Long.getLong(nm, null);
@@ -1331,7 +1335,7 @@ public final class Long extends Number
      * Returns the {@code long} value of the system property with
      * the specified name.  The first argument is treated as the name
      * of a system property.  System properties are accessible through
-     * the {@link java.lang.System#getProperty(java.lang.String)}
+     * the {@link System#getProperty(String)}
      * method. The string value of this property is then interpreted
      * as a {@code long} value, as per the
      * {@link Long#decode decode} method, and a {@code Long} object
@@ -1341,15 +1345,15 @@ public final class Long extends Number
      * <li>If the property value begins with the two ASCII characters
      * {@code 0x} or the ASCII character {@code #}, not followed by
      * a minus sign, then the rest of it is parsed as a hexadecimal integer
-     * exactly as for the method {@link #valueOf(java.lang.String, int)}
+     * exactly as for the method {@link #valueOf(String, int)}
      * with radix 16.
      * <li>If the property value begins with the ASCII character
      * {@code 0} followed by another character, it is parsed as
      * an octal integer exactly as by the method {@link
-     * #valueOf(java.lang.String, int)} with radix 8.
+     * #valueOf(String, int)} with radix 8.
      * <li>Otherwise the property value is parsed as a decimal
      * integer exactly as by the method
-     * {@link #valueOf(java.lang.String, int)} with radix 10.
+     * {@link #valueOf(String, int)} with radix 10.
      * </ul>
      *
      * <p>Note that, in every case, neither {@code L}
@@ -1366,8 +1370,8 @@ public final class Long extends Number
      * @param   nm   property name.
      * @param   val   default value.
      * @return  the {@code Long} value of the property.
-     * @see     System#getProperty(java.lang.String)
-     * @see     System#getProperty(java.lang.String, java.lang.String)
+     * @see     System#getProperty(String)
+     * @see     System#getProperty(String, String)
      */
     public static Long getLong(String nm, Long val) {
         String v = nm != null && !nm.isEmpty() ? System.getProperty(nm) : null;
