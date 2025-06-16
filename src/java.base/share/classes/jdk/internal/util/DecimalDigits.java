@@ -171,7 +171,8 @@ public final class DecimalDigits {
             9 ((0b0011_1001) & 0b0000_1111 + 0b0110_0000) & 0b1111_0000 = 0b0110_0000
          */
         int d;
-        short x = UNSAFE.getShortUnaligned(str, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset, false);
+        int x = (str[offset    ] & 0xff)
+             | ((str[offset + 1] & 0xff) <<  8);
         if ((((x & 0xF0F0) - 0x3030)
                 | (((d = x & 0x0F0F) + 0x0606) & 0xF0F0)) != 0
         ) {
