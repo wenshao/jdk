@@ -248,6 +248,32 @@ public class Surrogate {
             return character;
         }
 
+        public int parseUTF16(char c, byte[] ia, int ip, int il) {
+            assert (ia[ip] == c);
+            if (Character.isHighSurrogate(c)) {
+                if (il - ip < 2) {
+                    error = CoderResult.UNDERFLOW;
+                    return -1;
+                }
+                char d = StringUTF16.getChar(ia, ip + 1);
+                if (Character.isLowSurrogate(d)) {
+                    character = Character.toCodePoint(c, d);
+                    isPair = true;
+                    error = null;
+                    return character;
+                }
+                error = CoderResult.malformedForLength(1);
+                return -1;
+            }
+            if (Character.isLowSurrogate(c)) {
+                error = CoderResult.malformedForLength(1);
+                return -1;
+            }
+            character = c;
+            isPair = false;
+            error = null;
+            return character;
+        }
     }
 
     /**

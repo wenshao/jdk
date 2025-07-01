@@ -34,6 +34,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
+
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.VM;
 import sun.nio.cs.Surrogate;
 
@@ -12598,7 +12601,8 @@ public class GB18030
         }
     }
 
-    private static class Encoder extends CharsetEncoder {
+    private static class Encoder extends CharsetEncoder implements ArrayEncoder {
+        private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
         private int currentState = GB18030_DOUBLE_BYTE;
 
@@ -12833,6 +12837,225 @@ public class GB18030
                 return encodeArrayLoop(src, dst);
             else
                 return encodeBufferLoop(src, dst);
+        }
+
+        @Override
+        public int encode(char[] sa, int sp, int len, byte[] da, int dp) {
+            int sl = sp + len;
+            int dl = dp + len;
+            int hiByte = 0, loByte = 0;
+            int condensedKey = 0;  // expands to a four byte sequence
+            currentState = GB18030_DOUBLE_BYTE;
+            while (sp < sl) {
+                int inputSize = 1;
+                char c = sa[sp];
+
+                if (Character.isSurrogate(c)) {
+                    if ((condensedKey = sgp.parse(c, sa, sp, sl)) < 0) {
+                        return dp;
+                    }
+                    // Character.toCodePoint looks like
+                    // (((high & 0x3ff) << 10) | (low & 0x3ff)) + 0x10000;
+                    // so we add (0x2e248 - 0x10000) to get the "key".
+                    condensedKey += 0x1E248;
+                    currentState = GB18030_FOUR_BYTE;
+                    inputSize = sgp.increment();
+                }
+                else if (c <= 0x007F) {
+                    currentState = GB18030_SINGLE_BYTE;
+                }
+                else if (c <= 0xA4C6 || c >= 0xE000) {
+                    int outByteVal = getGB18030(encoderIndex1, encoderIndex2, c);
+                    if (outByteVal == 0xFFFD )
+                        return dp;
+
+                    hiByte = (outByteVal & 0xFF00) >> 8;
+                    loByte = (outByteVal & 0xFF);
+
+                    condensedKey = (hiByte - 0x20) * 256 + loByte;
+
+                    if (c >= 0xE000 && c < 0xF900) {
+                        if (IS_2000) {
+                            condensedKey += 0x82BD;
+                        } else {
+                            condensedKey = switch (c) {
+                                case 0xE7C7, 0xE81E, 0xE826, 0xE82B, 0xE82C, 0xE832,
+                                     0xE843, 0xE854, 0xE864 -> condensedKey;
+                                default -> condensedKey + 0x82BD;
+                            };
+                        }
+                    }
+                    else if (c >= 0xF900)
+                        condensedKey += 0x93A9;
+
+                    if (hiByte > 0x80)
+                        currentState = GB18030_DOUBLE_BYTE;
+                    else
+                        currentState = GB18030_FOUR_BYTE;
+                }
+                else {
+                    condensedKey = c - 0x5543;
+                    currentState = GB18030_FOUR_BYTE;
+                }
+
+                switch(currentState) {
+                    case GB18030_SINGLE_BYTE:
+                        if (dl - dp < 1)
+                            return dp;
+                        da[dp++] = (byte)c;
+                        break;
+
+                    case GB18030_DOUBLE_BYTE:
+                        if (dl - dp < 2)
+                            return dp;
+                        da[dp++] = (byte)hiByte;
+                        da[dp++] = (byte)loByte;
+                        break;
+
+                    case GB18030_FOUR_BYTE: // Four Byte encoding
+                        byte b1, b2, b3, b4;
+
+                        if (dl - dp < 4)
+                            return dp;
+                        // Decompose the condensed key into its 4 byte equivalent
+                        b4 = (byte)((condensedKey % 10) + 0x30);
+                        condensedKey /= 10;
+                        b3 = (byte)((condensedKey % 126) + 0x81);
+                        condensedKey /= 126;
+                        b2 = (byte)((condensedKey % 10) + 0x30);
+                        b1 = (byte)((condensedKey / 10) + 0x81);
+                        da[dp++] = b1;
+                        da[dp++] = b2;
+                        da[dp++] = b3;
+                        da[dp++] = b4;
+                        break;
+                    default:
+                        assert(false);
+                }
+                sp += inputSize;
+            }
+            return -1;
+        }
+
+        @Override
+        public int encodeFromLatin1(byte[] sa, int sp, int len, byte[] da, int dp) {
+            int sl = sp + len;
+            int dl = da.length;
+            int count = JLA.countPositives(sa, sp, len);
+            System.arraycopy(sa, sp, da, dp, count);
+            sp += count;
+            dp += count;
+            while (sp < sl && dl - dp >= 1) {
+                byte c = sa[sp++];
+                if (c < 0) {
+                    c = '?';
+                }
+                da[dp++] = c;
+            }
+            return dp;
+        }
+
+        @Override
+        public int encodeFromUTF16(byte[] sa, int sp, int len, byte[] da, int dp) {
+            int sl = sp + len;
+            int dl = dp + len;
+            int hiByte = 0, loByte = 0;
+            int condensedKey = 0;  // expands to a four byte sequence
+            currentState = GB18030_DOUBLE_BYTE;
+            while (sp < sl) {
+                int inputSize = 1;
+                char c = StringUTF16.getChar(sa, sp);
+
+                if (Character.isSurrogate(c)) {
+                    if ((condensedKey = sgp.parseUTF16(c, sa, sp, sl)) < 0) {
+                        return dp;
+                    }
+                    // Character.toCodePoint looks like
+                    // (((high & 0x3ff) << 10) | (low & 0x3ff)) + 0x10000;
+                    // so we add (0x2e248 - 0x10000) to get the "key".
+                    condensedKey += 0x1E248;
+                    currentState = GB18030_FOUR_BYTE;
+                    inputSize = sgp.increment();
+                }
+                else if (c <= 0x007F) {
+                    currentState = GB18030_SINGLE_BYTE;
+                }
+                else if (c <= 0xA4C6 || c >= 0xE000) {
+                    int outByteVal = getGB18030(encoderIndex1, encoderIndex2, c);
+                    if (outByteVal == 0xFFFD )
+                        return dp;
+
+                    hiByte = (outByteVal & 0xFF00) >> 8;
+                    loByte = (outByteVal & 0xFF);
+
+                    condensedKey = (hiByte - 0x20) * 256 + loByte;
+
+                    if (c >= 0xE000 && c < 0xF900) {
+                        if (IS_2000) {
+                            condensedKey += 0x82BD;
+                        } else {
+                            condensedKey = switch (c) {
+                                case 0xE7C7, 0xE81E, 0xE826, 0xE82B, 0xE82C, 0xE832,
+                                     0xE843, 0xE854, 0xE864 -> condensedKey;
+                                default -> condensedKey + 0x82BD;
+                            };
+                        }
+                    }
+                    else if (c >= 0xF900)
+                        condensedKey += 0x93A9;
+
+                    if (hiByte > 0x80)
+                        currentState = GB18030_DOUBLE_BYTE;
+                    else
+                        currentState = GB18030_FOUR_BYTE;
+                }
+                else {
+                    condensedKey = c - 0x5543;
+                    currentState = GB18030_FOUR_BYTE;
+                }
+
+                switch(currentState) {
+                    case GB18030_SINGLE_BYTE:
+                        if (dl - dp < 1)
+                            return dp;
+                        da[dp++] = (byte)c;
+                        break;
+
+                    case GB18030_DOUBLE_BYTE:
+                        if (dl - dp < 2)
+                            return dp;
+                        da[dp++] = (byte)hiByte;
+                        da[dp++] = (byte)loByte;
+                        break;
+
+                    case GB18030_FOUR_BYTE: // Four Byte encoding
+                        byte b1, b2, b3, b4;
+
+                        if (dl - dp < 4)
+                            return dp;
+                        // Decompose the condensed key into its 4 byte equivalent
+                        b4 = (byte)((condensedKey % 10) + 0x30);
+                        condensedKey /= 10;
+                        b3 = (byte)((condensedKey % 126) + 0x81);
+                        condensedKey /= 126;
+                        b2 = (byte)((condensedKey % 10) + 0x30);
+                        b1 = (byte)((condensedKey / 10) + 0x81);
+                        da[dp++] = b1;
+                        da[dp++] = b2;
+                        da[dp++] = b3;
+                        da[dp++] = b4;
+                        break;
+                    default:
+                        assert(false);
+                }
+                sp += inputSize;
+            }
+            return -1;
+        }
+
+        @Override
+        public boolean isASCIICompatible() {
+            return true;
         }
     }
 }

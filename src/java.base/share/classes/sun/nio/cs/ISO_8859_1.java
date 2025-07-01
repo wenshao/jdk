@@ -126,7 +126,8 @@ public class ISO_8859_1
         }
     }
 
-    private static class Encoder extends CharsetEncoder {
+    private static class Encoder extends CharsetEncoder implements ArrayEncoder {
+        private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
         private Encoder(Charset cs) {
             super(cs, 1.0f, 1.0f);
@@ -244,6 +245,51 @@ public class ISO_8859_1
                 return encodeArrayLoop(src, dst);
             else
                 return encodeBufferLoop(src, dst);
+        }
+
+        @Override
+        public int encode(char[] sa, int sp, int len, byte[] da, int dp) {
+            int sl = sp + len;
+            int dl = da.length;
+            int count = JLA.compress(sa, sp, da, dp, len);
+            sp += count;
+            dp += count;
+            while (sp < sl && dl - dp >= 1) {
+                char c = sa[sp++];
+                if (c > 0xFF) {
+                    c = '?';
+                }
+                da[dp++] = (byte) c;
+            }
+            return dp;
+        }
+
+        @Override
+        public int encodeFromLatin1(byte[] sa, int sp, int len, byte[] da, int dp) {
+            System.arraycopy(sa, sp, da, dp, len);
+            return dp + len;
+        }
+
+        @Override
+        public int encodeFromUTF16(byte[] sa, int sp, int len, byte[] da, int dp) {
+            int sl = sp + len;
+            int dl = da.length;
+            int count = JLA.compressUTF16(sa, sp, da, dp, len);
+            sp += (count << 1);
+            dp += count;
+            while (sp < sl && dl - dp >= 1) {
+                char c = StringUTF16.getChar(sa, sp++);
+                if (c > 0xFF) {
+                    c = '?';
+                }
+                da[dp++] = (byte) c;
+            }
+            return dp;
+        }
+
+        @Override
+        public boolean isASCIICompatible() {
+            return true;
         }
     }
 }

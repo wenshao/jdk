@@ -488,6 +488,15 @@ public interface JavaLangAccess {
     String concat(String prefix, Object value, String suffix);
 
     int encodeUTF8(String s, int sp, int sl, byte[] dst, int dp);
+    int encodeUTF8FromLatin1(byte[] src, int sp, int sl, byte[] dst, int dp);
+    int encodeUTF8FromUTF16(byte[] src, int sp, int sl, byte[] dst, int dp);
+
+    int encodeUTF8(char[] src, int sp, int sl, byte[] dst, int dp);
+
+    int encode(StringBuilder sb, sun.nio.cs.ArrayEncoder encoder, byte[] dst, int dp);
+
+    int compressUTF16(byte[] src, int srcOff, byte[] dst, int dstOff, int len);
+    int compress(char[] src, int srcOff, byte[] dst, int dstOff, int len);
 
     /*
      * Get the class data associated with the given class.

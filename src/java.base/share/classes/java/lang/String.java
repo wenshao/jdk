@@ -877,8 +877,8 @@ public final class String
                 return ba;
             }
 
-            int blen = (coder == LATIN1) ? ae.encodeFromLatin1(val, 0, len, ba)
-                    : ae.encodeFromUTF16(val, 0, len, ba);
+            int blen = (coder == LATIN1) ? ae.encodeFromLatin1(val, 0, len, ba, 0)
+                    : ae.encodeFromUTF16(val, 0, len, ba, 0);
             if (blen != -1) {
                 return trimArray(ba, blen);
             }
@@ -1305,8 +1305,23 @@ public final class String
     }
 
     int encodeUTF8(int sp, int sl, byte[] dst, int dp) {
-        byte[] val = this.value;
-        if (!isLatin1()) {
+        return encodeUTF8(this.coder(), this.value, sp, sl, dst, dp);
+    }
+
+    static int encodeUTF8FromLatin1(byte[] src, int sp, int sl, byte[] dst, int dp) {
+        return encodeUTF8(LATIN1, src, sp, sl, dst, dp);
+    }
+
+    static int encodeUTF8FromUTF16(byte[] src, int sp, int sl, byte[] dst, int dp) {
+        return encodeUTF8_UTF16(src, sp, sl, true, dst, dp);
+    }
+
+    static int encodeUTF8(char[] src, int sp, int sl, byte[] dst, int dp) {
+        return encodeUTF8(src, sp, sl, true, dst, dp);
+    }
+
+    static int encodeUTF8(byte coder, byte[] val, int sp, int sl, byte[] dst, int dp) {
+        if (coder != LATIN1) {
             return encodeUTF8_UTF16(val, sp, sl, true, dst, dp);
         }
 
@@ -1367,6 +1382,53 @@ public final class String
                 char c2;
                 if (Character.isHighSurrogate(c) && sp < sl &&
                         Character.isLowSurrogate(c2 = StringUTF16.getChar(val, sp))) {
+                    uc = Character.toCodePoint(c, c2);
+                }
+                if (uc < 0) {
+                    if (doReplace) {
+                        dst[dp++] = '?';
+                    } else {
+                        throwUnmappable(sp - 1);
+                    }
+                } else {
+                    dst[dp++] = (byte)(0xf0 | ((uc >> 18)));
+                    dst[dp++] = (byte)(0x80 | ((uc >> 12) & 0x3f));
+                    dst[dp++] = (byte)(0x80 | ((uc >>  6) & 0x3f));
+                    dst[dp++] = (byte)(0x80 | (uc & 0x3f));
+                    sp++;  // 2 chars
+                }
+            } else {
+                // 3 bytes, 16 bits
+                dst[dp++] = (byte)(0xe0 | ((c >> 12)));
+                dst[dp++] = (byte)(0x80 | ((c >>  6) & 0x3f));
+                dst[dp++] = (byte)(0x80 | (c & 0x3f));
+            }
+        }
+        return dp;
+    }
+
+    private static int encodeUTF8(char[] val, int sp, int sl, boolean doReplace, byte[] dst, int dp) {
+        while (sp < sl) {
+            // ascii fast loop;
+            char c = val[sp];
+            if (c >= '\u0080') {
+                break;
+            }
+            dst[dp++] = (byte)c;
+            sp++;
+        }
+        while (sp < sl) {
+            char c = val[sp++];
+            if (c < 0x80) {
+                dst[dp++] = (byte)c;
+            } else if (c < 0x800) {
+                dst[dp++] = (byte)(0xc0 | (c >> 6));
+                dst[dp++] = (byte)(0x80 | (c & 0x3f));
+            } else if (Character.isSurrogate(c)) {
+                int uc = -1;
+                char c2;
+                if (Character.isHighSurrogate(c) && sp < sl &&
+                        Character.isLowSurrogate(c2 = val[sp])) {
                     uc = Character.toCodePoint(c, c2);
                 }
                 if (uc < 0) {

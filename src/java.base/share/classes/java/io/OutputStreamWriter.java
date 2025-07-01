@@ -252,4 +252,8 @@ public class OutputStreamWriter extends Writer {
     public void close() throws IOException {
         se.close();
     }
+
+    final void write(StringBuilder sb) throws IOException {
+        se.write(sb);
+    }
 }
