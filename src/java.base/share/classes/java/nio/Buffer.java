@@ -859,6 +859,11 @@ public abstract sealed class Buffer
                 }
 
                 @Override
+                public Object getCharBufferBase(CharBuffer buffer) {
+                    return buffer.charBase();
+                }
+
+                @Override
                 public long getBufferAddress(Buffer buffer) {
                     return buffer.address;
                 }

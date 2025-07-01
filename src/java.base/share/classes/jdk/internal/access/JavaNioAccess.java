@@ -34,6 +34,7 @@ import jdk.internal.misc.VM.BufferPool;
 import java.lang.foreign.MemorySegment;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 
 public interface JavaNioAccess {
 
@@ -76,6 +77,11 @@ public interface JavaNioAccess {
      * Used by {@code jdk.internal.foreign.Utils}.
      */
     Object getBufferBase(Buffer bb);
+
+    /**
+     * Used by {@code sun.nio.cs.UnicodeEncoder}.
+     */
+    Object getCharBufferBase(CharBuffer buffer);
 
     /**
      * Used by {@code jdk.internal.foreign.Utils}.
