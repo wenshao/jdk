@@ -26,6 +26,7 @@
 package sun.nio.cs;
 
 import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.JavaNioAccess;
 import jdk.internal.access.SharedSecrets;
 
 import java.nio.Buffer;
@@ -415,6 +416,7 @@ public final class UTF_8 extends Unicode {
     }
 
     private static final class Encoder extends CharsetEncoder {
+        private static final JavaNioAccess NIO_ACCESS = SharedSecrets.getJavaNioAccess();
 
         private Encoder(Charset cs) {
             super(cs, 1.1f, 3.0f);
@@ -556,13 +558,40 @@ public final class UTF_8 extends Unicode {
             return CoderResult.UNDERFLOW;
         }
 
-        protected final CoderResult encodeLoop(CharBuffer src,
+        private CoderResult encodeArrayLoop(CharBuffer src, StringBuilder sb,
+                                            ByteBuffer dst) {
+            int sp = src.position();
+
+            byte[] da = dst.array();
+            int dp = dst.position();
+            int sl = sp + min(src.limit() - sp, (dst.limit() - dst.position()) / 3);
+
+            int n = JLA.encodeUTF8(sb, sp, sl, da, dp + dst.arrayOffset());
+            src.position(sl);
+            dst.position(n);
+            if (src.hasRemaining()) {
+                return CoderResult.OVERFLOW;
+            }
+            return CoderResult.UNDERFLOW;
+        }
+
+        private static int min(int a, int b) {
+            return a < b ? a : b;
+        }
+
+        protected CoderResult encodeLoop(CharBuffer src,
                                                ByteBuffer dst)
         {
-            if (src.hasArray() && dst.hasArray())
-                return encodeArrayLoop(src, dst);
-            else
-                return encodeBufferLoop(src, dst);
+            if (dst.hasArray()) {
+                if (src.hasArray()) {
+                    return encodeArrayLoop(src, dst);
+                }
+                Object base = NIO_ACCESS.getBufferBase(src);
+                if (base instanceof StringBuilder) {
+                    return encodeArrayLoop(src, (StringBuilder)base, dst);
+                }
+            }
+            return encodeBufferLoop(src, dst);
         }
 
     }
