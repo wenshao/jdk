@@ -478,6 +478,11 @@ public interface JavaLangAccess {
     byte stringCoder(String str);
 
     /**
+     * Get the Coder of String, which is used by UTF_8$Encoder to calculate the maxBytesPerChar
+     */
+    byte stringCoder(StringBuilder sb);
+
+    /**
      * Join strings
      */
     String join(String prefix, String suffix, String delimiter, String[] elements, int size);

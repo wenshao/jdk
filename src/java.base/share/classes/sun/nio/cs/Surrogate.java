@@ -248,6 +248,47 @@ public class Surrogate {
             return character;
         }
 
+        /**
+         * Parses a UCS-4 character from the given source buffer, handling
+         * surrogates.
+         *
+         * @param  c    The first character
+         * @param  ia   The input StringBuilder, from which one more character
+         *              will be consumed if c is a high surrogate
+         * @param  ip   The input index
+         * @param  il   The input limit
+         *
+         * @return  Either a parsed UCS-4 character, in which case the isPair()
+         *          and increment() methods will return meaningful values, or
+         *          -1, in which case error() will return a descriptive result
+         *          object
+         */
+        public int parse(char c, StringBuilder ia, int ip, int il) {
+            assert (ia.charAt(ip) == c);
+            if (Character.isHighSurrogate(c)) {
+                if (il - ip < 2) {
+                    error = CoderResult.UNDERFLOW;
+                    return -1;
+                }
+                char d = ia.charAt(ip + 1);
+                if (Character.isLowSurrogate(d)) {
+                    character = Character.toCodePoint(c, d);
+                    isPair = true;
+                    error = null;
+                    return character;
+                }
+                error = CoderResult.malformedForLength(1);
+                return -1;
+            }
+            if (Character.isLowSurrogate(c)) {
+                error = CoderResult.malformedForLength(1);
+                return -1;
+            }
+            character = c;
+            isPair = false;
+            error = null;
+            return character;
+        }
     }
 
     /**

@@ -77,9 +77,15 @@ public final class UTF_8 extends Unicode {
         return new Encoder(this);
     }
 
-    static final void updatePositions(Buffer src, int sp,
+    static void updatePositions(Buffer src, int sp,
                                               Buffer dst, int dp) {
         src.position(sp - src.arrayOffset());
+        dst.position(dp - dst.arrayOffset());
+    }
+
+    static void updatePositions1(Buffer src, int sp,
+                                              Buffer dst, int dp) {
+        src.position(sp);
         dst.position(dp - dst.arrayOffset());
     }
 
@@ -437,6 +443,12 @@ public final class UTF_8 extends Unicode {
             return CoderResult.OVERFLOW;
         }
 
+        private static CoderResult overflow1(CharBuffer src, int sp,
+                ByteBuffer dst, int dp) {
+            updatePositions1(src, sp, dst, dp);
+            return CoderResult.OVERFLOW;
+        }
+
         private static CoderResult overflow(CharBuffer src, int mark) {
             src.position(mark);
             return CoderResult.OVERFLOW;
@@ -561,17 +573,72 @@ public final class UTF_8 extends Unicode {
         private CoderResult encodeArrayLoop(CharBuffer src, StringBuilder sb,
                                             ByteBuffer dst) {
             int sp = src.position();
+            int sl = src.limit();
 
+            int doff = dst.arrayOffset();
             byte[] da = dst.array();
             int dp = dst.position();
-            int sl = sp + min(src.limit() - sp, (dst.limit() - dst.position()) / 3);
+            int dl = dst.limit();
 
-            int n = JLA.encodeUTF8(sb, sp, sl, da, dp + dst.arrayOffset());
-            src.position(sl);
-            dst.position(n);
-            if (src.hasRemaining()) {
-                return CoderResult.OVERFLOW;
+            int maxBytesPerChar = JLA.stringCoder(sb) == 0 // 0 LATIN1
+                    ? 2
+                    : 3;
+            int count = min(sl - sp, (dl - dp) / maxBytesPerChar);
+
+            int n = JLA.encodeUTF8(sb, sp, sp + count, da, dp + doff);
+            sp += count;
+
+            if (sp < sl) {
+                return encodeArrayLoopSlow(src, sb, sp, sl, dst, da, dp + doff, dl + doff);
+            } else {
+                src.position(sp);
+                dst.position(n);
+                return CoderResult.UNDERFLOW;
             }
+        }
+
+        private CoderResult encodeArrayLoopSlow(CharBuffer src, StringBuilder sb, int sp, int sl,
+                ByteBuffer dst, byte[] da, int dp, int dl) {
+            while (sp < sl) {
+                char c = sb.charAt(sp);
+                if (c < 0x80) {
+                    // Have at most seven bits
+                    if (dp >= dl)
+                        return overflow1(src, sp, dst, dp);
+                    da[dp++] = (byte)c;
+                } else if (c < 0x800) {
+                    // 2 bytes, 11 bits
+                    if (dl - dp < 2)
+                        return overflow1(src, sp, dst, dp);
+                    da[dp++] = (byte)(0xc0 | (c >> 6));
+                    da[dp++] = (byte)(0x80 | (c & 0x3f));
+                } else if (Character.isSurrogate(c)) {
+                    // Have a surrogate pair
+                    if (sgp == null)
+                        sgp = new Surrogate.Parser();
+                    int uc = sgp.parse(c, sb, sp, sl);
+                    if (uc < 0) {
+                        updatePositions1(src, sp, dst, dp);
+                        return sgp.error();
+                    }
+                    if (dl - dp < 4)
+                        return overflow1(src, sp, dst, dp);
+                    da[dp++] = (byte)(0xf0 | ((uc >> 18)));
+                    da[dp++] = (byte)(0x80 | ((uc >> 12) & 0x3f));
+                    da[dp++] = (byte)(0x80 | ((uc >>  6) & 0x3f));
+                    da[dp++] = (byte)(0x80 | (uc & 0x3f));
+                    sp++;  // 2 chars
+                } else {
+                    // 3 bytes, 16 bits
+                    if (dl - dp < 3)
+                        return overflow1(src, sp, dst, dp);
+                    da[dp++] = (byte)(0xe0 | ((c >> 12)));
+                    da[dp++] = (byte)(0x80 | ((c >>  6) & 0x3f));
+                    da[dp++] = (byte)(0x80 | (c & 0x3f));
+                }
+                sp++;
+            }
+            updatePositions1(src, sp, dst, dp);
             return CoderResult.UNDERFLOW;
         }
 

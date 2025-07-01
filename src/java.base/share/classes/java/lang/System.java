@@ -2201,6 +2201,10 @@ public final class System {
                 return str.coder();
             }
 
+            public byte stringCoder(StringBuilder sb) {
+                return sb.getCoder();
+            }
+
             public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }
