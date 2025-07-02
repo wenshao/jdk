@@ -42,7 +42,7 @@ import java.nio.charset.UnsupportedCharsetException;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
 
-public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl {
+public final class StreamEncoder extends Writer {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
     private static final int INITIAL_BYTE_BUFFER_CAPACITY = 512;
@@ -72,9 +72,6 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
                                                       Object lock,
                                                       Charset cs)
     {
-        if (cs == UTF_8.INSTANCE) {
-            return new UTF8Impl(out, lock);
-        }
         return new StreamEncoder(out, lock, cs);
     }
 
@@ -97,17 +94,13 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
     // methods; the concrete stream-encoder subclasses defined below need not
     // do any such checking.
 
-    public final String getEncoding() {
+    public String getEncoding() {
         if (isOpen())
             return encodingName();
         return null;
     }
 
-    public Charset getCharset() {
-        return cs;
-    }
-
-    public final void flushBuffer() throws IOException {
+    public void flushBuffer() throws IOException {
         synchronized (lock) {
             if (isOpen())
                 implFlushBuffer();
@@ -116,13 +109,13 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
         }
     }
 
-    public final void write(int c) throws IOException {
+    public void write(int c) throws IOException {
         char[] cbuf = new char[1];
         cbuf[0] = (char) c;
         write(cbuf, 0, 1);
     }
 
-    public final void write(char[] cbuf, int off, int len) throws IOException {
+    public void write(char[] cbuf, int off, int len) throws IOException {
         synchronized (lock) {
             ensureOpen();
             if ((off < 0) || (off > cbuf.length) || (len < 0) ||
@@ -144,7 +137,7 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
         write(cbuf, 0, len);
     }
 
-    public final void write(CharBuffer cb) throws IOException {
+    public void write(CharBuffer cb) throws IOException {
         int position = cb.position();
         try {
             synchronized (lock) {
@@ -156,14 +149,56 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
         }
     }
 
-    public final void flush() throws IOException {
+    public void write(StringBuilder sb) throws IOException {
+        if (!haveLeftoverChar && encoder instanceof ArrayEncoder ae) {
+            write(sb, ae);
+            return;
+        }
+        write(CharBuffer.wrap(sb));
+    }
+
+    private void write(StringBuilder sb, ArrayEncoder encoder) throws IOException {
+        int len = sb.length();
+        int maxBytes = len * Math.round(this.encoder.maxBytesPerChar()); // maxBytesPerChar is 3
+        if (maxBytes >= maxBufferCapacity) {
+            byte[] bytes = new byte[maxBytes];
+            maxBytes = JLA.encode(sb, encoder, bytes, 0);
+                /* If the request length exceeds the max size of the output buffer,
+                   flush the buffer and then write the data directly.  In this
+                   way buffered streams will cascade harmlessly. */
+            implFlushBuffer();
+            out.write(bytes, 0, maxBytes);
+            return;
+        }
+
+        var bb = this.bb;
+        int boff = bb.arrayOffset();
+        int cap = bb.capacity();
+        int newCap = bb.position() + boff + maxBytes;
+        if (newCap >= maxBufferCapacity) {
+            implFlushBuffer();
+        }
+
+        if (newCap > cap) {
+            implFlushBuffer();
+            this.bb = bb = ByteBuffer.allocate(newCap);
+        }
+
+        byte[] cb = bb.array();
+        int pos = bb.position();
+
+        pos = JLA.encode(sb, encoder, cb, pos + boff);
+        bb.position(pos - boff);
+    }
+
+    public void flush() throws IOException {
         synchronized (lock) {
             ensureOpen();
             implFlush();
         }
     }
 
-    public final void close() throws IOException {
+    public void close() throws IOException {
         synchronized (lock) {
             if (closed)
                 return;
@@ -184,13 +219,13 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
 
     private final Charset cs;
     private final CharsetEncoder encoder;
-    protected ByteBuffer bb;
-    protected final int maxBufferCapacity;
+    private ByteBuffer bb;
+    private final int maxBufferCapacity;
 
-    protected final OutputStream out;
+    private final OutputStream out;
 
     // Leftover first char in a surrogate pair
-    protected boolean haveLeftoverChar = false;
+    private boolean haveLeftoverChar = false;
     private char leftoverChar;
     private CharBuffer lcb = null;
 
@@ -272,14 +307,14 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
         haveLeftoverChar = false;
     }
 
-    final void implWrite(char[] cbuf, int off, int len)
+    void implWrite(char[] cbuf, int off, int len)
         throws IOException
     {
         CharBuffer cb = CharBuffer.wrap(cbuf, off, len);
         implWrite(cb);
     }
 
-    final void implWrite(CharBuffer cb)
+    void implWrite(CharBuffer cb)
         throws IOException
     {
         if (haveLeftoverChar) {
@@ -307,24 +342,10 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
         }
     }
 
-    public final void growByteBufferIfEmptyNeeded(int len) {
-        if (bb.position() != 0) {
-            return;
-        }
-        int cap = bb.capacity();
-        if (cap < maxBufferCapacity) {
-            int maxBytes = len;
-            int newCap = Math.min(maxBytes, maxBufferCapacity);
-            if (newCap > cap) {
-                bb = ByteBuffer.allocate(newCap);
-            }
-        }
-    }
-
     /**
      * Grows bb to a capacity to allow len characters be encoded.
      */
-    public final void growByteBufferIfNeeded(int len) throws IOException {
+    void growByteBufferIfNeeded(int len) throws IOException {
         int cap = bb.capacity();
         if (cap < maxBufferCapacity) {
             int maxBytes = len * Math.round(encoder.maxBytesPerChar());
@@ -336,18 +357,18 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
         }
     }
 
-    final void implFlushBuffer() throws IOException {
+    void implFlushBuffer() throws IOException {
         if (bb.position() > 0) {
             writeBytes();
         }
     }
 
-    final void implFlush() throws IOException {
+    void implFlush() throws IOException {
         implFlushBuffer();
         out.flush();
     }
 
-    final void implClose() throws IOException {
+    void implClose() throws IOException {
         try (out) {
             flushLeftoverChar(null, true);
             for (;;) {
@@ -371,57 +392,9 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
         }
     }
 
-    final String encodingName() {
+    String encodingName() {
         return ((cs instanceof HistoricallyNamedCharset)
             ? ((HistoricallyNamedCharset)cs).historicalName()
             : cs.name());
-    }
-
-    private final static class UTF8Impl extends StreamEncoder {
-        UTF8Impl(OutputStream out, Object lock) {
-            super(out, lock, UTF_8.INSTANCE);
-        }
-
-        public void write(String str, int off, int len) throws IOException {
-            /* Check the len before creating a char buffer */
-            if (len < 0)
-                throw new IndexOutOfBoundsException();
-            if (haveLeftoverChar) {
-                super.write(str, off, len);
-                return;
-            }
-
-            int utf8Size = len * 3;
-            if (utf8Size >= maxBufferCapacity) {
-                byte[] utf8 = new byte[utf8Size];
-                utf8Size = JLA.encodeUTF8(str, off, off + len, utf8, 0);
-                /* If the request length exceeds the max size of the output buffer,
-                   flush the buffer and then write the data directly.  In this
-                   way buffered streams will cascade harmlessly. */
-                implFlushBuffer();
-                out.write(utf8, 0, utf8Size);
-                return;
-            }
-
-            int boff = bb.arrayOffset();
-            int cap = bb.capacity();
-            int newCap = bb.position() + boff + utf8Size;
-            if (newCap >= maxBufferCapacity) {
-                implFlushBuffer();
-            }
-
-            if (newCap > cap) {
-                implFlushBuffer();
-                bb = ByteBuffer.allocate(newCap);
-            }
-
-            byte[] cb = bb.array();
-            int lim = bb.limit();
-            int pos = bb.position();
-
-
-            pos = JLA.encodeUTF8(str, off, off + len, cb, pos + boff);
-            bb.position(pos - boff);
-        }
     }
 }

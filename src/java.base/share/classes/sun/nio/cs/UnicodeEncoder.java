@@ -28,10 +28,14 @@ package sun.nio.cs;
 import java.nio.*;
 import java.nio.charset.*;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+
 /**
  * Base class for different flavors of UTF-16 encoders
  */
-public abstract class UnicodeEncoder extends CharsetEncoder {
+public abstract class UnicodeEncoder extends CharsetEncoder implements ArrayEncoder {
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
     protected static final char BYTE_ORDER_MARK = '\uFEFF';
     protected static final char REVERSED_MARK = '\uFFFE';
@@ -107,5 +111,80 @@ public abstract class UnicodeEncoder extends CharsetEncoder {
 
     public boolean canEncode(char c) {
         return ! Character.isSurrogate(c);
+    }
+
+    private static void putChar(byte[] ba, int off, char c, boolean big) {
+        if (big) {
+            ba[off    ] = (byte)(c >> 8);
+            ba[off + 1] = (byte)(c & 0xff);
+        } else {
+            ba[off    ] = (byte)(c & 0xff);
+            ba[off + 1] = (byte)(c >> 8);
+        }
+    }
+
+    @Override
+    public int encode(char[] sa, int sp, int len, byte[] da, int dp) {
+        boolean big = byteOrder == BIG;
+        int sl = sp + len;
+        int dl = da.length;
+        if (needsMark && sp < sl) {
+            if (dl - dp < 2)
+                return dp;
+            putChar(da, dp, BYTE_ORDER_MARK, big);
+            dp += 2;
+            needsMark = false;
+        }
+
+        while (sp < sl && dl - dp >= 2) {
+            putChar(da, dp, sa[sp++], big);
+            dp += 2;
+        }
+        return dp;
+    }
+
+    @Override
+    public int encodeFromLatin1(byte[] sa, int sp, int len, byte[] da, int dp) {
+        boolean big = byteOrder == BIG;
+        int sl = sp + len;
+        int dl = da.length;
+        if (needsMark && sp < sl) {
+            if (dl - dp < 2)
+                return dp;
+            putChar(da, dp, BYTE_ORDER_MARK, big);
+            dp += 2;
+            needsMark = false;
+        }
+
+        while (sp < sl && dl - dp >= 2) {
+            putChar(da, dp, (char) (sa[sp++] & 0xff), big);
+            dp += 2;
+        }
+        return dp;
+    }
+
+    @Override
+    public int encodeFromUTF16(byte[] sa, int sp, int len, byte[] da, int dp) {
+        boolean big = byteOrder == BIG;
+        int sl = sp + len;
+        int dl = da.length;
+        if (needsMark && sp < sl) {
+            if (dl - dp < 2)
+                return dp;
+            putChar(da, dp, BYTE_ORDER_MARK, big);
+            dp += 2;
+            needsMark = false;
+        }
+
+        while (sp < sl && dl - dp >= 2) {
+            putChar(da, dp, JLA.uncheckedGetUTF16Char(sa, sp++), big);
+            dp += 2;
+        }
+        return dp;
+    }
+
+    @Override
+    public boolean isASCIICompatible() {
+        return false;
     }
 }

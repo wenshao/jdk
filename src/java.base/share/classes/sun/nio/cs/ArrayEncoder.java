@@ -33,13 +33,13 @@ package sun.nio.cs;
 public interface ArrayEncoder {
 
     //  is only used by j.u.zip.ZipCoder for utf8
-    int encode(char[] src, int off, int len, byte[] dst);
+    int encode(char[] src, int off, int len, byte[] dst, int dp);
 
-    default int encodeFromLatin1(byte[] src, int sp, int len, byte[] dst) {
+    default int encodeFromLatin1(byte[] src, int sp, int len, byte[] dst, int dp) {
         return -1;
     }
 
-    default int encodeFromUTF16(byte[] src, int sp, int len, byte[] dst) {
+    default int encodeFromUTF16(byte[] src, int sp, int len, byte[] dst, int dp) {
         return -1;
     }
 

@@ -2209,8 +2209,20 @@ public final class System {
                 return StringConcatHelper.concat(prefix, value, suffix);
             }
 
-            public int encodeUTF8(String s, int sp, int sl, byte[] dst, int dp) {
-                return s.encodeUTF8(sp, sl, dst, dp);
+            public int encodeUTF8FromLatin1(byte[] src, int sp, int sl, byte[] dst, int dp) {
+                return String.encodeUTF8FromLatin1(src, sp, sl, dst, dp);
+            }
+
+            public int encodeUTF8FromUTF16(byte[] src, int sp, int sl, byte[] dst, int dp) {
+                return String.encodeUTF8FromUTF16(src, sp, sl, dst, dp);
+            }
+
+            public int encodeUTF8(char[] src, int sp, int sl, byte[] dst, int dp) {
+                return String.encodeUTF8(src, sp, sl, dst, dp);
+            }
+
+            public int encode(StringBuilder sb, sun.nio.cs.ArrayEncoder encoder, byte[] dst, int dp) {
+                return sb.encode(encoder, dst, dp);
             }
 
             public Object classData(Class<?> c) {

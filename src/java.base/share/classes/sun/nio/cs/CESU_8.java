@@ -546,9 +546,8 @@ class CESU_8 extends Unicode
 
         // returns -1 if there is malformed char(s) and the
         // "action" for malformed input is not REPLACE.
-        public int encode(char[] sa, int sp, int len, byte[] da) {
+        public int encode(char[] sa, int sp, int len, byte[] da, int dp) {
             int sl = sp + len;
-            int dp = 0;
 
             // Handle ASCII-only prefix
             int n = JLA.uncheckedEncodeASCII(sa, sp, da, dp, Math.min(len, da.length));
