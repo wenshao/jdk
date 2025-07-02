@@ -12842,7 +12842,7 @@ public class GB18030
         @Override
         public int encode(char[] sa, int sp, int len, byte[] da, int dp) {
             int sl = sp + len;
-            int dl = dp + len;
+            int dl = da.length;
             int hiByte = 0, loByte = 0;
             int condensedKey = 0;  // expands to a four byte sequence
             currentState = GB18030_DOUBLE_BYTE;
@@ -12934,7 +12934,7 @@ public class GB18030
                 }
                 sp += inputSize;
             }
-            return -1;
+            return dp;
         }
 
         @Override
@@ -12958,7 +12958,7 @@ public class GB18030
         @Override
         public int encodeFromUTF16(byte[] sa, int sp, int len, byte[] da, int dp) {
             int sl = sp + len;
-            int dl = dp + len;
+            int dl = da.length;
             int hiByte = 0, loByte = 0;
             int condensedKey = 0;  // expands to a four byte sequence
             currentState = GB18030_DOUBLE_BYTE;
@@ -13050,7 +13050,7 @@ public class GB18030
                 }
                 sp += inputSize;
             }
-            return -1;
+            return dp;
         }
 
         @Override

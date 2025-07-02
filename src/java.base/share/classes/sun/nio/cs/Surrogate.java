@@ -249,7 +249,7 @@ public class Surrogate {
         }
 
         public int parseUTF16(char c, byte[] ia, int ip, int il) {
-            assert (ia[ip] == c);
+            assert (StringUTF16.getChar(ia, ip) == c);
             if (Character.isHighSurrogate(c)) {
                 if (il - ip < 2) {
                     error = CoderResult.UNDERFLOW;
