@@ -77,6 +77,12 @@ import jdk.internal.misc.VM;
 public class BufferedWriter extends Writer {
     private static final int DEFAULT_INITIAL_BUFFER_SIZE = 512;
     private static final int DEFAULT_MAX_BUFFER_SIZE = 8192;
+    private static final boolean UTF8_FAST_PATH;
+
+    static {
+        String str = VM.getSavedProperty("java.io.BufferedWriter.UTF8_FAST_PATH");
+        UTF8_FAST_PATH = str == null || Boolean.parseBoolean(str);
+    }
 
     private final BufferedImpl impl;
     /**
@@ -99,7 +105,7 @@ public class BufferedWriter extends Writer {
             throw new IllegalArgumentException("Buffer size <= 0");
         }
 
-        if (out instanceof OutputStreamWriter w && w.se.getCharset() == UTF_8.INSTANCE) {
+        if (UTF8_FAST_PATH && out instanceof OutputStreamWriter w && w.se.getCharset() == UTF_8.INSTANCE) {
             w.se.growByteBufferIfEmptyNeeded(initialSize);
             this.impl = new OutputStreamWriterImpl(w);
         } else {
