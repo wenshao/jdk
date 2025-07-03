@@ -395,6 +395,8 @@ public interface JavaLangAccess {
      */
     void inflateBytesToChars(byte[] src, int srcOff, char[] dst, int dstOff, int len);
 
+    void inflateBytesToUTF16(byte[] src, int srcOff, byte[] dst, int dstOff, int len);
+
     /**
      * Decodes ASCII from the source byte array into the destination
      * char array.
@@ -493,10 +495,9 @@ public interface JavaLangAccess {
 
     int encodeUTF8(char[] src, int sp, int sl, byte[] dst, int dp);
 
-    int encode(StringBuilder sb, sun.nio.cs.ArrayEncoder encoder, byte[] dst, int dp);
-
     int compressUTF16(byte[] src, int srcOff, byte[] dst, int dstOff, int len);
     int compress(char[] src, int srcOff, byte[] dst, int dstOff, int len);
+    void stringGetBytes(String s, byte[] dst, int srcPos, int dstBegin, byte coder, int length);
 
     /*
      * Get the class data associated with the given class.

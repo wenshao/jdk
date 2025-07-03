@@ -47,6 +47,7 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
 
     private static final int INITIAL_BYTE_BUFFER_CAPACITY = 512;
     private static final int MAX_BYTE_BUFFER_CAPACITY = 8192;
+    private static final byte LATIN1 = 0, UTF16  = 1;
 
     private volatile boolean closed;
 
@@ -157,19 +158,43 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
     }
 
     public void write(StringBuilder sb) throws IOException {
-        if (!haveLeftoverChar && encoder instanceof ArrayEncoder ae) {
-            write(sb, ae);
-            return;
-        }
         write(CharBuffer.wrap(sb));
     }
 
-    private void write(StringBuilder sb, ArrayEncoder encoder) throws IOException {
-        int len = sb.length();
-        int maxBytes = len * Math.round(this.encoder.maxBytesPerChar()); // maxBytesPerChar is 3
+    public void write(byte coder, byte[] src, int off, int len) throws IOException {
+        if (encoder instanceof ArrayEncoder ae) {
+            write(coder, src, off, len, ae);
+            return;
+        }
+        write(CharBuffer.wrap(new ArrayCharBuffer(coder, src, off, len)));
+    }
+
+    public record ArrayCharBuffer(byte coder, byte[] src, int off, int len) implements CharSequence {
+        @Override
+        public int length() {
+            return len;
+        }
+
+        @Override
+        public char charAt(int index) {
+            return coder == LATIN1 ? (char) src[off + index] : JLA.uncheckedGetUTF16Char(src, off + index);
+        }
+
+        @Override
+        public CharSequence subSequence(int start, int end) {
+            return new ArrayCharBuffer(coder, src, start, end - start);
+        }
+    }
+
+    private void write(byte coder, byte[] src, int off, int len, ArrayEncoder encoder) throws IOException {
+        int maxBytes = len * (coder == 0 ? 2 : 3); // maxBytesPerChar is 3
         if (maxBytes >= maxBufferCapacity) {
             byte[] bytes = new byte[maxBytes];
-            maxBytes = JLA.encode(sb, encoder, bytes, 0);
+            if (coder == LATIN1) {
+                encoder.encodeFromLatin1(src, off, len, bytes, 0);
+            } else {
+                encoder.encodeFromUTF16(src, off, len, bytes, 0);
+            }
                 /* If the request length exceeds the max size of the output buffer,
                    flush the buffer and then write the data directly.  In this
                    way buffered streams will cascade harmlessly. */
@@ -194,7 +219,12 @@ public sealed class StreamEncoder extends Writer permits StreamEncoder.UTF8Impl 
         byte[] cb = bb.array();
         int pos = bb.position();
 
-        pos = JLA.encode(sb, encoder, cb, pos + boff);
+        if (coder == LATIN1) {
+            pos = encoder.encodeFromLatin1(src, off, len, cb, pos);
+        } else {
+            pos = encoder.encodeFromUTF16(src, off, len, cb, pos);
+        }
+
         bb.position(pos - boff);
     }
 

@@ -2215,14 +2215,4 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         this.count = limit;
         return this;
     }
-
-    int encode(sun.nio.cs.ArrayEncoder encoder, byte[] dst, int dp) {
-        byte[] val = this.value;
-        int count = this.count;
-        if (isLatin1()) {
-            return encoder.encodeFromLatin1(val, 0, count, dst, dp);
-        } else {
-            return encoder.encodeFromUTF16(val, 0, count, dst, dp);
-        }
-    }
 }

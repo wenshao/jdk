@@ -2149,6 +2149,10 @@ public final class System {
                 StringLatin1.inflate(src, srcOff, dst, dstOff, len);
             }
 
+            public void inflateBytesToUTF16(byte[] src, int srcOff, byte[] dst, int dstOff, int len) {
+                StringLatin1.inflate(src, srcOff, dst, dstOff, len);
+            }
+
             public int decodeASCII(byte[] src, int srcOff, char[] dst, int dstOff, int len) {
                 return String.decodeASCII(src, srcOff, dst, dstOff, len);
             }
@@ -2225,15 +2229,15 @@ public final class System {
                 return String.encodeUTF8(src, sp, sl, dst, dp);
             }
 
-            public int encode(StringBuilder sb, sun.nio.cs.ArrayEncoder encoder, byte[] dst, int dp) {
-                return sb.encode(encoder, dst, dp);
-            }
-
             public int compressUTF16(byte[] src, int srcOff, byte[] dst, int dstOff, int len) {
                 return StringUTF16.compress(src, srcOff, dst, dstOff, len);
             }
             public int compress(char[] src, int srcOff, byte[] dst, int dstOff, int len) {
                 return StringUTF16.compress(src, srcOff, dst, dstOff, len);
+            }
+
+            public void stringGetBytes(String s, byte[] dst, int srcPos, int dstBegin, byte coder, int length) {
+                s.getBytes(dst, srcPos, dstBegin, coder, length);
             }
 
             public Object classData(Class<?> c) {

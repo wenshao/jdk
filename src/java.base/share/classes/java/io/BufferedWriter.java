@@ -26,10 +26,14 @@
 
 package java.io;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import sun.nio.cs.UTF_8;
+import sun.nio.cs.StreamEncoder;
+
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.misc.Unsafe;
 import jdk.internal.misc.VM;
 
 /**
@@ -274,24 +278,63 @@ public class BufferedWriter extends Writer {
     }
 
     private static final class WriterImpl extends BufferedImpl {
-        private StringBuilder cb;
+        private static final Unsafe UNSAFE = Unsafe.getUnsafe();
+        private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+        private static final byte LATIN1 = 0, UTF16  = 1;
+
+        private byte coder;
+        private byte[] cb;
+        private int nChars;
+        private int nextChar;
         private final int maxChars;  // maximum number of buffers chars
 
         WriterImpl(Writer out, int initialSize, int maxSize) {
             super(out);
-            this.cb = new StringBuilder(initialSize);
+            this.cb = new byte[initialSize];
+            this.nChars = initialSize;
             this.maxChars = maxSize;
+        }
+
+        /**
+         * Grow char array to fit an additional len characters if needed.
+         * If possible, it grows by len+1 to avoid flushing when len chars
+         * are added.
+         *
+         * This method should only be called while holding the lock.
+         */
+        private void growIfNeeded(int len, byte coder) {
+            int neededSize = nextChar + len + 1;
+            if (neededSize < 0)
+                neededSize = Integer.MAX_VALUE;
+            if (neededSize > nChars && nChars < maxChars) {
+                int newSize = min(neededSize, maxChars);
+                byte[] newArray = new byte[newSize << coder];
+                if (coder == this.coder) {
+                    System.arraycopy(cb, 0, newArray, 0, nextChar);
+                } else {
+                    JLA.inflateBytesToUTF16(cb, 0, newArray, 0, nextChar);
+                }
+                cb = newArray;
+                nChars = newSize;
+            }
+        }
+
+        private static byte stringCoder(int cp) {
+            return cp <= 0xff ? LATIN1 : UTF16;
         }
 
         @Override
         void flushBuffer() throws IOException {
             ensureOpen();
+            if (nextChar == 0)
+                return;
             if (out instanceof OutputStreamWriter w) {
-                w.write(cb);
+                w.se.write(coder, cb, 0, nextChar);
             } else {
-                out.append(cb);
+                out.append(
+                        new StreamEncoder.ArrayCharBuffer(coder, cb, 0, nextChar));
             }
-            cb.setLength(0);
+            nextChar = 0;
         }
 
         /**
@@ -302,9 +345,15 @@ public class BufferedWriter extends Writer {
         @Override
         void write(int c) throws IOException {
             ensureOpen();
-            if (cb.length() >= maxChars)
+            growIfNeeded(1, stringCoder(c));
+            if (nextChar >= nChars)
                 flushBuffer();
-            cb.append((char) c);
+            if (this.coder == LATIN1) {
+                cb[nextChar] = (byte) c;
+            } else {
+                JLA.uncheckedPutCharUTF16(cb, nextChar, c);
+            }
+            nextChar++;
         }
 
         /**
@@ -335,7 +384,6 @@ public class BufferedWriter extends Writer {
             if (len == 0) {
                 return;
             }
-
             if (len >= maxChars) {
                 /* If the request length exceeds the max size of the output buffer,
                    flush the buffer and then write the data directly.  In this
@@ -345,13 +393,27 @@ public class BufferedWriter extends Writer {
                 return;
             }
 
-            if (len + cb.length() >= maxChars) {
-                flushBuffer();
+            growIfNeeded(len, UTF16);
+            int b = off, t = off + len;
+            while (b < t) {
+                int d = min(nChars - nextChar, t - b);
+                putChars(cb, nextChar, cbuf, b, b + d);
+                b += d;
+                nextChar += d;
+                if (nextChar >= nChars) {
+                    flushBuffer();
+                }
             }
-
-            cb.append(cbuf, off, len);
         }
 
+        private void putChars(byte[] val, int index, char[] ca, int off, int end) {
+            UNSAFE.copyMemory(
+                    ca,
+                    Unsafe.ARRAY_CHAR_BASE_OFFSET + ((long) off << 1),
+                    val,
+                    Unsafe.ARRAY_BYTE_BASE_OFFSET + ((long) index << 1),
+                    (long) (end - off) << 1);
+        }
 
         /**
          * Writes a portion of a String.
@@ -378,20 +440,17 @@ public class BufferedWriter extends Writer {
         @Override
         void write(String s, int off, int len) throws IOException {
             ensureOpen();
-            if (len >= maxChars) {
-                /* If the request length exceeds the max size of the output buffer,
-                   flush the buffer and then write the data directly.  In this
-                   way buffered streams will cascade harmlessly. */
-                flushBuffer();
-                out.write(s, off, len);
-                return;
+            byte strCoder = JLA.stringCoder(s);
+            growIfNeeded(len, strCoder);
+            int b = off, t = off + len;
+            while (b < t) {
+                int d = min(nChars - nextChar, t - b);
+                JLA.stringGetBytes(s, cb, b, nextChar, coder, d);
+                b += d;
+                nextChar += d;
+                if (nextChar >= nChars)
+                    flushBuffer();
             }
-
-            if (len + cb.length() >= maxChars) {
-                flushBuffer();
-            }
-
-            cb.append(s, off, len);
         }
 
         @SuppressWarnings("try")
@@ -417,6 +476,14 @@ public class BufferedWriter extends Writer {
         void flush() throws IOException {
             flushBuffer();
             out.flush();
+        }
+
+        /**
+         * Our own little min method, to avoid loading java.lang.Math if we've run
+         * out of file descriptors and we're trying to print a stack trace.
+         */
+        private static int min(int a, int b) {
+            return a < b ? a : b;
         }
     }
 
