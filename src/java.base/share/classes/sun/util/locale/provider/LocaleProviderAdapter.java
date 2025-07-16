@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -73,6 +73,7 @@ public abstract class LocaleProviderAdapter {
         private final String CLASSNAME;
         private final String UTIL_RESOURCES_PACKAGE;
         private final String TEXT_RESOURCES_PACKAGE;
+        private final StableValue<LocaleProviderAdapter> adapter = StableValue.of();
 
         Type(String className) {
             this(className, null, null);
@@ -95,17 +96,31 @@ public abstract class LocaleProviderAdapter {
         public String getTextResourcesPackage() {
             return TEXT_RESOURCES_PACKAGE;
         }
+
+        public LocaleProviderAdapter getAdapter() {
+            return adapter.orElseSet(() -> {
+                var type = Type.this;
+                try {
+                    // lazily load adapters here
+                    return (LocaleProviderAdapter)Class.forName(type.getAdapterClassName())
+                            .getDeclaredConstructor().newInstance();
+                } catch (NoSuchMethodException |
+                         InvocationTargetException |
+                         ClassNotFoundException |
+                         IllegalAccessException |
+                         InstantiationException |
+                         UnsupportedOperationException e) {
+                    throw new ServiceConfigurationError("Locale provider adapter \"" +
+                            type + "\"cannot be instantiated.", e);
+                }
+            });
+        }
     }
 
     /**
      * LocaleProviderAdapter preference list.
      */
     private static final List<Type> adapterPreference;
-
-    /**
-     * LocaleProviderAdapter instances
-     */
-    private static final Map<Type, LocaleProviderAdapter> adapterInstances = new ConcurrentHashMap<>();
 
     /**
      * Adapter lookup cache.
@@ -167,49 +182,17 @@ public abstract class LocaleProviderAdapter {
      * Returns the singleton instance for each adapter type
      */
     public static LocaleProviderAdapter forType(Type type) {
-        switch (type) {
-        case JRE:
-        case CLDR:
-        case SPI:
-        case HOST:
-        case FALLBACK:
-            LocaleProviderAdapter adapter = adapterInstances.get(type);
-            if (adapter == null) {
-                try {
-                    // lazily load adapters here
-                    adapter = (LocaleProviderAdapter)Class.forName(type.getAdapterClassName())
-                            .getDeclaredConstructor().newInstance();
-                    LocaleProviderAdapter cached = adapterInstances.putIfAbsent(type, adapter);
-                    if (cached != null) {
-                        adapter = cached;
-                    }
-                } catch (NoSuchMethodException |
-                         InvocationTargetException |
-                         ClassNotFoundException |
-                         IllegalAccessException |
-                         InstantiationException |
-                         UnsupportedOperationException e) {
-                    throw new ServiceConfigurationError("Locale provider adapter \"" +
-                            type + "\"cannot be instantiated.", e);
-                }
-            }
-            return adapter;
-        default:
-            throw new InternalError("unknown locale data adapter type");
-        }
+        return type.getAdapter();
     }
 
     public static LocaleProviderAdapter forJRE() {
-        return forType(Type.JRE);
+        return Type.JRE.getAdapter();
     }
 
     public static LocaleProviderAdapter getResourceBundleBased() {
         for (Type type : getAdapterPreference()) {
             if (type == Type.JRE || type == Type.CLDR || type == Type.FALLBACK) {
-                LocaleProviderAdapter adapter = forType(type);
-                if (adapter != null) {
-                    return adapter;
-                }
+                return type.getAdapter();
             }
         }
         // Shouldn't happen.
@@ -270,20 +253,18 @@ public abstract class LocaleProviderAdapter {
         }
 
         // returns the adapter for FALLBACK as the last resort
-        adapterMap.putIfAbsent(locale, forType(Type.FALLBACK));
-        return forType(Type.FALLBACK);
+        adapterMap.putIfAbsent(locale, Type.FALLBACK.getAdapter());
+        return Type.FALLBACK.getAdapter();
     }
 
     private static LocaleProviderAdapter findAdapter(Class<? extends LocaleServiceProvider> providerClass,
                                                  Locale locale) {
         for (Type type : getAdapterPreference()) {
-            LocaleProviderAdapter adapter = forType(type);
-            if (adapter != null) {
-                LocaleServiceProvider provider = adapter.getLocaleServiceProvider(providerClass);
-                if (provider != null) {
-                    if (provider.isSupportedLocale(locale)) {
-                        return adapter;
-                    }
+            LocaleProviderAdapter adapter = type.getAdapter();
+            LocaleServiceProvider provider = adapter.getLocaleServiceProvider(providerClass);
+            if (provider != null) {
+                if (provider.isSupportedLocale(locale)) {
+                    return adapter;
                 }
             }
         }
