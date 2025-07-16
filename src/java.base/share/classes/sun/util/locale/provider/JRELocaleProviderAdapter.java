@@ -65,7 +65,7 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
         = new ConcurrentHashMap<>();
 
     // LocaleData specific to this LocaleProviderAdapter.
-    private volatile LocaleData localeData;
+    private final StableValue<LocaleData> localeData = StableValue.of();
 
     /**
      * Returns the type of this LocaleProviderAdapter
@@ -249,14 +249,7 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
 
     @Override
     public LocaleData getLocaleData() {
-        if (localeData == null) {
-            synchronized (this) {
-                if (localeData == null) {
-                    localeData = new LocaleData(getAdapterType());
-                }
-            }
-        }
-        return localeData;
+        return localeData.orElseSet(() -> new LocaleData(getAdapterType()));
     }
 
     @Override
