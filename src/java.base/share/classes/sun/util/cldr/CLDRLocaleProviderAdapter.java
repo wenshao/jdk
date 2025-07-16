@@ -60,7 +60,7 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
     // cache to hold  locale to locale mapping for language aliases.
     private static final Map<Locale, Locale> langAliasesCache;
     // cache the available locales
-    private static volatile Locale[] AVAILABLE_LOCALES;
+    private static final StableValue<Locale[]> AVAILABLE_LOCALES = StableValue.of();
 
     static {
         parentLocalesMap = new ConcurrentHashMap<>();
@@ -123,12 +123,9 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
 
     @Override
     public Locale[] getAvailableLocales() {
-        if (AVAILABLE_LOCALES == null) {
-            AVAILABLE_LOCALES = createLanguageTagSet("AvailableLocales").stream()
+        return AVAILABLE_LOCALES.orElseSet(() -> createLanguageTagSet("AvailableLocales").stream()
                 .map(Locale::forLanguageTag)
-                .toArray(Locale[]::new);
-        }
-        return AVAILABLE_LOCALES;
+                .toArray(Locale[]::new));
     }
 
     private static Locale applyAliases(Locale loc) {
