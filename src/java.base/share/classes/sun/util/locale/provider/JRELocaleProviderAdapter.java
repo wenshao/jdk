@@ -113,119 +113,65 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
         }
     }
 
-    private volatile BreakIteratorProvider breakIteratorProvider;
-    private volatile CollatorProvider collatorProvider;
-    private volatile DateFormatProvider dateFormatProvider;
-    private volatile DateFormatSymbolsProvider dateFormatSymbolsProvider;
-    private volatile DecimalFormatSymbolsProvider decimalFormatSymbolsProvider;
-    private volatile NumberFormatProvider numberFormatProvider;
+    private final StableValue<BreakIteratorProvider> breakIteratorProvider = StableValue.of();
+    private final StableValue<CollatorProvider> collatorProvider = StableValue.of();
+    private final StableValue<DateFormatProvider> dateFormatProvider = StableValue.of();
+    private final StableValue<DateFormatSymbolsProvider> dateFormatSymbolsProvider = StableValue.of();
+    private final StableValue<DecimalFormatSymbolsProvider> decimalFormatSymbolsProvider = StableValue.of();
+    private final StableValue<NumberFormatProvider> numberFormatProvider = StableValue.of();
 
-    private volatile CurrencyNameProvider currencyNameProvider;
-    private volatile LocaleNameProvider localeNameProvider;
-    protected volatile TimeZoneNameProvider timeZoneNameProvider;
-    protected volatile CalendarDataProvider calendarDataProvider;
-    protected volatile CalendarNameProvider calendarNameProvider;
+    private final StableValue<CurrencyNameProvider> currencyNameProvider = StableValue.of();
+    private final StableValue<LocaleNameProvider> localeNameProvider = StableValue.of();
+    protected final StableValue<TimeZoneNameProvider> timeZoneNameProvider = StableValue.of();
+    protected final StableValue<CalendarDataProvider> calendarDataProvider = StableValue.of();
+    protected final StableValue<CalendarNameProvider> calendarNameProvider = StableValue.of();
 
-    private volatile CalendarProvider calendarProvider;
-    private volatile JavaTimeDateTimePatternProvider javaTimeDateTimePatternProvider;
+    private final StableValue<CalendarProvider> calendarProvider = StableValue.of();
+    private final StableValue<JavaTimeDateTimePatternProvider> javaTimeDateTimePatternProvider = StableValue.of();
 
     /*
      * Getter methods for java.text.spi.* providers
      */
     @Override
     public BreakIteratorProvider getBreakIteratorProvider() {
-        if (breakIteratorProvider == null) {
-            BreakIteratorProvider provider = new BreakIteratorProviderImpl(
-                    getAdapterType(),
-                    getLanguageTagSet("FormatData"));
-
-            synchronized (this) {
-                if (breakIteratorProvider == null) {
-                    breakIteratorProvider = provider;
-                }
-            }
-        }
-        return breakIteratorProvider;
+        return breakIteratorProvider.orElseSet(() -> new BreakIteratorProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("FormatData")));
     }
 
     @Override
     public CollatorProvider getCollatorProvider() {
-        if (collatorProvider == null) {
-            CollatorProvider provider = new CollatorProviderImpl(
-                    getAdapterType(),
-                    getLanguageTagSet("CollationData"));
-
-            synchronized (this) {
-                if (collatorProvider == null) {
-                    collatorProvider = provider;
-                }
-            }
-        }
-        return collatorProvider;
+        return collatorProvider.orElseSet(() -> new CollatorProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("CollationData")));
     }
 
     @Override
     public DateFormatProvider getDateFormatProvider() {
-        if (dateFormatProvider == null) {
-            DateFormatProvider provider = new DateFormatProviderImpl(
-                    getAdapterType(),
-                    getLanguageTagSet("FormatData"));
-
-            synchronized (this) {
-                if (dateFormatProvider == null) {
-                    dateFormatProvider = provider;
-                }
-            }
-        }
-        return dateFormatProvider;
+        return dateFormatProvider.orElseSet(() -> new DateFormatProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("FormatData")));
     }
 
     @Override
     public DateFormatSymbolsProvider getDateFormatSymbolsProvider() {
-        if (dateFormatSymbolsProvider == null) {
-            DateFormatSymbolsProvider provider = new DateFormatSymbolsProviderImpl(
-                    getAdapterType(),
-                    getLanguageTagSet("FormatData"));
-
-            synchronized (this) {
-                if (dateFormatSymbolsProvider == null) {
-                    dateFormatSymbolsProvider = provider;
-                }
-            }
-        }
-        return dateFormatSymbolsProvider;
+        return dateFormatSymbolsProvider.orElseSet(() -> new DateFormatSymbolsProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("FormatData")));
     }
 
     @Override
     public DecimalFormatSymbolsProvider getDecimalFormatSymbolsProvider() {
-        if (decimalFormatSymbolsProvider == null) {
-            DecimalFormatSymbolsProvider provider = new DecimalFormatSymbolsProviderImpl(
-                    getAdapterType(),
-                    getLanguageTagSet("FormatData"));
-
-            synchronized (this) {
-                if (decimalFormatSymbolsProvider == null) {
-                    decimalFormatSymbolsProvider = provider;
-                }
-            }
-        }
-        return decimalFormatSymbolsProvider;
+        return decimalFormatSymbolsProvider.orElseSet(() -> new DecimalFormatSymbolsProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("FormatData")));
     }
 
     @Override
     public NumberFormatProvider getNumberFormatProvider() {
-        if (numberFormatProvider == null) {
-            NumberFormatProvider provider = new NumberFormatProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("FormatData"));
-
-            synchronized (this) {
-                if (numberFormatProvider == null) {
-                    numberFormatProvider = provider;
-                }
-            }
-        }
-        return numberFormatProvider;
+        return numberFormatProvider.orElseSet(() -> new NumberFormatProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("FormatData")));
     }
 
     /**
@@ -233,82 +179,37 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
      */
     @Override
     public CurrencyNameProvider getCurrencyNameProvider() {
-        if (currencyNameProvider == null) {
-            CurrencyNameProvider provider = new CurrencyNameProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("CurrencyNames"));
-
-            synchronized (this) {
-                if (currencyNameProvider == null) {
-                    currencyNameProvider = provider;
-                }
-            }
-        }
-        return currencyNameProvider;
+        return currencyNameProvider.orElseSet(() -> new CurrencyNameProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("CurrencyNames")));
     }
 
     @Override
     public LocaleNameProvider getLocaleNameProvider() {
-        if (localeNameProvider == null) {
-            LocaleNameProvider provider = new LocaleNameProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("LocaleNames"));
-
-            synchronized (this) {
-                if (localeNameProvider == null) {
-                    localeNameProvider = provider;
-                }
-            }
-        }
-        return localeNameProvider;
+        return localeNameProvider.orElseSet(() -> new LocaleNameProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("LocaleNames")));
     }
 
     @Override
     public TimeZoneNameProvider getTimeZoneNameProvider() {
-        if (timeZoneNameProvider == null) {
-            TimeZoneNameProvider provider = new TimeZoneNameProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("TimeZoneNames"));
-
-            synchronized (this) {
-                if (timeZoneNameProvider == null) {
-                    timeZoneNameProvider = provider;
-                }
-            }
-        }
-        return timeZoneNameProvider;
+        return timeZoneNameProvider.orElseSet(() -> new TimeZoneNameProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("TimeZoneNames")));
     }
 
     @Override
     public CalendarDataProvider getCalendarDataProvider() {
-        if (calendarDataProvider == null) {
-            CalendarDataProvider provider = new CalendarDataProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("CalendarData"));
-
-            synchronized (this) {
-                if (calendarDataProvider == null) {
-                    calendarDataProvider = provider;
-                }
-            }
-        }
-        return calendarDataProvider;
+        return calendarDataProvider.orElseSet(() -> new CalendarDataProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("CalendarData")));
     }
 
     @Override
     public CalendarNameProvider getCalendarNameProvider() {
-        if (calendarNameProvider == null) {
-            CalendarNameProvider provider = new CalendarNameProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("FormatData"));
-
-            synchronized (this) {
-                if (calendarNameProvider == null) {
-                    calendarNameProvider = provider;
-                }
-            }
-        }
-        return calendarNameProvider;
+        return calendarNameProvider.orElseSet(() -> new CalendarNameProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("FormatData")));
     }
 
     /**
@@ -316,18 +217,9 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
      */
     @Override
     public CalendarProvider getCalendarProvider() {
-        if (calendarProvider == null) {
-            CalendarProvider provider = new CalendarProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("CalendarData"));
-
-            synchronized (this) {
-                if (calendarProvider == null) {
-                    calendarProvider = provider;
-                }
-            }
-        }
-        return calendarProvider;
+        return calendarProvider.orElseSet(() -> new CalendarProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("CalendarData")));
     }
 
     /**
@@ -335,18 +227,9 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
      */
     @Override
     public JavaTimeDateTimePatternProvider getJavaTimeDateTimePatternProvider() {
-        if (javaTimeDateTimePatternProvider == null) {
-            JavaTimeDateTimePatternProvider provider = new JavaTimeDateTimePatternImpl(
-                            getAdapterType(),
-                            getLanguageTagSet("FormatData"));
-
-            synchronized (this) {
-                if (javaTimeDateTimePatternProvider == null) {
-                    javaTimeDateTimePatternProvider = provider;
-                }
-            }
-        }
-        return javaTimeDateTimePatternProvider;
+        return javaTimeDateTimePatternProvider.orElseSet(() -> new JavaTimeDateTimePatternImpl(
+                getAdapterType(),
+                getLanguageTagSet("FormatData")));
     }
 
     @Override

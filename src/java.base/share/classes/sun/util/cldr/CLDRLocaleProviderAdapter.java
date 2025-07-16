@@ -97,34 +97,16 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
 
     @Override
     public CalendarDataProvider getCalendarDataProvider() {
-        if (calendarDataProvider == null) {
-            CalendarDataProvider provider = new CLDRCalendarDataProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("CalendarData"));
-
-            synchronized (this) {
-                if (calendarDataProvider == null) {
-                    calendarDataProvider = provider;
-                }
-            }
-        }
-        return calendarDataProvider;
+        return calendarDataProvider.orElseSet(() -> new CLDRCalendarDataProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("CalendarData")));
     }
 
     @Override
     public CalendarNameProvider getCalendarNameProvider() {
-        if (calendarNameProvider == null) {
-            CalendarNameProvider provider = new CLDRCalendarNameProviderImpl(
-                            getAdapterType(),
-                            getLanguageTagSet("FormatData"));
-
-            synchronized (this) {
-                if (calendarNameProvider == null) {
-                    calendarNameProvider = provider;
-                }
-            }
-        }
-        return calendarNameProvider;
+        return calendarNameProvider.orElseSet(() -> new CLDRCalendarNameProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("FormatData")));
     }
 
     @Override
@@ -134,18 +116,9 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
 
     @Override
     public TimeZoneNameProvider getTimeZoneNameProvider() {
-        if (timeZoneNameProvider == null) {
-            TimeZoneNameProvider provider = new CLDRTimeZoneNameProviderImpl(
-                        getAdapterType(),
-                        getLanguageTagSet("TimeZoneNames"));
-
-            synchronized (this) {
-                if (timeZoneNameProvider == null) {
-                    timeZoneNameProvider = provider;
-                }
-            }
-        }
-        return timeZoneNameProvider;
+        return timeZoneNameProvider.orElseSet(() -> new CLDRTimeZoneNameProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("TimeZoneNames")));
     }
 
     @Override

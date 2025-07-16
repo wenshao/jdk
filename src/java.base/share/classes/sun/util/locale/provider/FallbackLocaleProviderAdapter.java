@@ -46,7 +46,7 @@ public class FallbackLocaleProviderAdapter extends JRELocaleProviderAdapter {
     private static final Locale[] AVAILABLE_LOCS = {Locale.US, Locale.ENGLISH, Locale.ROOT};
     private static final Set<String> AVAILABLE_LANGTAGS = Set.of("en-US", "en", "und");
 
-    private volatile BreakIteratorProvider breakIteratorProvider;
+    private final StableValue<BreakIteratorProvider> breakIteratorProvider = StableValue.of();
 
     /**
      * Returns the type of this LocaleProviderAdapter
@@ -82,17 +82,8 @@ public class FallbackLocaleProviderAdapter extends JRELocaleProviderAdapter {
     @Override
     // In order to correctly report supported locales
     public BreakIteratorProvider getBreakIteratorProvider() {
-        if (breakIteratorProvider == null) {
-            BreakIteratorProvider provider = new BreakIteratorProviderImpl(
-                                    getAdapterType(),
-                                    getLanguageTagSet("BreakIteratorRules"));
-
-            synchronized (this) {
-                if (breakIteratorProvider == null) {
-                    breakIteratorProvider = provider;
-                }
-            }
-        }
-        return breakIteratorProvider;
+        return breakIteratorProvider.orElseSet(() -> new BreakIteratorProviderImpl(
+                getAdapterType(),
+                getLanguageTagSet("BreakIteratorRules")));
     }
 }
