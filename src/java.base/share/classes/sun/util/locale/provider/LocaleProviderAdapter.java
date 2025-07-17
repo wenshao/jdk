@@ -65,30 +65,20 @@ public abstract class LocaleProviderAdapter {
      * Adapter type.
      */
     public enum Type {
-        JRE("sun.util.locale.provider.JRELocaleProviderAdapter", "sun.util.resources", "sun.text.resources"),
-        CLDR("sun.util.cldr.CLDRLocaleProviderAdapter", "sun.util.resources.cldr", "sun.text.resources.cldr"),
-        SPI("sun.util.locale.provider.SPILocaleProviderAdapter"),
-        HOST("sun.util.locale.provider.HostLocaleProviderAdapter"),
-        FALLBACK("sun.util.locale.provider.FallbackLocaleProviderAdapter", "sun.util.resources", "sun.text.resources");
+        JRE("sun.util.resources", "sun.text.resources"),
+        CLDR("sun.util.resources.cldr", "sun.text.resources.cldr"),
+        SPI(null, null),
+        HOST(null, null),
+        FALLBACK("sun.util.resources", "sun.text.resources");
 
-        private final String CLASSNAME;
         private final String UTIL_RESOURCES_PACKAGE;
         private final String TEXT_RESOURCES_PACKAGE;
         @Stable
         private volatile LocaleProviderAdapter adapter;
 
-        Type(String className) {
-            this(className, null, null);
-        }
-
-        Type(String className, String util, String text) {
-            CLASSNAME = className;
+        Type(String util, String text) {
             UTIL_RESOURCES_PACKAGE = util;
             TEXT_RESOURCES_PACKAGE = text;
-        }
-
-        public String getAdapterClassName() {
-            return CLASSNAME;
         }
 
         public String getUtilResourcesPackage() {
@@ -109,20 +99,37 @@ public abstract class LocaleProviderAdapter {
         private synchronized LocaleProviderAdapter getAdapter0() {
             if (adapter == null) {
                 // lazily load adapters here
-                try {
-                    adapter = (LocaleProviderAdapter)Class.forName(getAdapterClassName())
-                            .getDeclaredConstructor().newInstance();
-                } catch (NoSuchMethodException |
-                         InvocationTargetException |
-                         ClassNotFoundException |
-                         IllegalAccessException |
-                         InstantiationException |
-                         UnsupportedOperationException e) {
-                    throw new ServiceConfigurationError("Locale provider adapter \"" +
-                            this + "\"cannot be instantiated.", e);
-                }
+                adapter = switch (this) {
+                    case JRE -> createJREAdapter();
+                    case CLDR -> createCLDRAdapter();
+                    case SPI -> createSPIAdapter();
+                    case HOST -> createHOSTAdapter();
+                    case FALLBACK -> createFALLBACKAdapter();
+                    default -> throw new ServiceConfigurationError("Locale provider adapter \"" +
+                            this + "\"cannot be instantiated.");
+                };
             }
             return adapter;
+        }
+
+        private static LocaleProviderAdapter createJREAdapter() {
+            return new JRELocaleProviderAdapter();
+        }
+
+        private static LocaleProviderAdapter createCLDRAdapter() {
+            return new sun.util.cldr.CLDRLocaleProviderAdapter();
+        }
+
+        private static LocaleProviderAdapter createSPIAdapter() {
+            return new SPILocaleProviderAdapter();
+        }
+
+        private static LocaleProviderAdapter createHOSTAdapter() {
+            return new HostLocaleProviderAdapter();
+        }
+
+        private static LocaleProviderAdapter createFALLBACKAdapter() {
+            return new FallbackLocaleProviderAdapter();
         }
     }
 
