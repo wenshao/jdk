@@ -141,8 +141,20 @@ public abstract class LocaleProviderAdapter {
     /**
      * Adapter lookup cache.
      */
-    private static final ConcurrentMap<Class<? extends LocaleServiceProvider>, ConcurrentMap<Locale, LocaleProviderAdapter>>
-        adapterCache = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Locale, LocaleProviderAdapter>
+            breakIteratorProviderAdapterMap           = new ConcurrentHashMap<>(),
+            collatorProviderAdapterMap                = new ConcurrentHashMap<>(),
+            dateFormatProviderAdapterMap              = new ConcurrentHashMap<>(),
+            dateFormatSymbolsProviderAdapterMap       = new ConcurrentHashMap<>(),
+            decimalFormatSymbolsProviderAdapterMap    = new ConcurrentHashMap<>(),
+            numberFormatProviderAdapterMap            = new ConcurrentHashMap<>(),
+            currencyNameProviderAdapterMap            = new ConcurrentHashMap<>(),
+            localeNameProviderAdapterMap              = new ConcurrentHashMap<>(),
+            timeZoneNameProviderAdapterMap            = new ConcurrentHashMap<>(),
+            calendarDataProviderAdapterMap            = new ConcurrentHashMap<>(),
+            calendarNameProviderAdapterMap            = new ConcurrentHashMap<>(),
+            calendarProviderAdapterMap                = new ConcurrentHashMap<>(),
+            javaTimeDateTimePatternProviderAdapterMap = new ConcurrentHashMap<>();
 
     static {
         String order = System.getProperty("java.locale.providers");
@@ -222,6 +234,24 @@ public abstract class LocaleProviderAdapter {
         return adapterPreference;
     }
 
+    @SuppressWarnings("unchecked")
+    private static ConcurrentMap<Locale, LocaleProviderAdapter> getAdapterMap(Class<? extends LocaleServiceProvider> providerClass) {
+        if (providerClass == BreakIteratorProvider.class)           return breakIteratorProviderAdapterMap;
+        if (providerClass == CollatorProvider.class)                return collatorProviderAdapterMap;
+        if (providerClass == DateFormatProvider.class)              return dateFormatProviderAdapterMap;
+        if (providerClass == DateFormatSymbolsProvider.class)       return dateFormatSymbolsProviderAdapterMap;
+        if (providerClass == DecimalFormatSymbolsProvider.class)    return decimalFormatSymbolsProviderAdapterMap;
+        if (providerClass == NumberFormatProvider.class)            return numberFormatProviderAdapterMap;
+        if (providerClass == CurrencyNameProvider.class)            return currencyNameProviderAdapterMap;
+        if (providerClass == LocaleNameProvider.class)              return localeNameProviderAdapterMap;
+        if (providerClass == TimeZoneNameProvider.class)            return timeZoneNameProviderAdapterMap;
+        if (providerClass == CalendarDataProvider.class)            return calendarDataProviderAdapterMap;
+        if (providerClass == CalendarNameProvider.class)            return calendarNameProviderAdapterMap;
+        if (providerClass == CalendarProvider.class)                return calendarProviderAdapterMap;
+        if (providerClass == JavaTimeDateTimePatternProvider.class) return javaTimeDateTimePatternProviderAdapterMap;
+        throw new InternalError("should not come down here");
+    }
+
     /**
      * Returns a LocaleProviderAdapter for the given locale service provider that
      * best matches the given locale. This method returns the LocaleProviderAdapter
@@ -236,23 +266,23 @@ public abstract class LocaleProviderAdapter {
         LocaleProviderAdapter adapter;
 
         // cache lookup
-        ConcurrentMap<Locale, LocaleProviderAdapter> adapterMap = adapterCache.get(providerClass);
-        if (adapterMap != null) {
-            if ((adapter = adapterMap.get(locale)) != null) {
-                return adapter;
-            }
-        } else {
-            adapterMap = new ConcurrentHashMap<>();
-            adapterCache.putIfAbsent(providerClass, adapterMap);
+        ConcurrentMap<Locale, LocaleProviderAdapter> adapterMap = getAdapterMap(providerClass);
+        if ((adapter = adapterMap.get(locale)) != null) {
+            return adapter;
         }
 
+        return getAdapter0(providerClass, locale, adapterMap);
+    }
+
+    private static LocaleProviderAdapter getAdapter0(Class<? extends LocaleServiceProvider> providerClass,
+                                                     Locale locale,
+                                                     ConcurrentMap<Locale, LocaleProviderAdapter> adapterMap) {
         // Fast look-up for the given locale
-        adapter = findAdapter(providerClass, locale);
+        LocaleProviderAdapter adapter = findAdapter(providerClass, locale);
         if (adapter != null) {
             adapterMap.putIfAbsent(locale, adapter);
             return adapter;
         }
-
         // Try finding an adapter in the normal candidate locales path of the given locale.
         List<Locale> lookupLocales = ResourceBundle.Control.getControl(ResourceBundle.Control.FORMAT_DEFAULT)
                                         .getCandidateLocales("", locale);

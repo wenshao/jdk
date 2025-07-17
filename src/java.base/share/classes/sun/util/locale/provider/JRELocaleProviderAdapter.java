@@ -83,36 +83,20 @@ public class JRELocaleProviderAdapter extends LocaleProviderAdapter implements R
     @Override
     @SuppressWarnings("unchecked")
     public <P extends LocaleServiceProvider> P getLocaleServiceProvider(Class<P> c) {
-        switch (c.getSimpleName()) {
-        case "BreakIteratorProvider":
-            return (P) getBreakIteratorProvider();
-        case "CollatorProvider":
-            return (P) getCollatorProvider();
-        case "DateFormatProvider":
-            return (P) getDateFormatProvider();
-        case "DateFormatSymbolsProvider":
-            return (P) getDateFormatSymbolsProvider();
-        case "DecimalFormatSymbolsProvider":
-            return (P) getDecimalFormatSymbolsProvider();
-        case "NumberFormatProvider":
-            return (P) getNumberFormatProvider();
-        case "CurrencyNameProvider":
-            return (P) getCurrencyNameProvider();
-        case "LocaleNameProvider":
-            return (P) getLocaleNameProvider();
-        case "TimeZoneNameProvider":
-            return (P) getTimeZoneNameProvider();
-        case "CalendarDataProvider":
-            return (P) getCalendarDataProvider();
-        case "CalendarNameProvider":
-            return (P) getCalendarNameProvider();
-        case "CalendarProvider":
-            return (P) getCalendarProvider();
-        case "JavaTimeDateTimePatternProvider":
-            return (P) getJavaTimeDateTimePatternProvider();
-        default:
-            throw new InternalError("should not come down here");
-        }
+        if (c == BreakIteratorProvider.class)           return (P) getBreakIteratorProvider();
+        if (c == CollatorProvider.class)                return (P) getCollatorProvider();
+        if (c == DateFormatProvider.class)              return (P) getDateFormatProvider();
+        if (c == DateFormatSymbolsProvider.class)       return (P) getDateFormatSymbolsProvider();
+        if (c == DecimalFormatSymbolsProvider.class)    return (P) getDecimalFormatSymbolsProvider();
+        if (c == NumberFormatProvider.class)            return (P) getNumberFormatProvider();
+        if (c == CurrencyNameProvider.class)            return (P) getCurrencyNameProvider();
+        if (c == LocaleNameProvider.class)              return (P) getLocaleNameProvider();
+        if (c == TimeZoneNameProvider.class)            return (P) getTimeZoneNameProvider();
+        if (c == CalendarDataProvider.class)            return (P) getCalendarDataProvider();
+        if (c == CalendarNameProvider.class)            return (P) getCalendarNameProvider();
+        if (c == CalendarProvider.class)                return (P) getCalendarProvider();
+        if (c == JavaTimeDateTimePatternProvider.class) return (P) getJavaTimeDateTimePatternProvider();
+        throw new InternalError("should not come down here");
     }
 
     @Stable
