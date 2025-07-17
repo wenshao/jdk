@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.spi.CalendarDataProvider;
 import java.util.spi.CalendarNameProvider;
 import java.util.spi.TimeZoneNameProvider;
+import jdk.internal.vm.annotation.Stable;
 import sun.util.locale.provider.JRELocaleProviderAdapter;
 import sun.util.locale.provider.LocaleDataMetaInfo;
 import sun.util.locale.provider.LocaleProviderAdapter;
@@ -60,7 +61,8 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
     // cache to hold  locale to locale mapping for language aliases.
     private static final Map<Locale, Locale> langAliasesCache;
     // cache the available locales
-    private static final StableValue<Locale[]> AVAILABLE_LOCALES = StableValue.of();
+    @Stable
+    private static volatile Locale[] AVAILABLE_LOCALES;
 
     static {
         parentLocalesMap = new ConcurrentHashMap<>();
@@ -97,16 +99,34 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
 
     @Override
     public CalendarDataProvider getCalendarDataProvider() {
-        return calendarDataProvider.orElseSet(() -> new CLDRCalendarDataProviderImpl(
-                getAdapterType(),
-                getLanguageTagSet("CalendarData")));
+        if (calendarDataProvider == null) {
+            CalendarDataProvider provider = new CLDRCalendarDataProviderImpl(
+                        getAdapterType(),
+                        getLanguageTagSet("CalendarData"));
+
+            synchronized (this) {
+                if (calendarDataProvider == null) {
+                    calendarDataProvider = provider;
+                }
+            }
+        }
+        return calendarDataProvider;
     }
 
     @Override
     public CalendarNameProvider getCalendarNameProvider() {
-        return calendarNameProvider.orElseSet(() -> new CLDRCalendarNameProviderImpl(
-                getAdapterType(),
-                getLanguageTagSet("FormatData")));
+        if (calendarNameProvider == null) {
+            CalendarNameProvider provider = new CLDRCalendarNameProviderImpl(
+                            getAdapterType(),
+                            getLanguageTagSet("FormatData"));
+
+            synchronized (this) {
+                if (calendarNameProvider == null) {
+                    calendarNameProvider = provider;
+                }
+            }
+        }
+        return calendarNameProvider;
     }
 
     @Override
@@ -116,16 +136,28 @@ public class CLDRLocaleProviderAdapter extends JRELocaleProviderAdapter {
 
     @Override
     public TimeZoneNameProvider getTimeZoneNameProvider() {
-        return timeZoneNameProvider.orElseSet(() -> new CLDRTimeZoneNameProviderImpl(
-                getAdapterType(),
-                getLanguageTagSet("TimeZoneNames")));
+        if (timeZoneNameProvider == null) {
+            TimeZoneNameProvider provider = new CLDRTimeZoneNameProviderImpl(
+                        getAdapterType(),
+                        getLanguageTagSet("TimeZoneNames"));
+
+            synchronized (this) {
+                if (timeZoneNameProvider == null) {
+                    timeZoneNameProvider = provider;
+                }
+            }
+        }
+        return timeZoneNameProvider;
     }
 
     @Override
     public Locale[] getAvailableLocales() {
-        return AVAILABLE_LOCALES.orElseSet(() -> createLanguageTagSet("AvailableLocales").stream()
+        if (AVAILABLE_LOCALES == null) {
+            AVAILABLE_LOCALES = createLanguageTagSet("AvailableLocales").stream()
                 .map(Locale::forLanguageTag)
-                .toArray(Locale[]::new));
+                .toArray(Locale[]::new);
+        }
+        return AVAILABLE_LOCALES;
     }
 
     private static Locale applyAliases(Locale loc) {

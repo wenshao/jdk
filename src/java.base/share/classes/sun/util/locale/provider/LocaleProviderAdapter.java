@@ -48,6 +48,7 @@ import java.util.spi.CurrencyNameProvider;
 import java.util.spi.LocaleNameProvider;
 import java.util.spi.LocaleServiceProvider;
 import java.util.spi.TimeZoneNameProvider;
+import jdk.internal.vm.annotation.Stable;
 import sun.text.spi.JavaTimeDateTimePatternProvider;
 import sun.util.spi.CalendarProvider;
 
@@ -73,7 +74,8 @@ public abstract class LocaleProviderAdapter {
         private final String CLASSNAME;
         private final String UTIL_RESOURCES_PACKAGE;
         private final String TEXT_RESOURCES_PACKAGE;
-        private final StableValue<LocaleProviderAdapter> adapter = StableValue.of();
+        @Stable
+        private volatile LocaleProviderAdapter adapter;
 
         Type(String className) {
             this(className, null, null);
@@ -98,11 +100,17 @@ public abstract class LocaleProviderAdapter {
         }
 
         public LocaleProviderAdapter getAdapter() {
-            return adapter.orElseSet(() -> {
-                var type = Type.this;
+            if (adapter != null) {
+                return adapter;
+            }
+            return getAdapter0();
+        }
+
+        private synchronized LocaleProviderAdapter getAdapter0() {
+            if (adapter == null) {
+                // lazily load adapters here
                 try {
-                    // lazily load adapters here
-                    return (LocaleProviderAdapter)Class.forName(type.getAdapterClassName())
+                    adapter = (LocaleProviderAdapter)Class.forName(getAdapterClassName())
                             .getDeclaredConstructor().newInstance();
                 } catch (NoSuchMethodException |
                          InvocationTargetException |
@@ -111,9 +119,10 @@ public abstract class LocaleProviderAdapter {
                          InstantiationException |
                          UnsupportedOperationException e) {
                     throw new ServiceConfigurationError("Locale provider adapter \"" +
-                            type + "\"cannot be instantiated.", e);
+                            this + "\"cannot be instantiated.", e);
                 }
-            });
+            }
+            return adapter;
         }
     }
 
