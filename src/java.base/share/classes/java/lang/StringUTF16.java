@@ -1484,10 +1484,10 @@ final class StringUTF16 {
         String.checkBoundsBeginEnd(off, end, ca.length);
         Unsafe.getUnsafe().copyMemory(
                 ca,
-                Unsafe.ARRAY_CHAR_BASE_OFFSET + ((long) off << 1),
+                Unsafe.ARRAY_CHAR_BASE_OFFSET + ((long) off << ARRAY_CHAR_SHIFT),
                 val,
-                Unsafe.ARRAY_BYTE_BASE_OFFSET + ((long) index << 1),
-                (long) (end - off) << 1);
+                Unsafe.ARRAY_CHAR_BASE_OFFSET + ((long) index << ARRAY_CHAR_SHIFT),
+                (long) (end - off) << ARRAY_CHAR_SHIFT);
     }
 
     public static void putCharsSB(byte[] val, int index, CharSequence s, int off, int end) {
@@ -1646,6 +1646,7 @@ final class StringUTF16 {
     }
 
     static final int MAX_LENGTH = Integer.MAX_VALUE >> 1;
+    static final int ARRAY_CHAR_SHIFT = 31 - Integer.numberOfLeadingZeros(Unsafe.ARRAY_CHAR_INDEX_SCALE);
 
     public static void checkIndex(int off, byte[] val) {
         String.checkIndex(off, length(val));
