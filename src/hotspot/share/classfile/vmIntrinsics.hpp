@@ -369,9 +369,6 @@ class methodHandle;
   do_intrinsic(_toBytesStringU,           java_lang_StringUTF16, toBytes_name, toBytesU_signature,               F_S)   \
    do_name(     toBytes_name,                                    "toBytes")                                             \
    do_signature(toBytesU_signature,                              "([CII)[B")                                            \
-  do_intrinsic(_getCharsStringU,          java_lang_StringUTF16, getCharsU_name, getCharsU_signature,            F_S)   \
-   do_name(     getCharsU_name,                                  "getChars")                                            \
-   do_signature(getCharsU_signature,                             "([BII[CI)V")                                          \
   do_intrinsic(_getCharStringU,           java_lang_StringUTF16, getChar_name, getCharStringU_signature,         F_S)   \
    do_signature(getCharStringU_signature,                        "([BI)C")                                              \
   do_intrinsic(_putCharStringU,           java_lang_StringUTF16, putChar_name, putCharStringU_signature,         F_S)   \

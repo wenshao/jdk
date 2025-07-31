@@ -308,7 +308,6 @@ bool LibraryCallKit::try_to_inline(int predicate) {
   case vmIntrinsics::_vectorizedHashCode:       return inline_vectorizedHashCode();
 
   case vmIntrinsics::_toBytesStringU:           return inline_string_toBytesU();
-  case vmIntrinsics::_getCharsStringU:          return inline_string_getCharsU();
   case vmIntrinsics::_getCharStringU:           return inline_string_char_access(!is_store);
   case vmIntrinsics::_putCharStringU:           return inline_string_char_access( is_store);
 
@@ -1617,87 +1616,6 @@ bool LibraryCallKit::inline_string_toBytesU() {
   }
   clear_upper_avx();
 
-  return true;
-}
-
-//------------------------inline_string_getCharsU--------------------------
-// public void StringUTF16.getChars(byte[] src, int srcBegin, int srcEnd, char dst[], int dstBegin)
-bool LibraryCallKit::inline_string_getCharsU() {
-  if (too_many_traps(Deoptimization::Reason_intrinsic)) {
-    return false;
-  }
-
-  // Get the arguments.
-  Node* src       = argument(0);
-  Node* src_begin = argument(1);
-  Node* src_end   = argument(2); // exclusive offset (i < src_end)
-  Node* dst       = argument(3);
-  Node* dst_begin = argument(4);
-
-  // Check for allocation before we add nodes that would confuse
-  // tightly_coupled_allocation()
-  AllocateArrayNode* alloc = tightly_coupled_allocation(dst);
-
-  // Check if a null path was taken unconditionally.
-  src = null_check(src);
-  dst = null_check(dst);
-  if (stopped()) {
-    return true;
-  }
-
-  // Get length and convert char[] offset to byte[] offset
-  Node* length = _gvn.transform(new SubINode(src_end, src_begin));
-  src_begin = _gvn.transform(new LShiftINode(src_begin, intcon(1)));
-
-  // Range checks
-  generate_string_range_check(src, src_begin, length, true);
-  generate_string_range_check(dst, dst_begin, length, false);
-  if (stopped()) {
-    return true;
-  }
-
-  if (!stopped()) {
-    // Calculate starting addresses.
-    Node* src_start = array_element_address(src, src_begin, T_BYTE);
-    Node* dst_start = array_element_address(dst, dst_begin, T_CHAR);
-
-    // Check if array addresses are aligned to HeapWordSize
-    const TypeInt* tsrc = gvn().type(src_begin)->is_int();
-    const TypeInt* tdst = gvn().type(dst_begin)->is_int();
-    bool aligned = tsrc->is_con() && ((arrayOopDesc::base_offset_in_bytes(T_BYTE) + tsrc->get_con() * type2aelembytes(T_BYTE)) % HeapWordSize == 0) &&
-                   tdst->is_con() && ((arrayOopDesc::base_offset_in_bytes(T_CHAR) + tdst->get_con() * type2aelembytes(T_CHAR)) % HeapWordSize == 0);
-
-    // Figure out which arraycopy runtime method to call (disjoint, uninitialized).
-    const char* copyfunc_name = "arraycopy";
-    address     copyfunc_addr = StubRoutines::select_arraycopy_function(T_CHAR, aligned, true, copyfunc_name, true);
-    Node* call = make_runtime_call(RC_LEAF|RC_NO_FP,
-                      OptoRuntime::fast_arraycopy_Type(),
-                      copyfunc_addr, copyfunc_name, TypeRawPtr::BOTTOM,
-                      src_start, dst_start, ConvI2X(length) XTOP);
-    // Do not let reads from the cloned object float above the arraycopy.
-    if (alloc != nullptr) {
-      if (alloc->maybe_set_complete(&_gvn)) {
-        // "You break it, you buy it."
-        InitializeNode* init = alloc->initialization();
-        assert(init->is_complete(), "we just did this");
-        init->set_complete_with_arraycopy();
-        assert(dst->is_CheckCastPP(), "sanity");
-        assert(dst->in(0)->in(0) == init, "dest pinned");
-      }
-      // Do not let stores that initialize this object be reordered with
-      // a subsequent store that would make this object accessible by
-      // other threads.
-      // Record what AllocateNode this StoreStore protects so that
-      // escape analysis can go from the MemBarStoreStoreNode to the
-      // AllocateNode and eliminate the MemBarStoreStoreNode if possible
-      // based on the escape status of the AllocateNode.
-      insert_mem_bar(Op_MemBarStoreStore, alloc->proj_out_or_null(AllocateNode::RawAddress));
-    } else {
-      insert_mem_bar(Op_MemBarCPUOrder);
-    }
-  }
-
-  C->set_has_split_ifs(true); // Has chance for split-if optimization
   return true;
 }
 

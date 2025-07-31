@@ -432,14 +432,17 @@ final class StringUTF16 {
         return result;
     }
 
-    @IntrinsicCandidate
     public static void getChars(byte[] value, int srcBegin, int srcEnd, char[] dst, int dstBegin) {
-        // We need a range check here because 'getChar' has no checks
-        if (srcBegin < srcEnd) {
+        int len = srcEnd - srcBegin;
+        if (len > 0) {
             checkBoundsOffCount(srcBegin, srcEnd - srcBegin, value);
-        }
-        for (int i = srcBegin; i < srcEnd; i++) {
-            dst[dstBegin++] = getChar(value, i);
+            String.checkBoundsBeginEnd(dstBegin, dstBegin + len, dst.length);
+            Unsafe.getUnsafe().copyMemory(
+                    value,
+                    Unsafe.ARRAY_BYTE_BASE_OFFSET + ((long) srcBegin << 1),
+                    dst,
+                    Unsafe.ARRAY_CHAR_BASE_OFFSET + ((long) dstBegin << 1),
+                    (long) len << 1);
         }
     }
 

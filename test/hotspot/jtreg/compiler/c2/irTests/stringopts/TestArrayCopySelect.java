@@ -81,15 +81,6 @@ public class TestArrayCopySelect {
 
     @Test
     @Warmup(10000)
-    @IR(applyIf = {"UseCompactObjectHeaders", "false"},
-        counts = {IRNode.CALL_OF, "arrayof_jshort_disjoint_arraycopy", ">0"})
-    static void testStrUGetCharsAligned() {
-        // Exercise the StringUTF16.getChars API
-        output_arrU = input_strU.toCharArray();
-    }
-
-    @Test
-    @Warmup(10000)
     @IR(applyIf = {"UseCompactObjectHeaders", "true"},
         counts = {IRNode.CALL_OF, "arrayof_jshort_disjoint_arraycopy", "0"})
     static void testStrUGetCharsUnAligned() {
