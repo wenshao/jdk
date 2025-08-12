@@ -72,18 +72,15 @@ import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 import static java.time.temporal.ChronoField.YEAR;
 import static java.time.temporal.ChronoField.ERA;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.ref.SoftReference;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.text.ParsePosition;
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.chrono.ChronoLocalDate;
 import java.time.chrono.Chronology;
 import java.time.chrono.Era;
@@ -118,6 +115,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -444,7 +442,7 @@ public final class DateTimeFormatterBuilder {
      */
     public DateTimeFormatterBuilder appendValue(TemporalField field) {
         Objects.requireNonNull(field, "field");
-        appendValue(new NumberPrinterParser(field, 1, 19, SignStyle.NORMAL));
+        appendValue(NumberPrinterParser.of(field, 1, 19, SignStyle.NORMAL));
         return this;
     }
 
@@ -501,7 +499,7 @@ public final class DateTimeFormatterBuilder {
         if (width < 1 || width > 19) {
             throw new IllegalArgumentException("The width must be from 1 to 19 inclusive but was " + width);
         }
-        NumberPrinterParser pp = new NumberPrinterParser(field, width, width, SignStyle.NOT_NEGATIVE);
+        NumberPrinterParser pp = NumberPrinterParser.of(field, width, width, SignStyle.NOT_NEGATIVE);
         appendValue(pp);
         return this;
     }
@@ -554,7 +552,7 @@ public final class DateTimeFormatterBuilder {
             throw new IllegalArgumentException("The maximum width must exceed or equal the minimum width but " +
                     maxWidth + " < " + minWidth);
         }
-        NumberPrinterParser pp = new NumberPrinterParser(field, minWidth, maxWidth, signStyle);
+        NumberPrinterParser pp = NumberPrinterParser.of(field, minWidth, maxWidth, signStyle);
         appendValue(pp);
         return this;
     }
@@ -2464,7 +2462,6 @@ public final class DateTimeFormatterBuilder {
      * variable or shared with any other threads.
      */
     interface DateTimePrinterParser {
-
         /**
          * Prints the date-time object to the buffer.
          * <p>
@@ -2502,8 +2499,32 @@ public final class DateTimeFormatterBuilder {
      * Composite printer and parser.
      */
     static final class CompositePrinterParser implements DateTimePrinterParser {
+        static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+        static final MethodHandle
+                MH_format,
+                MH_formatNumber,
+                MH_false;
+
+        static {
+            try {
+                MethodType methodType = MethodType.methodType(boolean.class, DateTimePrintContext.class, StringBuilder.class);
+                MH_format = LOOKUP.findVirtual(DateTimePrinterParser.class, "format", methodType);
+                MH_formatNumber = LOOKUP.findVirtual(NumberPrinterParser.class, "format", methodType);
+                MH_false = MethodHandles.dropArguments(
+                        MethodHandles.constant(boolean.class, false),
+                        0,
+                        DateTimePrintContext.class,
+                        StringBuilder.class
+                );
+            }
+            catch (IllegalAccessException | NoSuchMethodException e) {
+                throw new Error("init MethodHandlers failed", e);
+            }
+        }
+
         private final DateTimePrinterParser[] printerParsers;
         private final boolean optional;
+        private final MethodHandle formatMH;
 
         private CompositePrinterParser(List<DateTimePrinterParser> printerParsers, boolean optional) {
             this(printerParsers.toArray(new DateTimePrinterParser[0]), optional);
@@ -2512,6 +2533,34 @@ public final class DateTimeFormatterBuilder {
         private CompositePrinterParser(DateTimePrinterParser[] printerParsers, boolean optional) {
             this.printerParsers = printerParsers;
             this.optional = optional;
+            this.formatMH = createFormatMH(printerParsers);
+        }
+
+        static MethodHandle createFormatMH(DateTimePrinterParser[] printerParsers) {
+            MethodHandle formatN;
+            try {
+                MethodHandle lastCall = createParseMH(printerParsers[printerParsers.length - 1]);
+
+                for (int i = printerParsers.length - 2; i >= 0; i--) {
+                    lastCall = MethodHandles.guardWithTest(
+                            createParseMH(printerParsers[i]),
+                            lastCall,
+                            MH_false);
+                }
+
+                formatN = lastCall;
+            }
+            catch (Throwable e) {
+                throw new Error("create formatN failed", e);
+            }
+            return formatN;
+        }
+
+        static MethodHandle createParseMH(DateTimePrinterParser printerParser) {
+            if (printerParser instanceof NumberPrinterParser) {
+                return MH_formatNumber.bindTo(printerParser);
+            }
+            return MH_format.bindTo(printerParser);
         }
 
         /**
@@ -2534,12 +2583,13 @@ public final class DateTimeFormatterBuilder {
                 context.startOptional();
             }
             try {
-                for (DateTimePrinterParser pp : printerParsers) {
-                    if (pp.format(context, buf) == false) {
-                        buf.setLength(length);  // reset buffer
-                        return true;
-                    }
+                boolean result = (boolean) formatMH.invokeExact(context, buf);
+                if (!result) {
+                    buf.setLength(length);  // reset buffer
+                    return true;
                 }
+            } catch (Throwable e) {
+                throw new Error("invoke formatMH failed", e);
             } finally {
                 if (optional) {
                     context.endOptional();
@@ -2859,13 +2909,53 @@ public final class DateTimeFormatterBuilder {
          * @param maxWidth  the maximum field width, from minWidth to 19
          * @param signStyle  the positive/negative sign style, not null
          */
-        private NumberPrinterParser(TemporalField field, int minWidth, int maxWidth, SignStyle signStyle) {
+        static NumberPrinterParser of(TemporalField field, int minWidth, int maxWidth, SignStyle signStyle) {
             // validated by caller
-            this.field = field;
-            this.minWidth = minWidth;
-            this.maxWidth = maxWidth;
-            this.signStyle = signStyle;
-            this.subsequentWidth = 0;
+            if (minWidth == 2 && maxWidth == 2 && signStyle == SignStyle.NOT_NEGATIVE) {
+                if (field instanceof ChronoField chronoField) {
+                    switch (chronoField) {
+                        case MONTH_OF_YEAR:
+                            return FixWidth2PrinterParser.MONTH_PRINTER_PARSER;
+                        case DAY_OF_MONTH:
+                            return FixWidth2PrinterParser.DAY_OF_MONTH_PRINTER_PARSER;
+                        case HOUR_OF_DAY:
+                            return FixWidth2PrinterParser.HOUR_PRINTER_PARSER;
+                        case MINUTE_OF_HOUR:
+                            return FixWidth2PrinterParser.MINUTE_PRINTER_PARSER;
+                        case SECOND_OF_MINUTE:
+                            return FixWidth2PrinterParser.SECOND_PRINTER_PARSER;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            return new NumberPrinterParser(field, minWidth, maxWidth, signStyle, 0);
+        }
+
+        static final class FixWidth2PrinterParser extends NumberPrinterParser {
+            private final ToIntFunction<DateTimePrintContext> valueFunction;
+            FixWidth2PrinterParser(ChronoField field, ToIntFunction<DateTimePrintContext> valueFunction) {
+                super(field, 2, 2, SignStyle.NOT_NEGATIVE, 0);
+                this.valueFunction = valueFunction;
+            }
+
+            @Override
+            public boolean format(DateTimePrintContext context, StringBuilder buf) {
+                int value = valueFunction.applyAsInt(context);
+                if (value >= 0 && value < 10) {
+                    buf.append('0');
+                }
+                buf.append(value);
+                return true;
+            }
+
+            static final FixWidth2PrinterParser
+                    MONTH_PRINTER_PARSER        = new FixWidth2PrinterParser(MONTH_OF_YEAR,    DateTimePrintContext::getMonthValue),
+                    DAY_OF_MONTH_PRINTER_PARSER = new FixWidth2PrinterParser(DAY_OF_MONTH,     DateTimePrintContext::getDayOfMonth),
+                    HOUR_PRINTER_PARSER         = new FixWidth2PrinterParser(HOUR_OF_DAY,      DateTimePrintContext::getHour),
+                    MINUTE_PRINTER_PARSER       = new FixWidth2PrinterParser(MINUTE_OF_HOUR,   DateTimePrintContext::getMinute),
+                    SECOND_PRINTER_PARSER       = new FixWidth2PrinterParser(SECOND_OF_MINUTE, DateTimePrintContext::getSecond);
         }
 
         /**
@@ -2915,38 +3005,30 @@ public final class DateTimeFormatterBuilder {
             if (valueLong == null) {
                 return false;
             }
-            long value = getValue(context, valueLong);
-            DecimalStyle decimalStyle = context.getDecimalStyle();
+            format(buf, context.getDecimalStyle(), getValue(context, valueLong));
+            return true;
+        }
+
+        public void format(StringBuilder buf, DecimalStyle decimalStyle, long value) {
             int size = DecimalDigits.stringSize(value);
             if (value < 0) {
                 size--;
             }
 
             if (size > maxWidth) {
-                throw new DateTimeException("Field " + field +
-                    " cannot be printed as the value " + value +
-                    " exceeds the maximum print width of " + maxWidth);
+                throw maxWidthError(value);
             }
 
-            if (value >= 0) {
-                switch (signStyle) {
-                    case EXCEEDS_PAD:
-                        if (minWidth < 19 && size > minWidth) {
-                            buf.append(decimalStyle.getPositiveSign());
-                        }
-                        break;
-                    case ALWAYS:
-                        buf.append(decimalStyle.getPositiveSign());
-                        break;
-                }
-            } else {
-                switch (signStyle) {
-                    case NORMAL, EXCEEDS_PAD, ALWAYS -> buf.append(decimalStyle.getNegativeSign());
-                    case NOT_NEGATIVE -> throw new DateTimeException("Field " + field +
-                                             " cannot be printed as the value " + value +
-                                             " cannot be negative according to the SignStyle");
-                }
+            switch (signStyle) {
+                case EXCEEDS_PAD  -> printSignExceedsPad(buf, decimalStyle, minWidth, size, value);
+                case ALWAYS       -> printSignAlways(buf, decimalStyle, value);
+                case NORMAL       -> printSignNormal(buf, decimalStyle, value);
+                case NOT_NEGATIVE -> notNegative(value);
             }
+            printValue(buf, decimalStyle, size, value);
+        }
+
+        protected final void printValue(StringBuilder buf, DecimalStyle decimalStyle, int size, long value) {
             char zeroDigit = decimalStyle.getZeroDigit();
             int zeros = minWidth - size;
             if (zeros > 0) {
@@ -2958,7 +3040,46 @@ public final class DateTimeFormatterBuilder {
                 String str = value == Long.MIN_VALUE ? "9223372036854775808" : Long.toString(Math.abs(value));
                 buf.append(decimalStyle.convertNumberToI18N(str));
             }
-            return true;
+        }
+
+        final void printSignExceedsPad(StringBuilder buf, DecimalStyle decimalStyle, int minWidth, int size, long value) {
+            if (value >= 0) {
+                if (minWidth < 19 && size > minWidth) {
+                    buf.append(decimalStyle.getPositiveSign());
+                }
+            } else {
+                buf.append(decimalStyle.getNegativeSign());
+            }
+        }
+
+        final void printSignNormal(StringBuilder buf, DecimalStyle decimalStyle, long value) {
+            if (value < 0) {
+                buf.append(decimalStyle.getNegativeSign());
+            }
+        }
+
+        final void printSignAlways(StringBuilder buf, DecimalStyle decimalStyle, long value) {
+            buf.append(
+                    value >= 0 ? decimalStyle.getPositiveSign() : decimalStyle.getNegativeSign()
+            );
+        }
+
+        final void notNegative(long value) {
+            if (value < 0) {
+                negateFieldError(value);
+            }
+        }
+
+        final DateTimeException maxWidthError(long value) {
+            return new DateTimeException("Field " + field +
+                    " cannot be printed as the value " + value +
+                    " exceeds the maximum print width of " + maxWidth);
+        }
+
+        final DateTimeException negateFieldError(long value) {
+            return new DateTimeException("Field " + field +
+                    " cannot be printed as the value " + value +
+                    " cannot be negative according to the SignStyle");
         }
 
         /**
@@ -3766,7 +3887,7 @@ public final class DateTimeFormatterBuilder {
          */
         private NumberPrinterParser numberPrinterParser() {
             if (numberPrinterParser == null) {
-                numberPrinterParser = new NumberPrinterParser(field, 1, 19, SignStyle.NORMAL);
+                numberPrinterParser = NumberPrinterParser.of(field, 1, 19, SignStyle.NORMAL);
             }
             return numberPrinterParser;
         }

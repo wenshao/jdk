@@ -65,10 +65,7 @@ import static java.time.temporal.ChronoField.EPOCH_DAY;
 import static java.time.temporal.ChronoField.INSTANT_SECONDS;
 import static java.time.temporal.ChronoField.OFFSET_SECONDS;
 
-import java.time.DateTimeException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.chrono.ChronoLocalDate;
 import java.time.chrono.Chronology;
 import java.time.chrono.IsoChronology;
@@ -99,6 +96,10 @@ final class DateTimePrintContext {
      * The temporal being output.
      */
     private final TemporalAccessor temporal;
+
+    private final LocalDate localDate;
+    private final LocalTime localTime;
+
     /**
      * The formatter, not null.
      */
@@ -116,8 +117,29 @@ final class DateTimePrintContext {
      */
     DateTimePrintContext(TemporalAccessor temporal, DateTimeFormatter formatter) {
         super();
-        this.temporal = adjust(temporal, formatter);
+        temporal = adjust(temporal, formatter);
+        this.temporal = temporal;
         this.formatter = formatter;
+        LocalDate localDate = null;
+        LocalTime localTime = null;
+        if (temporal instanceof LocalDate) {
+            localDate = (LocalDate) temporal;
+        } else if (temporal instanceof LocalTime) {
+            localTime = (LocalTime) temporal;
+        } else if (temporal instanceof LocalDateTime localDateTime) {
+            localDate = localDateTime.toLocalDate();
+            localTime = localDateTime.toLocalTime();
+        } else if (temporal instanceof OffsetDateTime odt) {
+            localDate = odt.toLocalDate();
+            localTime = odt.toLocalTime();
+        } else if (temporal instanceof OffsetTime) {
+            localTime = ((OffsetTime) temporal).toLocalTime();
+        } else if (temporal instanceof ZonedDateTime zdt) {
+            localDate = zdt.toLocalDate();
+            localTime = zdt.toLocalTime();
+        }
+        this.localDate = localDate;
+        this.localTime = localTime;
     }
 
     /**
@@ -397,6 +419,34 @@ final class DateTimePrintContext {
             return null;
         }
         return temporal.getLong(field);
+    }
+
+    public int getIntValue(TemporalField field) {
+        return temporal.get(field);
+    }
+    public int getYear() {
+        return localDate != null ? localDate.getYear() : temporal.get(ChronoField.YEAR);
+    }
+    public int getMonthValue() {
+        return localDate != null ? localDate.getMonthValue() : temporal.get(ChronoField.MONTH_OF_YEAR);
+    }
+    public int getDayOfYear() {
+        return localDate != null ? localDate.getDayOfYear() : temporal.get(ChronoField.DAY_OF_YEAR);
+    }
+    public int getDayOfMonth() {
+        return localDate != null ? localDate.getDayOfMonth() : temporal.get(ChronoField.DAY_OF_MONTH);
+    }
+    public int getHour() {
+        return localTime != null ? localTime.getHour() : temporal.get(ChronoField.HOUR_OF_DAY);
+    }
+    public int getMinute() {
+        return localTime != null ? localTime.getMinute() : temporal.get(ChronoField.MINUTE_OF_HOUR);
+    }
+    public int getSecond() {
+        return localTime != null ? localTime.getSecond() : temporal.get(ChronoField.SECOND_OF_MINUTE);
+    }
+    public int getNano() {
+        return localTime != null ? localTime.getNano() : temporal.get(ChronoField.NANO_OF_SECOND);
     }
 
     //-----------------------------------------------------------------------
