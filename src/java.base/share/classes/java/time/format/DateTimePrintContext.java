@@ -427,6 +427,10 @@ final class DateTimePrintContext {
     public int getYear() {
         return localDate != null ? localDate.getYear() : temporal.get(ChronoField.YEAR);
     }
+    public int getYearOfEra() {
+        int year = getYear();
+        return (year >= 1 ? year : 1 - year);
+    }
     public int getMonthValue() {
         return localDate != null ? localDate.getMonthValue() : temporal.get(ChronoField.MONTH_OF_YEAR);
     }
@@ -447,6 +451,16 @@ final class DateTimePrintContext {
     }
     public int getNano() {
         return localTime != null ? localTime.getNano() : temporal.get(ChronoField.NANO_OF_SECOND);
+    }
+
+    public boolean isSupported(ChronoField field) {
+        if (field.isTimeBased()) {
+            return localTime != null;
+        }
+        if (field.isDateBased()) {
+            return localDate != null;
+        }
+        return temporal.isSupported(field);
     }
 
     //-----------------------------------------------------------------------

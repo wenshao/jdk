@@ -2144,6 +2144,10 @@ public final class System {
                 return String.newStringUTF8NoRepl(bytes, off, len, true);
             }
 
+            public void appendTwoDigitNumber(StringBuilder buf, int v) {
+                buf.appendTwoDigitNumber(v);
+            }
+
             public byte[] getBytesUTF8NoRepl(String s) {
                 return String.getBytesUTF8NoRepl(s);
             }

@@ -61,20 +61,6 @@
  */
 package java.time.format;
 
-import static java.time.temporal.ChronoField.DAY_OF_MONTH;
-import static java.time.temporal.ChronoField.HOUR_OF_DAY;
-import static java.time.temporal.ChronoField.INSTANT_SECONDS;
-import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
-import static java.time.temporal.ChronoField.MONTH_OF_YEAR;
-import static java.time.temporal.ChronoField.NANO_OF_SECOND;
-import static java.time.temporal.ChronoField.OFFSET_SECONDS;
-import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
-import static java.time.temporal.ChronoField.YEAR;
-import static java.time.temporal.ChronoField.ERA;
-
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.ref.SoftReference;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -115,10 +101,13 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiPredicate;
 import java.util.function.ToIntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.util.DateTimeHelper;
 import jdk.internal.util.DecimalDigits;
 
@@ -127,6 +116,8 @@ import sun.util.locale.provider.CalendarDataUtility;
 import sun.util.locale.provider.LocaleProviderAdapter;
 import sun.util.locale.provider.LocaleResources;
 import sun.util.locale.provider.TimeZoneNameUtility;
+
+import static java.time.temporal.ChronoField.*;
 
 /**
  * Builder to create date-time formatters.
@@ -160,6 +151,8 @@ import sun.util.locale.provider.TimeZoneNameUtility;
  * @since 1.8
  */
 public final class DateTimeFormatterBuilder {
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+
     /**
      * Query for a time-zone that is region-only.
      */
@@ -748,9 +741,9 @@ public final class DateTimeFormatterBuilder {
         if (field == NANO_OF_SECOND) {
             if (minWidth == maxWidth && decimalPoint == false) {
                 // adjacent parsing
-                appendValue(new NanosPrinterParser(minWidth, maxWidth, decimalPoint));
+                appendValue(NanosPrinterParser.of(minWidth, maxWidth, decimalPoint));
             } else {
-                appendInternal(new NanosPrinterParser(minWidth, maxWidth, decimalPoint));
+                appendInternal(NanosPrinterParser.of(minWidth, maxWidth, decimalPoint));
             }
         } else {
             if (minWidth == maxWidth && decimalPoint == false) {
@@ -2499,32 +2492,9 @@ public final class DateTimeFormatterBuilder {
      * Composite printer and parser.
      */
     static final class CompositePrinterParser implements DateTimePrinterParser {
-        static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-        static final MethodHandle
-                MH_format,
-                MH_formatNumber,
-                MH_false;
-
-        static {
-            try {
-                MethodType methodType = MethodType.methodType(boolean.class, DateTimePrintContext.class, StringBuilder.class);
-                MH_format = LOOKUP.findVirtual(DateTimePrinterParser.class, "format", methodType);
-                MH_formatNumber = LOOKUP.findVirtual(NumberPrinterParser.class, "format", methodType);
-                MH_false = MethodHandles.dropArguments(
-                        MethodHandles.constant(boolean.class, false),
-                        0,
-                        DateTimePrintContext.class,
-                        StringBuilder.class
-                );
-            }
-            catch (IllegalAccessException | NoSuchMethodException e) {
-                throw new Error("init MethodHandlers failed", e);
-            }
-        }
-
         private final DateTimePrinterParser[] printerParsers;
         private final boolean optional;
-        private final MethodHandle formatMH;
+        private final BiPredicate<DateTimePrintContext, StringBuilder> formatter;
 
         private CompositePrinterParser(List<DateTimePrinterParser> printerParsers, boolean optional) {
             this(printerParsers.toArray(new DateTimePrinterParser[0]), optional);
@@ -2533,34 +2503,155 @@ public final class DateTimeFormatterBuilder {
         private CompositePrinterParser(DateTimePrinterParser[] printerParsers, boolean optional) {
             this.printerParsers = printerParsers;
             this.optional = optional;
-            this.formatMH = createFormatMH(printerParsers);
+            this.formatter = createFormatter(printerParsers);
         }
 
-        static MethodHandle createFormatMH(DateTimePrinterParser[] printerParsers) {
-            MethodHandle formatN;
-            try {
-                MethodHandle lastCall = createParseMH(printerParsers[printerParsers.length - 1]);
-
-                for (int i = printerParsers.length - 2; i >= 0; i--) {
-                    lastCall = MethodHandles.guardWithTest(
-                            createParseMH(printerParsers[i]),
-                            lastCall,
-                            MH_false);
-                }
-
-                formatN = lastCall;
-            }
-            catch (Throwable e) {
-                throw new Error("create formatN failed", e);
-            }
-            return formatN;
-        }
-
-        static MethodHandle createParseMH(DateTimePrinterParser printerParser) {
-            if (printerParser instanceof NumberPrinterParser) {
-                return MH_formatNumber.bindTo(printerParser);
-            }
-            return MH_format.bindTo(printerParser);
+        static BiPredicate<DateTimePrintContext, StringBuilder> createFormatter(DateTimePrinterParser[] printerParsers) {
+            int length = printerParsers.length;
+            return switch (length) {
+                case 1 -> printerParsers[0]::format;
+                case 2 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf);
+                case 3 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf);
+                case 4 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf);
+                case 5 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf);
+                case 6 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf);
+                case 7 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf);
+                case 8 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf)
+                        && printerParsers[7].format(context, buf);
+                case 9 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf)
+                        && printerParsers[7].format(context, buf)
+                        && printerParsers[8].format(context, buf);
+                case 10 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf)
+                        && printerParsers[7].format(context, buf)
+                        && printerParsers[8].format(context, buf)
+                        && printerParsers[9].format(context, buf);
+                case 11 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf)
+                        && printerParsers[7].format(context, buf)
+                        && printerParsers[8].format(context, buf)
+                        && printerParsers[9].format(context, buf)
+                        && printerParsers[10].format(context, buf);
+                case 12 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf)
+                        && printerParsers[7].format(context, buf)
+                        && printerParsers[8].format(context, buf)
+                        && printerParsers[9].format(context, buf)
+                        && printerParsers[10].format(context, buf)
+                        && printerParsers[11].format(context, buf);
+                case 13 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf)
+                        && printerParsers[7].format(context, buf)
+                        && printerParsers[8].format(context, buf)
+                        && printerParsers[9].format(context, buf)
+                        && printerParsers[10].format(context, buf)
+                        && printerParsers[11].format(context, buf)
+                        && printerParsers[12].format(context, buf);
+                case 14 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf)
+                        && printerParsers[7].format(context, buf)
+                        && printerParsers[8].format(context, buf)
+                        && printerParsers[9].format(context, buf)
+                        && printerParsers[10].format(context, buf)
+                        && printerParsers[11].format(context, buf)
+                        && printerParsers[12].format(context, buf)
+                        && printerParsers[13].format(context, buf);
+                case 15 -> (context, buf)
+                        -> printerParsers[0].format(context, buf)
+                        && printerParsers[1].format(context, buf)
+                        && printerParsers[2].format(context, buf)
+                        && printerParsers[3].format(context, buf)
+                        && printerParsers[4].format(context, buf)
+                        && printerParsers[5].format(context, buf)
+                        && printerParsers[6].format(context, buf)
+                        && printerParsers[7].format(context, buf)
+                        && printerParsers[8].format(context, buf)
+                        && printerParsers[9].format(context, buf)
+                        && printerParsers[10].format(context, buf)
+                        && printerParsers[11].format(context, buf)
+                        && printerParsers[12].format(context, buf)
+                        && printerParsers[13].format(context, buf)
+                        && printerParsers[14].format(context, buf);
+                default -> (context, buf) -> {
+                    for (DateTimePrinterParser pp : printerParsers) {
+                        if (!pp.format(context, buf)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                };
+            };
         }
 
         /**
@@ -2583,13 +2674,11 @@ public final class DateTimeFormatterBuilder {
                 context.startOptional();
             }
             try {
-                boolean result = (boolean) formatMH.invokeExact(context, buf);
+                boolean result = formatter.test(context, buf);
                 if (!result) {
                     buf.setLength(length);  // reset buffer
                     return true;
                 }
-            } catch (Throwable e) {
-                throw new Error("invoke formatMH failed", e);
             } finally {
                 if (optional) {
                     context.endOptional();
@@ -2928,25 +3017,68 @@ public final class DateTimeFormatterBuilder {
                             break;
                     }
                 }
+            } else if (minWidth == 4 && maxWidth == 19 && signStyle == SignStyle.EXCEEDS_PAD) {
+                if (field instanceof ChronoField chronoField) {
+                    switch (chronoField) {
+                        case YEAR:
+                            return YearFixWidth4ExceedsPadPrinterParser.YEAR_PRINTER_PARSER;
+                        case YEAR_OF_ERA:
+                            return YearFixWidth4ExceedsPadPrinterParser.YEAR_OF_ERA_PRINTER_PARSER;
+                        default:
+                            break;
+                    }
+                }
             }
 
             return new NumberPrinterParser(field, minWidth, maxWidth, signStyle, 0);
         }
 
-        static final class FixWidth2PrinterParser extends NumberPrinterParser {
+        static final class YearFixWidth4ExceedsPadPrinterParser extends NumberPrinterParser {
+            final ChronoField field;
             private final ToIntFunction<DateTimePrintContext> valueFunction;
-            FixWidth2PrinterParser(ChronoField field, ToIntFunction<DateTimePrintContext> valueFunction) {
-                super(field, 2, 2, SignStyle.NOT_NEGATIVE, 0);
+            YearFixWidth4ExceedsPadPrinterParser(ChronoField field, ToIntFunction<DateTimePrintContext> valueFunction) {
+                super(field, 4, 19, SignStyle.EXCEEDS_PAD, 0);
                 this.valueFunction = valueFunction;
+                this.field = field;
             }
 
             @Override
             public boolean format(DateTimePrintContext context, StringBuilder buf) {
-                int value = valueFunction.applyAsInt(context);
-                if (value >= 0 && value < 10) {
-                    buf.append('0');
+                if (!context.isSupported(field)) {
+                    return false;
                 }
-                buf.append(value);
+                int value = valueFunction.applyAsInt(context);
+                if (value < 0) {
+                    buf.append('-');
+                    value = -value;
+                }
+                int value2 = value / 100;
+                JLA.appendTwoDigitNumber(buf, value / 100);
+                JLA.appendTwoDigitNumber(buf, value - value2 * 100);
+                return true;
+            }
+
+            static final YearFixWidth4ExceedsPadPrinterParser
+                    YEAR_PRINTER_PARSER         = new YearFixWidth4ExceedsPadPrinterParser(YEAR,        DateTimePrintContext::getYear),
+                    YEAR_OF_ERA_PRINTER_PARSER  = new YearFixWidth4ExceedsPadPrinterParser(YEAR_OF_ERA, DateTimePrintContext::getYearOfEra);
+        }
+
+        static final class FixWidth2PrinterParser extends NumberPrinterParser {
+            final ChronoField field;
+            private final ToIntFunction<DateTimePrintContext> valueFunction;
+            FixWidth2PrinterParser(ChronoField field, ToIntFunction<DateTimePrintContext> valueFunction) {
+                super(field, 2, 2, SignStyle.NOT_NEGATIVE, 0);
+                this.valueFunction = valueFunction;
+                this.field = field;
+            }
+
+            @Override
+            public boolean format(DateTimePrintContext context, StringBuilder buf) {
+                if (!context.isSupported(field)) {
+                    return false;
+                }
+                int value = valueFunction.applyAsInt(context);
+                JLA.appendTwoDigitNumber(buf, value);
                 return true;
             }
 
@@ -3397,7 +3529,7 @@ public final class DateTimeFormatterBuilder {
     /**
      * Prints and parses a NANO_OF_SECOND field with optional padding.
      */
-    static final class NanosPrinterParser extends NumberPrinterParser {
+    static class NanosPrinterParser extends NumberPrinterParser {
         private final boolean decimalPoint;
 
         /**
@@ -3407,8 +3539,7 @@ public final class DateTimeFormatterBuilder {
          * @param maxWidth  the maximum width to output, from 0 to 9
          * @param decimalPoint  whether to output the localized decimal point symbol
          */
-        private NanosPrinterParser(int minWidth, int maxWidth, boolean decimalPoint) {
-            this(minWidth, maxWidth, decimalPoint, 0);
+        private static NanosPrinterParser of(int minWidth, int maxWidth, boolean decimalPoint) {
             if (minWidth < 0 || minWidth > 9) {
                 throw new IllegalArgumentException("Minimum width must be from 0 to 9 inclusive but was " + minWidth);
             }
@@ -3419,7 +3550,33 @@ public final class DateTimeFormatterBuilder {
                 throw new IllegalArgumentException("Maximum width must exceed or equal the minimum width but " +
                         maxWidth + " < " + minWidth);
             }
+            if (minWidth == 3 && maxWidth == 3 && !decimalPoint) {
+                return FixWidth3PrinterParser;
+            }
+            return new NanosPrinterParser(minWidth, maxWidth, decimalPoint, 0);
         }
+
+        static final NanosPrinterParser FixWidth3PrinterParser = new NanosPrinterParser(3, 3, false, 0) {
+            @Override
+            public boolean format(DateTimePrintContext context, StringBuilder buf) {
+                if (!context.isSupported(NANO_OF_SECOND)) {
+                    return false;
+                }
+                int val = context.getNano() / 1000000;
+                DecimalStyle decimalStyle = context.getDecimalStyle();
+                char zero = decimalStyle.getZeroDigit();
+                if (val < 100) {
+                    int zeros = val < 10 ? 2 : 1;
+                    buf.repeat(zero, zeros);
+                }
+                if (zero == '0') {
+                    buf.append(val);
+                } else {
+                    buf.append(decimalStyle.convertNumberToI18N(Integer.toString(val)));
+                }
+                return true;
+            }
+        };
 
         /**
          * Constructor.
@@ -3487,10 +3644,7 @@ public final class DateTimeFormatterBuilder {
 
         @Override
         public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            Long value = context.getValue(field);
-            if (value == null) {
-                return false;
-            }
+            int value = context.getNano();
             int val = field.range().checkValidIntValue(value, field);
             DecimalStyle decimalStyle = context.getDecimalStyle();
             int stringSize = DecimalDigits.stringSize(val);
