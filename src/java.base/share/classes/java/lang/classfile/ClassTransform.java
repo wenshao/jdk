@@ -50,7 +50,7 @@ public non-sealed interface ClassTransform
     /**
      * A class transform that passes all elements to the builder.
      */
-    static final ClassTransform ACCEPT_ALL = new ClassTransform() {
+    ClassTransform ACCEPT_ALL = new ClassTransform() {
         @Override
         public void accept(ClassBuilder builder, ClassElement element) {
             builder.with(element);

@@ -82,7 +82,7 @@ public sealed interface ClassSignature
      * @param superclassSignature the superclass
      * @param superinterfaceSignatures the interfaces
      */
-    public static ClassSignature of(Signature.ClassTypeSig superclassSignature,
+    static ClassSignature of(Signature.ClassTypeSig superclassSignature,
                                     Signature.ClassTypeSig... superinterfaceSignatures) {
         return of(List.of(), superclassSignature, superinterfaceSignatures);
     }
@@ -93,7 +93,7 @@ public sealed interface ClassSignature
      * @param superclassSignature the superclass
      * @param superinterfaceSignatures the interfaces
      */
-    public static ClassSignature of(List<Signature.TypeParam> typeParameters,
+    static ClassSignature of(List<Signature.TypeParam> typeParameters,
                                     Signature.ClassTypeSig superclassSignature,
                                     Signature.ClassTypeSig... superinterfaceSignatures) {
         return new SignaturesImpl.ClassSignatureImpl(
@@ -109,7 +109,7 @@ public sealed interface ClassSignature
      * @return class signature
      * @throws IllegalArgumentException if the string is not a valid class signature string
      */
-    public static ClassSignature parseFrom(String classSignature) {
+    static ClassSignature parseFrom(String classSignature) {
         return new SignaturesImpl(classSignature).parseClassSignature();
     }
 }
