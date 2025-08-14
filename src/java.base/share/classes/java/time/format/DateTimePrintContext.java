@@ -90,36 +90,10 @@ import java.util.Objects;
  *
  * @since 1.8
  */
-final class DateTimePrintContext {
+record DateTimePrintContext(TemporalAccessor temporal, DateTimeFormatter formatter, LocalDate localDate, LocalTime localTime) {
 
-    /**
-     * The temporal being output.
-     */
-    private final TemporalAccessor temporal;
-
-    private final LocalDate localDate;
-    private final LocalTime localTime;
-
-    /**
-     * The formatter, not null.
-     */
-    private final DateTimeFormatter formatter;
-    /**
-     * Whether the current formatter is optional.
-     */
-    private int optional;
-
-    /**
-     * Creates a new instance of the context.
-     *
-     * @param temporal  the temporal object being output, not null
-     * @param formatter  the formatter controlling the format, not null
-     */
-    DateTimePrintContext(TemporalAccessor temporal, DateTimeFormatter formatter) {
-        super();
+    public static DateTimePrintContext of(TemporalAccessor temporal, DateTimeFormatter formatter) {
         temporal = adjust(temporal, formatter);
-        this.temporal = temporal;
-        this.formatter = formatter;
         LocalDate localDate = null;
         LocalTime localTime = null;
         if (temporal instanceof LocalDate) {
@@ -138,8 +112,7 @@ final class DateTimePrintContext {
             localDate = zdt.toLocalDate();
             localTime = zdt.toLocalTime();
         }
-        this.localDate = localDate;
-        this.localTime = localTime;
+        return new DateTimePrintContext(temporal, formatter, localDate, localTime);
     }
 
     /**
@@ -155,7 +128,7 @@ final class DateTimePrintContext {
      * @implNote Optimizes for the common case where formatters don't specify chronology/time-zone
      *           by avoiding unnecessary processing. Most formatters have null for these properties.
      */
-    private static TemporalAccessor adjust(final TemporalAccessor temporal, DateTimeFormatter formatter) {
+    static TemporalAccessor adjust(final TemporalAccessor temporal, DateTimeFormatter formatter) {
         // normal case first (early return is an optimization)
         Chronology overrideChrono = formatter.getChronology();
         ZoneId overrideZone = formatter.getZone();
@@ -379,14 +352,12 @@ final class DateTimePrintContext {
      * Starts the printing of an optional segment of the input.
      */
     void startOptional() {
-        this.optional++;
     }
 
     /**
      * Ends the printing of an optional segment of the input.
      */
     void endOptional() {
-        this.optional--;
     }
 
     /**
@@ -396,9 +367,9 @@ final class DateTimePrintContext {
      * @return the result, null if not found and optional is true
      * @throws DateTimeException if the type is not available and the section is not optional
      */
-    <R> R getValue(TemporalQuery<R> query) {
+    <R> R getValue(TemporalQuery<R> query, boolean optional) {
         R result = temporal.query(query);
-        if (result == null && optional == 0) {
+        if (result == null && !optional) {
             throw new DateTimeException("Unable to extract " +
                     query + " from temporal " + temporal);
         }
@@ -414,8 +385,8 @@ final class DateTimePrintContext {
      * @return the value, null if not found and optional is true
      * @throws DateTimeException if the field is not available and the section is not optional
      */
-    Long getValue(TemporalField field) {
-        if (optional > 0 && !temporal.isSupported(field)) {
+    Long getValue(TemporalField field, boolean optional) {
+        if (optional && !temporal.isSupported(field)) {
             return null;
         }
         return temporal.getLong(field);

@@ -1900,13 +1900,13 @@ public final class DateTimeFormatter {
         Objects.requireNonNull(temporal, "temporal");
         Objects.requireNonNull(appendable, "appendable");
         try {
-            DateTimePrintContext context = new DateTimePrintContext(temporal, this);
+            DateTimePrintContext context = DateTimePrintContext.of(temporal, this);
             if (appendable instanceof StringBuilder) {
-                printerParser.format(context, (StringBuilder) appendable);
+                printerParser.format(context, (StringBuilder) appendable, false);
             } else {
                 // buffer output to avoid writing to appendable in case of error
                 StringBuilder buf = new StringBuilder(32);
-                printerParser.format(context, buf);
+                printerParser.format(context, buf, false);
                 appendable.append(buf);
             }
         } catch (IOException ex) {

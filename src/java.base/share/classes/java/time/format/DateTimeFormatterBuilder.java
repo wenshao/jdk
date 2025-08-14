@@ -2460,7 +2460,7 @@ public final class DateTimeFormatterBuilder {
          * @return false if unable to query the value from the date-time, true otherwise
          * @throws DateTimeException if the date-time cannot be printed successfully
          */
-        boolean format(DateTimePrintContext context, StringBuilder buf);
+        boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional);
     }
 
     /**
@@ -2517,142 +2517,142 @@ public final class DateTimeFormatterBuilder {
             int length = printerParsers.length;
             return switch (length) {
                 case 1 -> printerParsers[0]::format;
-                case 2 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf);
-                case 3 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf);
-                case 4 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf);
-                case 5 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf);
-                case 6 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf);
-                case 7 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf);
-                case 8 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf)
-                        && printerParsers[7].format(context, buf);
-                case 9 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf)
-                        && printerParsers[7].format(context, buf)
-                        && printerParsers[8].format(context, buf);
-                case 10 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf)
-                        && printerParsers[7].format(context, buf)
-                        && printerParsers[8].format(context, buf)
-                        && printerParsers[9].format(context, buf);
-                case 11 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf)
-                        && printerParsers[7].format(context, buf)
-                        && printerParsers[8].format(context, buf)
-                        && printerParsers[9].format(context, buf)
-                        && printerParsers[10].format(context, buf);
-                case 12 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf)
-                        && printerParsers[7].format(context, buf)
-                        && printerParsers[8].format(context, buf)
-                        && printerParsers[9].format(context, buf)
-                        && printerParsers[10].format(context, buf)
-                        && printerParsers[11].format(context, buf);
-                case 13 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf)
-                        && printerParsers[7].format(context, buf)
-                        && printerParsers[8].format(context, buf)
-                        && printerParsers[9].format(context, buf)
-                        && printerParsers[10].format(context, buf)
-                        && printerParsers[11].format(context, buf)
-                        && printerParsers[12].format(context, buf);
-                case 14 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf)
-                        && printerParsers[7].format(context, buf)
-                        && printerParsers[8].format(context, buf)
-                        && printerParsers[9].format(context, buf)
-                        && printerParsers[10].format(context, buf)
-                        && printerParsers[11].format(context, buf)
-                        && printerParsers[12].format(context, buf)
-                        && printerParsers[13].format(context, buf);
-                case 15 -> (context, buf)
-                        -> printerParsers[0].format(context, buf)
-                        && printerParsers[1].format(context, buf)
-                        && printerParsers[2].format(context, buf)
-                        && printerParsers[3].format(context, buf)
-                        && printerParsers[4].format(context, buf)
-                        && printerParsers[5].format(context, buf)
-                        && printerParsers[6].format(context, buf)
-                        && printerParsers[7].format(context, buf)
-                        && printerParsers[8].format(context, buf)
-                        && printerParsers[9].format(context, buf)
-                        && printerParsers[10].format(context, buf)
-                        && printerParsers[11].format(context, buf)
-                        && printerParsers[12].format(context, buf)
-                        && printerParsers[13].format(context, buf)
-                        && printerParsers[14].format(context, buf);
-                default -> (context, buf) -> {
+                case 2 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional);
+                case 3 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional);
+                case 4 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional);
+                case 5 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional);
+                case 6 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional);
+                case 7 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional);
+                case 8 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional)
+                        && printerParsers[7].format(context, buf, optional);
+                case 9 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional)
+                        && printerParsers[7].format(context, buf, optional)
+                        && printerParsers[8].format(context, buf, optional);
+                case 10 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional)
+                        && printerParsers[7].format(context, buf, optional)
+                        && printerParsers[8].format(context, buf, optional)
+                        && printerParsers[9].format(context, buf, optional);
+                case 11 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional)
+                        && printerParsers[7].format(context, buf, optional)
+                        && printerParsers[8].format(context, buf, optional)
+                        && printerParsers[9].format(context, buf, optional)
+                        && printerParsers[10].format(context, buf, optional);
+                case 12 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional)
+                        && printerParsers[7].format(context, buf, optional)
+                        && printerParsers[8].format(context, buf, optional)
+                        && printerParsers[9].format(context, buf, optional)
+                        && printerParsers[10].format(context, buf, optional)
+                        && printerParsers[11].format(context, buf, optional);
+                case 13 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional)
+                        && printerParsers[7].format(context, buf, optional)
+                        && printerParsers[8].format(context, buf, optional)
+                        && printerParsers[9].format(context, buf, optional)
+                        && printerParsers[10].format(context, buf, optional)
+                        && printerParsers[11].format(context, buf, optional)
+                        && printerParsers[12].format(context, buf, optional);
+                case 14 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional)
+                        && printerParsers[7].format(context, buf, optional)
+                        && printerParsers[8].format(context, buf, optional)
+                        && printerParsers[9].format(context, buf, optional)
+                        && printerParsers[10].format(context, buf, optional)
+                        && printerParsers[11].format(context, buf, optional)
+                        && printerParsers[12].format(context, buf, optional)
+                        && printerParsers[13].format(context, buf, optional);
+                case 15 -> (context, buf, optional)
+                        -> printerParsers[0].format(context, buf, optional)
+                        && printerParsers[1].format(context, buf, optional)
+                        && printerParsers[2].format(context, buf, optional)
+                        && printerParsers[3].format(context, buf, optional)
+                        && printerParsers[4].format(context, buf, optional)
+                        && printerParsers[5].format(context, buf, optional)
+                        && printerParsers[6].format(context, buf, optional)
+                        && printerParsers[7].format(context, buf, optional)
+                        && printerParsers[8].format(context, buf, optional)
+                        && printerParsers[9].format(context, buf, optional)
+                        && printerParsers[10].format(context, buf, optional)
+                        && printerParsers[11].format(context, buf, optional)
+                        && printerParsers[12].format(context, buf, optional)
+                        && printerParsers[13].format(context, buf, optional)
+                        && printerParsers[14].format(context, buf, optional);
+                default -> (context, buf, optional) -> {
                     for (DateTimePrinterParser pp : printerParsers) {
-                        if (!pp.format(context, buf)) {
+                        if (!pp.format(context, buf, optional)) {
                             return false;
                         }
                     }
@@ -2675,21 +2675,13 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             int length = buf.length();
-            if (optional) {
-                context.startOptional();
-            }
-            try {
-                boolean result = formatter.format(context, buf);
-                if (!result) {
-                    buf.setLength(length);  // reset buffer
-                    return true;
-                }
-            } finally {
-                if (optional) {
-                    context.endOptional();
-                }
+            optional |= this.optional;
+            boolean result = formatter.format(context, buf, optional);
+            if (!result) {
+                buf.setLength(length);  // reset buffer
+                return true;
             }
             return true;
         }
@@ -2897,9 +2889,9 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             int preLen = buf.length();
-            if (printerParser.format(context, buf) == false) {
+            if (printerParser.format(context, buf, optional) == false) {
                 return false;
             }
             int len = buf.length() - preLen;
@@ -2966,7 +2958,7 @@ public final class DateTimeFormatterBuilder {
         LENIENT;
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             return true;  // nothing to do here
         }
 
@@ -3008,7 +3000,7 @@ public final class DateTimeFormatterBuilder {
             this.value = value;
         }
 
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             return true;
         }
 
@@ -3034,7 +3026,7 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             buf.append(literal);
             return true;
         }
@@ -3084,7 +3076,7 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             buf.append(literal);
             return true;
         }
@@ -3190,7 +3182,7 @@ public final class DateTimeFormatterBuilder {
             }
 
             @Override
-            public boolean format(DateTimePrintContext context, StringBuilder buf) {
+            public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
                 if (!context.isSupported(field)) {
                     return false;
                 }
@@ -3220,7 +3212,7 @@ public final class DateTimeFormatterBuilder {
             }
 
             @Override
-            public boolean format(DateTimePrintContext context, StringBuilder buf) {
+            public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
                 if (!context.isSupported(field)) {
                     return false;
                 }
@@ -3279,8 +3271,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            Long valueLong = context.getValue(field);
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            Long valueLong = context.getValue(field, optional);
             if (valueLong == null) {
                 return false;
             }
@@ -3705,7 +3697,7 @@ public final class DateTimeFormatterBuilder {
 
         static final NanosPrinterParser FixWidth3PrinterParser = new NanosPrinterParser(3, 3, false, 0) {
             @Override
-            public boolean format(DateTimePrintContext context, StringBuilder buf) {
+            public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
                 if (!context.isSupported(NANO_OF_SECOND)) {
                     return false;
                 }
@@ -3790,7 +3782,7 @@ public final class DateTimeFormatterBuilder {
         };
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             int value = context.getNano();
             int val = field.range().checkValidIntValue(value, field);
             DecimalStyle decimalStyle = context.getDecimalStyle();
@@ -3976,8 +3968,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            Long value = context.getValue(field);
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            Long value = context.getValue(field, optional);
             if (value == null) {
                 return false;
             }
@@ -4124,8 +4116,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            Long value = context.getValue(field);
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            Long value = context.getValue(field, optional);
             if (value == null) {
                 return false;
             }
@@ -4137,7 +4129,7 @@ public final class DateTimeFormatterBuilder {
                 text = provider.getText(chrono, field, value, textStyle, context.getLocale());
             }
             if (text == null) {
-                return numberPrinterParser().format(context, buf);
+                return numberPrinterParser().format(context, buf, optional);
             }
             buf.append(text);
             return true;
@@ -4219,9 +4211,9 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             // use INSTANT_SECONDS, thus this code is not bound by Instant.MAX
-            Long inSecs = context.getValue(INSTANT_SECONDS);
+            Long inSecs = context.getValue(INSTANT_SECONDS, optional);
             Long inNanos = null;
             if (context.getTemporal().isSupported(NANO_OF_SECOND)) {
                 inNanos = context.getTemporal().getLong(NANO_OF_SECOND);
@@ -4404,8 +4396,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            Long offsetSecs = context.getValue(OFFSET_SECONDS);
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            Long offsetSecs = context.getValue(OFFSET_SECONDS, optional);
             if (offsetSecs == null) {
                 return false;
             }
@@ -4703,8 +4695,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            Long offsetSecs = context.getValue(OFFSET_SECONDS);
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            Long offsetSecs = context.getValue(OFFSET_SECONDS, optional);
             if (offsetSecs == null) {
                 return false;
             }
@@ -4917,8 +4909,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            ZoneId zone = context.getValue(TemporalQueries.zoneId());
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            ZoneId zone = context.getValue(TemporalQueries.zoneId(), optional);
             if (zone == null) {
                 return false;
             }
@@ -5039,8 +5031,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            ZoneId zone = context.getValue(query);
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            ZoneId zone = context.getValue(query, optional);
             if (zone == null) {
                 return false;
             }
@@ -5464,8 +5456,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            Chronology chrono = context.getValue(TemporalQueries.chronology());
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            Chronology chrono = context.getValue(TemporalQueries.chronology(), optional);
             if (chrono == null) {
                 return false;
             }
@@ -5561,9 +5553,9 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
             Chronology chrono = Chronology.from(context.getTemporal());
-            return formatter(context.getLocale(), chrono).toPrinterParser(false).format(context, buf);
+            return formatter(context.getLocale(), chrono).toPrinterParser(false).format(context, buf, optional);
         }
 
         @Override
@@ -5672,8 +5664,8 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            return printerParser(context.getLocale()).format(context, buf);
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            return printerParser(context.getLocale()).format(context, buf, optional);
         }
 
         @Override
@@ -5776,12 +5768,12 @@ public final class DateTimeFormatterBuilder {
         }
 
         @Override
-        public boolean format(DateTimePrintContext context, StringBuilder buf) {
-            Long hod = context.getValue(HOUR_OF_DAY);
+        public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+            Long hod = context.getValue(HOUR_OF_DAY, optional);
             if (hod == null) {
                 return false;
             }
-            Long moh = context.getValue(MINUTE_OF_HOUR);
+            Long moh = context.getValue(MINUTE_OF_HOUR, optional);
             long value = Math.floorMod(hod, 24) * 60 + (moh != null ? Math.floorMod(moh, 60) : 0);
             Locale locale = context.getLocale();
             LocaleStore store = findDayPeriodStore(locale);
