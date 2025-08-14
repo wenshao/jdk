@@ -424,6 +424,38 @@ record DateTimePrintContext(TemporalAccessor temporal, DateTimeFormatter formatt
         return localTime != null ? localTime.getNano() : temporal.get(ChronoField.NANO_OF_SECOND);
     }
 
+    public boolean isSupportYear() {
+        return localDate != null || temporal.isSupported(ChronoField.YEAR);
+    }
+
+    public boolean isSupportYearOfEra() {
+        return localDate != null || temporal.isSupported(ChronoField.YEAR_OF_ERA);
+    }
+
+    public boolean isSupportMonth() {
+        return localDate != null || temporal.isSupported(ChronoField.MONTH_OF_YEAR);
+    }
+
+    public boolean isSupportDayOfMonth() {
+        return localDate != null || temporal.isSupported(ChronoField.DAY_OF_MONTH);
+    }
+
+    public boolean isSupportHour() {
+        return localTime != null || temporal.isSupported(ChronoField.HOUR_OF_DAY);
+    }
+
+    public boolean isSupportMinute() {
+        return localTime != null || temporal.isSupported(ChronoField.MINUTE_OF_HOUR);
+    }
+
+    public boolean isSupportSecond() {
+        return localTime != null || temporal.isSupported(ChronoField.SECOND_OF_MINUTE);
+    }
+
+    public boolean isSupportNano() {
+        return localTime != null || temporal.isSupported(ChronoField.NANO_OF_SECOND);
+    }
+
     public boolean isSupported(ChronoField field) {
         if (field.isTimeBased()) {
             return localTime != null;

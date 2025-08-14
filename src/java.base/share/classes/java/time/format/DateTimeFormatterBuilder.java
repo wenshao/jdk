@@ -3172,21 +3172,33 @@ public final class DateTimeFormatterBuilder {
             return new NumberPrinterParser(field, minWidth, maxWidth, signStyle, 0);
         }
 
-        static final class YearFixWidth4ExceedsPadPrinterParser extends NumberPrinterParser {
-            final ChronoField field;
-            private final ToIntFunction<DateTimePrintContext> valueFunction;
-            YearFixWidth4ExceedsPadPrinterParser(ChronoField field, ToIntFunction<DateTimePrintContext> valueFunction) {
-                super(field, 4, 19, SignStyle.EXCEEDS_PAD, 0);
-                this.valueFunction = valueFunction;
-                this.field = field;
+        static abstract class ChronoFieldNumberPrinterParser extends NumberPrinterParser {
+            protected ChronoFieldNumberPrinterParser(TemporalField field, int minWidth, int maxWidth, SignStyle signStyle) {
+                super(field, minWidth, maxWidth, signStyle, 0);
+            }
+
+            protected abstract boolean isSupported(DateTimePrintContext context);
+            protected abstract int getValue(DateTimePrintContext context);
+
+            @Override
+            public final boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
+                if (!isSupported(context)) {
+                    return false;
+                }
+                printValue(buf, getValue(context));
+                return true;
+            }
+
+            public abstract void printValue(StringBuilder buf, int value);
+        }
+
+        static abstract class YearFixWidth4ExceedsPadPrinterParser extends ChronoFieldNumberPrinterParser {
+            YearFixWidth4ExceedsPadPrinterParser(ChronoField field) {
+                super(field, 4, 19, SignStyle.EXCEEDS_PAD);
             }
 
             @Override
-            public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
-                if (!context.isSupported(field)) {
-                    return false;
-                }
-                int value = valueFunction.applyAsInt(context);
+            public final void printValue(StringBuilder buf, int value) {
                 if (value < 0) {
                     buf.append('-');
                     value = -value;
@@ -3194,39 +3206,66 @@ public final class DateTimeFormatterBuilder {
                 int value2 = value / 100;
                 JLA.appendTwoDigitNumber(buf, value / 100);
                 JLA.appendTwoDigitNumber(buf, value - value2 * 100);
-                return true;
             }
 
             static final YearFixWidth4ExceedsPadPrinterParser
-                    YEAR_PRINTER_PARSER         = new YearFixWidth4ExceedsPadPrinterParser(YEAR,        DateTimePrintContext::getYear),
-                    YEAR_OF_ERA_PRINTER_PARSER  = new YearFixWidth4ExceedsPadPrinterParser(YEAR_OF_ERA, DateTimePrintContext::getYearOfEra);
+                    YEAR_PRINTER_PARSER = new YearFixWidth4ExceedsPadPrinterParser(YEAR) {
+                @Override
+                protected boolean isSupported(DateTimePrintContext context) {return context.isSupportYear();}
+
+                @Override
+                protected int getValue(DateTimePrintContext context) {return context.getYear();}
+            };
+            static final YearFixWidth4ExceedsPadPrinterParser YEAR_OF_ERA_PRINTER_PARSER = new YearFixWidth4ExceedsPadPrinterParser(YEAR_OF_ERA) {
+                @Override
+                protected boolean isSupported(DateTimePrintContext context) {return context.isSupportYearOfEra();}
+
+                @Override
+                protected int getValue(DateTimePrintContext context) {return context.getYearOfEra();}
+            };
         }
 
-        static final class FixWidth2PrinterParser extends NumberPrinterParser {
-            final ChronoField field;
-            private final ToIntFunction<DateTimePrintContext> valueFunction;
-            FixWidth2PrinterParser(ChronoField field, ToIntFunction<DateTimePrintContext> valueFunction) {
-                super(field, 2, 2, SignStyle.NOT_NEGATIVE, 0);
-                this.valueFunction = valueFunction;
-                this.field = field;
+        static abstract class FixWidth2PrinterParser extends ChronoFieldNumberPrinterParser {
+            FixWidth2PrinterParser(ChronoField field) {
+                super(field, 2, 2, SignStyle.NOT_NEGATIVE);
             }
 
             @Override
-            public boolean format(DateTimePrintContext context, StringBuilder buf, boolean optional) {
-                if (!context.isSupported(field)) {
-                    return false;
-                }
-                int value = valueFunction.applyAsInt(context);
+            public final void printValue(StringBuilder buf, int value) {
                 JLA.appendTwoDigitNumber(buf, value);
-                return true;
             }
 
             static final FixWidth2PrinterParser
-                    MONTH_PRINTER_PARSER        = new FixWidth2PrinterParser(MONTH_OF_YEAR,    DateTimePrintContext::getMonthValue),
-                    DAY_OF_MONTH_PRINTER_PARSER = new FixWidth2PrinterParser(DAY_OF_MONTH,     DateTimePrintContext::getDayOfMonth),
-                    HOUR_PRINTER_PARSER         = new FixWidth2PrinterParser(HOUR_OF_DAY,      DateTimePrintContext::getHour),
-                    MINUTE_PRINTER_PARSER       = new FixWidth2PrinterParser(MINUTE_OF_HOUR,   DateTimePrintContext::getMinute),
-                    SECOND_PRINTER_PARSER       = new FixWidth2PrinterParser(SECOND_OF_MINUTE, DateTimePrintContext::getSecond);
+                    MONTH_PRINTER_PARSER = new FixWidth2PrinterParser(MONTH_OF_YEAR) {
+                @Override
+                protected boolean isSupported(DateTimePrintContext context) {return context.isSupportMonth();}
+                @Override
+                protected int getValue(DateTimePrintContext context) {return context.getMonthValue();}
+            };
+            static final FixWidth2PrinterParser DAY_OF_MONTH_PRINTER_PARSER = new FixWidth2PrinterParser(DAY_OF_MONTH) {
+                @Override
+                protected boolean isSupported(DateTimePrintContext context) {return context.isSupportDayOfMonth();}
+                @Override
+                protected int getValue(DateTimePrintContext context) {return context.getDayOfMonth();}
+            };
+            static final FixWidth2PrinterParser HOUR_PRINTER_PARSER = new FixWidth2PrinterParser(HOUR_OF_DAY) {
+                @Override
+                protected boolean isSupported(DateTimePrintContext context) {return context.isSupportDayOfMonth();}
+                @Override
+                protected int getValue(DateTimePrintContext context) {return context.getDayOfMonth();}
+            };
+            static final FixWidth2PrinterParser MINUTE_PRINTER_PARSER = new FixWidth2PrinterParser(MINUTE_OF_HOUR) {
+                @Override
+                protected boolean isSupported(DateTimePrintContext context) {return context.isSupportMinute();}
+                @Override
+                protected int getValue(DateTimePrintContext context) {return context.getMinute();}
+            };
+            static final FixWidth2PrinterParser SECOND_PRINTER_PARSER = new FixWidth2PrinterParser(SECOND_OF_MINUTE) {
+                @Override
+                protected boolean isSupported(DateTimePrintContext context) {return context.isSupportSecond();}
+                @Override
+                protected int getValue(DateTimePrintContext context) {return context.getSecond();}
+            };
         }
 
         /**
