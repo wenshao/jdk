@@ -2428,6 +2428,41 @@ public final class DateTimeFormatterBuilder {
     }
 
     //-----------------------------------------------------------------------
+    interface DateTimeParser {
+        /**
+         * Parses text into date-time information.
+         * <p>
+         * The context holds information to use during the parse.
+         * It is also used to store the parsed date-time information.
+         *
+         * @param context  the context to use and parse into, not null
+         * @param text  the input text to parse, not null
+         * @param position  the position to start parsing at, from 0 to the text length
+         * @return the new parse position, where negative means an error with the
+         *  error position encoded using the complement ~ operator
+         * @throws NullPointerException if the context or text is null
+         * @throws IndexOutOfBoundsException if the position is invalid
+         */
+        int parse(DateTimeParseContext context, CharSequence text, int position);
+    }
+
+    interface DateTimePrinter {
+        /**
+         * Prints the date-time object to the buffer.
+         * <p>
+         * The context holds information to use during the format.
+         * It also contains the date-time information to be printed.
+         * <p>
+         * The buffer must not be mutated beyond the content controlled by the implementation.
+         *
+         * @param context  the context to format using, not null
+         * @param buf  the buffer to append to, not null
+         * @return false if unable to query the value from the date-time, true otherwise
+         * @throws DateTimeException if the date-time cannot be printed successfully
+         */
+        boolean format(DateTimePrintContext context, StringBuilder buf);
+    }
+
     /**
      * Strategy for formatting/parsing date-time information.
      * <p>
@@ -2454,37 +2489,7 @@ public final class DateTimeFormatterBuilder {
      * for each format that occurs. The context must not be stored in an instance
      * variable or shared with any other threads.
      */
-    interface DateTimePrinterParser {
-        /**
-         * Prints the date-time object to the buffer.
-         * <p>
-         * The context holds information to use during the format.
-         * It also contains the date-time information to be printed.
-         * <p>
-         * The buffer must not be mutated beyond the content controlled by the implementation.
-         *
-         * @param context  the context to format using, not null
-         * @param buf  the buffer to append to, not null
-         * @return false if unable to query the value from the date-time, true otherwise
-         * @throws DateTimeException if the date-time cannot be printed successfully
-         */
-        boolean format(DateTimePrintContext context, StringBuilder buf);
-
-        /**
-         * Parses text into date-time information.
-         * <p>
-         * The context holds information to use during the parse.
-         * It is also used to store the parsed date-time information.
-         *
-         * @param context  the context to use and parse into, not null
-         * @param text  the input text to parse, not null
-         * @param position  the position to start parsing at, from 0 to the text length
-         * @return the new parse position, where negative means an error with the
-         *  error position encoded using the complement ~ operator
-         * @throws NullPointerException if the context or text is null
-         * @throws IndexOutOfBoundsException if the position is invalid
-         */
-        int parse(DateTimeParseContext context, CharSequence text, int position);
+    interface DateTimePrinterParser extends DateTimeParser, DateTimePrinter {
     }
 
     //-----------------------------------------------------------------------
@@ -2494,7 +2499,8 @@ public final class DateTimeFormatterBuilder {
     static final class CompositePrinterParser implements DateTimePrinterParser {
         private final DateTimePrinterParser[] printerParsers;
         private final boolean optional;
-        private final BiPredicate<DateTimePrintContext, StringBuilder> formatter;
+        private final DateTimePrinter formatter;
+        private final DateTimeParser parser;
 
         private CompositePrinterParser(List<DateTimePrinterParser> printerParsers, boolean optional) {
             this(printerParsers.toArray(new DateTimePrinterParser[0]), optional);
@@ -2504,9 +2510,10 @@ public final class DateTimeFormatterBuilder {
             this.printerParsers = printerParsers;
             this.optional = optional;
             this.formatter = createFormatter(printerParsers);
+            this.parser = createParser(printerParsers);
         }
 
-        static BiPredicate<DateTimePrintContext, StringBuilder> createFormatter(DateTimePrinterParser[] printerParsers) {
+        static DateTimePrinter createFormatter(DateTimePrinterParser[] printerParsers) {
             int length = printerParsers.length;
             return switch (length) {
                 case 1 -> printerParsers[0]::format;
@@ -2674,7 +2681,7 @@ public final class DateTimeFormatterBuilder {
                 context.startOptional();
             }
             try {
-                boolean result = formatter.test(context, buf);
+                boolean result = formatter.format(context, buf);
                 if (!result) {
                     buf.setLength(length);  // reset buffer
                     return true;
@@ -2691,25 +2698,165 @@ public final class DateTimeFormatterBuilder {
         public int parse(DateTimeParseContext context, CharSequence text, int position) {
             if (optional) {
                 context.startOptional();
-                int pos = position;
-                for (DateTimePrinterParser pp : printerParsers) {
-                    pos = pp.parse(context, text, pos);
-                    if (pos < 0) {
-                        context.endOptional(false);
-                        return position;  // return original position
-                    }
+                int pos = parser.parse(context, text, position);
+                if (pos < 0) {
+                    context.endOptional(false);
+                    return position;  // return original position
                 }
                 context.endOptional(true);
                 return pos;
             } else {
-                for (DateTimePrinterParser pp : printerParsers) {
-                    position = pp.parse(context, text, position);
-                    if (position < 0) {
-                        break;
-                    }
-                }
-                return position;
+                return parser.parse(context, text, position);
             }
+        }
+
+        static DateTimeParser createParser(DateTimePrinterParser[] printerParsers) {
+            return switch (printerParsers.length) {
+                case 1 -> (context, text, position)
+                        -> printerParsers[0].parse(context, text, position);
+                case 2 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                            ? printerParsers[1].parse(context, text, position)
+                            : position;
+                case 3 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        ? printerParsers[2].parse(context, text, position) : position;
+                case 4 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                            && (position = printerParsers[1].parse(context, text, position)) >= 0
+                            && (position = printerParsers[2].parse(context, text, position)) >= 0
+                            ? printerParsers[3].parse(context, text, position) : position;
+                case 5 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        ? printerParsers[4].parse(context, text, position) : position;
+                case 6 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        ? printerParsers[5].parse(context, text, position) : position;
+                case 7 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        ? printerParsers[6].parse(context, text, position) : position;
+                case 8 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        && (position = printerParsers[6].parse(context, text, position)) >= 0
+                        ? printerParsers[7].parse(context, text, position) : position;
+                case 9 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        && (position = printerParsers[6].parse(context, text, position)) >= 0
+                        && (position = printerParsers[7].parse(context, text, position)) >= 0
+                        ? printerParsers[8].parse(context, text, position) : position;
+                case 10 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        && (position = printerParsers[6].parse(context, text, position)) >= 0
+                        && (position = printerParsers[7].parse(context, text, position)) >= 0
+                        && (position = printerParsers[8].parse(context, text, position)) >= 0
+                        ? printerParsers[9].parse(context, text, position) : position;
+                case 11 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        && (position = printerParsers[6].parse(context, text, position)) >= 0
+                        && (position = printerParsers[7].parse(context, text, position)) >= 0
+                        && (position = printerParsers[8].parse(context, text, position)) >= 0
+                        && (position = printerParsers[9].parse(context, text, position)) >= 0
+                        ? printerParsers[10].parse(context, text, position) : position;
+                case 12 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        && (position = printerParsers[6].parse(context, text, position)) >= 0
+                        && (position = printerParsers[7].parse(context, text, position)) >= 0
+                        && (position = printerParsers[8].parse(context, text, position)) >= 0
+                        && (position = printerParsers[9].parse(context, text, position)) >= 0
+                        && (position = printerParsers[10].parse(context, text, position)) >= 0
+                        ? printerParsers[11].parse(context, text, position) : position;
+                case 13 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        && (position = printerParsers[6].parse(context, text, position)) >= 0
+                        && (position = printerParsers[7].parse(context, text, position)) >= 0
+                        && (position = printerParsers[8].parse(context, text, position)) >= 0
+                        && (position = printerParsers[9].parse(context, text, position)) >= 0
+                        && (position = printerParsers[10].parse(context, text, position)) >= 0
+                        && (position = printerParsers[11].parse(context, text, position)) >= 0
+                        ? printerParsers[12].parse(context, text, position) : position;
+                case 14 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        && (position = printerParsers[6].parse(context, text, position)) >= 0
+                        && (position = printerParsers[7].parse(context, text, position)) >= 0
+                        && (position = printerParsers[8].parse(context, text, position)) >= 0
+                        && (position = printerParsers[9].parse(context, text, position)) >= 0
+                        && (position = printerParsers[10].parse(context, text, position)) >= 0
+                        && (position = printerParsers[11].parse(context, text, position)) >= 0
+                        && (position = printerParsers[12].parse(context, text, position)) >= 0
+                        ? printerParsers[13].parse(context, text, position) : position;
+                case 15 -> (context, text, position)
+                        -> (position = printerParsers[0].parse(context, text, position)) >= 0
+                        && (position = printerParsers[1].parse(context, text, position)) >= 0
+                        && (position = printerParsers[2].parse(context, text, position)) >= 0
+                        && (position = printerParsers[3].parse(context, text, position)) >= 0
+                        && (position = printerParsers[4].parse(context, text, position)) >= 0
+                        && (position = printerParsers[5].parse(context, text, position)) >= 0
+                        && (position = printerParsers[6].parse(context, text, position)) >= 0
+                        && (position = printerParsers[7].parse(context, text, position)) >= 0
+                        && (position = printerParsers[8].parse(context, text, position)) >= 0
+                        && (position = printerParsers[9].parse(context, text, position)) >= 0
+                        && (position = printerParsers[10].parse(context, text, position)) >= 0
+                        && (position = printerParsers[11].parse(context, text, position)) >= 0
+                        && (position = printerParsers[12].parse(context, text, position)) >= 0
+                        && (position = printerParsers[13].parse(context, text, position)) >= 0
+                        ? printerParsers[14].parse(context, text, position) : position;
+                default -> (context, text, position) -> {
+                    for (DateTimePrinterParser pp : printerParsers) {
+                        if ((position = pp.parse(context, text, position)) < 0) {
+                            break;
+                        }
+                    }
+                    return position;
+                };
+            };
         }
 
         @Override
