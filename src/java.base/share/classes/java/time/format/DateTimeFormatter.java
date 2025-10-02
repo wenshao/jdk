@@ -2233,13 +2233,7 @@ public final class DateTimeFormatter {
     @Override
     public String toString() {
         String pattern = printerParser.toString();
-        pattern = pattern.startsWith("[") ? pattern : pattern.substring(1, pattern.length() - 1);
-        return pattern;
-        // TODO: Fix tests to not depend on toString()
-//        return "DateTimeFormatter[" + locale +
-//                (chrono != null ? "," + chrono : "") +
-//                (zone != null ? "," + zone : "") +
-//                pattern + "]";
+        return pattern.charAt(0) == '[' ? pattern : pattern.substring(1, pattern.length() - 1);
     }
 
     //-----------------------------------------------------------------------

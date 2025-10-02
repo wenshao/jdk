@@ -2575,15 +2575,12 @@ public final class DateTimeFormatterBuilder {
 
         @Override
         public String toString() {
-            StringBuilder buf = new StringBuilder();
-            if (printerParsers != null) {
-                buf.append(optional ? "[" : "(");
-                for (DateTimePrinterParser pp : printerParsers) {
-                    buf.append(pp);
-                }
-                buf.append(optional ? "]" : ")");
+            var buf = new StringBuilder().append(optional ? '[' : '(');
+            for (DateTimePrinterParser pp : printerParsers) {
+                buf.append(pp);
             }
-            return buf.toString();
+            return buf.append(optional ? ']' : ')')
+                      .toString();
         }
     }
 
