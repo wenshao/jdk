@@ -86,6 +86,8 @@ import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import jdk.internal.vm.annotation.Stable;
+
 import sun.util.locale.provider.CalendarDataUtility;
 import sun.util.locale.provider.LocaleProviderAdapter;
 import sun.util.locale.provider.LocaleResources;
@@ -534,16 +536,18 @@ class DateTimeTextProvider {
         /**
          * Parsable data.
          */
-        private final Map<TextStyle, List<Entry<String, Long>>> parsable;
+        @Stable
+        private final List<Entry<String, Long>>[] parsable;
 
         /**
          * Constructor.
          *
          * @param valueTextMap  the map of values to text to store, assigned and not altered, not null
          */
+        @SuppressWarnings({"unchecked", "rawtypes"})
         LocaleStore(Map<TextStyle, Map<Long, String>> valueTextMap) {
             this.valueTextMap = valueTextMap;
-            Map<TextStyle, List<Entry<String, Long>>> map = new HashMap<>();
+            List<Entry<String, Long>>[] map = new List[TextStyle.values().length + 1];
             List<Entry<String, Long>> allList = new ArrayList<>();
             for (Map.Entry<TextStyle, Map<Long, String>> vtmEntry : valueTextMap.entrySet()) {
                 Map<String, Entry<String, Long>> reverse = new HashMap<>();
@@ -555,9 +559,9 @@ class DateTimeTextProvider {
                 }
                 List<Entry<String, Long>> list = new ArrayList<>(reverse.values());
                 list.sort(COMPARATOR);
-                map.put(vtmEntry.getKey(), list);
+                map[vtmEntry.getKey().ordinal()] = list;
                 allList.addAll(list);
-                map.put(null, allList);
+                map[map.length - 1] = allList;
             }
             allList.sort(COMPARATOR);
             this.parsable = map;
@@ -586,7 +590,7 @@ class DateTimeTextProvider {
          *  null if the style is not parsable
          */
         Iterator<Entry<String, Long>> getTextIterator(TextStyle style) {
-            List<Entry<String, Long>> list = parsable.get(style);
+            List<Entry<String, Long>> list = parsable[style == null ? TextStyle.values().length : style.ordinal()];
             return list != null ? list.iterator() : null;
         }
     }
