@@ -877,19 +877,7 @@ class Field extends AccessibleObject implements Member {
     public void set(Object obj, Object value)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().set(obj, value);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.set(obj, value);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.set(obj, value));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().set(obj, value));
     }
 
     /**
@@ -922,19 +910,7 @@ class Field extends AccessibleObject implements Member {
     public void setBoolean(Object obj, boolean z)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().setBoolean(obj, z);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.setBoolean(obj, z);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.setBoolean(obj, z));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().setBoolean(obj, z));
     }
 
     /**
@@ -967,19 +943,7 @@ class Field extends AccessibleObject implements Member {
     public void setByte(Object obj, byte b)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().setByte(obj, b);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.setByte(obj, b);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.setByte(obj, b));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().setByte(obj, b));
     }
 
     /**
@@ -1012,19 +976,7 @@ class Field extends AccessibleObject implements Member {
     public void setChar(Object obj, char c)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().setChar(obj, c);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.setChar(obj, c);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.setChar(obj, c));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().setChar(obj, c));
     }
 
     /**
@@ -1057,19 +1009,7 @@ class Field extends AccessibleObject implements Member {
     public void setShort(Object obj, short s)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().setShort(obj, s);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.setShort(obj, s);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.setShort(obj, s));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().setShort(obj, s));
     }
 
     /**
@@ -1102,19 +1042,7 @@ class Field extends AccessibleObject implements Member {
     public void setInt(Object obj, int i)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().setInt(obj, i);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.setInt(obj, i);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.setInt(obj, i));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().setInt(obj, i));
     }
 
     /**
@@ -1147,19 +1075,7 @@ class Field extends AccessibleObject implements Member {
     public void setLong(Object obj, long l)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().setLong(obj, l);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.setLong(obj, l);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.setLong(obj, l));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().setLong(obj, l));
     }
 
     /**
@@ -1192,19 +1108,7 @@ class Field extends AccessibleObject implements Member {
     public void setFloat(Object obj, float f)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().setFloat(obj, f);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.setFloat(obj, f);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.setFloat(obj, f));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().setFloat(obj, f));
     }
 
     /**
@@ -1237,19 +1141,7 @@ class Field extends AccessibleObject implements Member {
     public void setDouble(Object obj, double d)
         throws IllegalArgumentException, IllegalAccessException
     {
-        if (!override) {
-            Class<?> caller = Reflection.getCallerClass();
-            checkAccess(caller, obj);
-            getFieldAccessor().setDouble(obj, d);
-            return;
-        }
-
-        FieldAccessor fa = getOverrideFieldAccessor();
-        if (!Modifier.isFinal(modifiers)) {
-            fa.setDouble(obj, d);
-        } else {
-            setFinal(Reflection.getCallerClass(), obj, () -> fa.setDouble(obj, d));
-        }
+        setImpl(Reflection.getCallerClass(), obj, () -> getOverrideFieldAccessor().setDouble(obj, d));
     }
 
     // check access to field
@@ -1422,16 +1314,26 @@ class Field extends AccessibleObject implements Member {
     }
 
     /**
-     * Attempts to set a final field.
+     * implements set field.
      */
-    private void setFinal(Class<?> caller, Object obj, FieldSetter setter) throws IllegalAccessException {
-        if (obj != null && isFinalInstanceInNormalClass()) {
-            preSetFinal(caller, false);
+    private void setImpl(Class<?> caller, Object obj, FieldSetter setter) throws IllegalAccessException {
+        if (!override) {
+            checkAccess(caller, obj);
             setter.setFieldValue();
-            postSetFinal(caller, false);
+            return;
+        }
+
+        if (!Modifier.isFinal(modifiers)) {
+            setter.setFieldValue();
         } else {
-            // throws IllegalAccessException if static, or field in record or hidden class
-            setter.setFieldValue();
+            if (obj != null && isFinalInstanceInNormalClass()) {
+                preSetFinal(caller, false);
+                setter.setFieldValue();
+                postSetFinal(caller, false);
+            } else {
+                // throws IllegalAccessException if static, or field in record or hidden class
+                setter.setFieldValue();
+            }
         }
     }
 
