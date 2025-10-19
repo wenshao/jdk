@@ -760,18 +760,24 @@ public final class Double extends Number
                 chars[index + 3] = '.';  // Decimal point
                 index += 4;
 
+                // Shift the significand bits right to remove trailing zeros
+                // (trailingZeros << 2) is equivalent to (trailingZeros * 4) since each hex digit represents 4 bits
+                signifBits >>= (trailingZeros << 2);
+                
                 // Convert significand to hex digits manually to avoid creating temporary strings
-                // Extract the 13 hex digits (52 bits) from signifBits
-                // We need to extract bits 48-51, 44-47, ..., 0-3 (13 groups of 4 bits)
-                for (int i = 0, end = 13 - trailingZeros; i < end; i++) {
-                    // Extract 4 bits at a time from left to right
-                    // Shift right by (12 - i) * 4 positions and mask with 0xF
+                // Process digits from right to left to place them correctly in the character array
+                int i = 13 - trailingZeros - 1;  // Start from the rightmost digit position
+                while (i >= 0) {
+                    // Extract the lowest 4 bits and map to hex character using Integer.digits array
                     // Integer.digits maps values 0-15 to '0'-'f' characters
-                    chars[index++] = Integer.digits[((int)(signifBits >> ((12 - i) << 2))) & 0xF];
+                    chars[index + i] = Integer.digits[((int) signifBits) & 0xF];
+                    i--;
+                    // Shift right by 4 bits to process the next hex digit
+                    signifBits >>= 4;
                 }
 
-                // Add the exponent indicator
-                chars[index] = 'p';
+                // Add the exponent indicator 'p' after the significand digits
+                chars[index + 13 - trailingZeros] = 'p';
 
                 // Append the exponent value to the character array
                 // This method writes the decimal representation of exp directly into the byte array
