@@ -459,7 +459,8 @@ public final class DecimalDigits {
      * @see jdk.internal.access.JavaLangAccess#appendPair(StringBuilder, int)
      */
     public static void appendPair(StringBuilder buf, int v) {
-        SharedSecrets.getJavaLangAccess()
-                     .appendPair(buf, v);
+        int packed = DIGITS[v & 0x7f];
+        buf.append((char) (packed & 0xFF))
+           .append((char) (packed >> 8));
     }
 }
