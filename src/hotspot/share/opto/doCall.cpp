@@ -41,6 +41,7 @@
 #include "opto/parse.hpp"
 #include "opto/rootnode.hpp"
 #include "opto/runtime.hpp"
+#include "opto/stringIndexer.hpp"
 #include "opto/subnode.hpp"
 #include "prims/methodHandles.hpp"
 #include "runtime/sharedRuntime.hpp"
