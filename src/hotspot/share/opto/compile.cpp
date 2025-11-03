@@ -76,6 +76,7 @@
 #include "opto/phaseX.hpp"
 #include "opto/rootnode.hpp"
 #include "opto/runtime.hpp"
+#include "opto/stringBuilderOptimization.hpp"
 #include "opto/stringopts.hpp"
 #include "opto/type.hpp"
 #include "opto/vector.hpp"
@@ -2308,6 +2309,13 @@ void Compile::Optimize() {
 
   print_method(PHASE_AFTER_PARSING, 1);
 
+  // Run StringBuilder optimization
+  {
+    TracePhase tp(_t_macroExpand);
+    StringBuilderOptimization sbo(initial_gvn());
+    sbo.optimize();
+  }
+
  {
   // Iterative Global Value Numbering, including ideal transforms
   PhaseIterGVN igvn;
@@ -2322,6 +2330,13 @@ void Compile::Optimize() {
   if (failing())  return;
 
   print_method(PHASE_ITER_GVN1, 2);
+
+  // Run StringBuilder optimization after IGVN
+  //{
+  //  TracePhase tp(_t_macroExpand);
+  //  StringBuilderOptimization sbo(initial_gvn());
+  //  sbo.optimize();
+  //} 
 
   process_for_unstable_if_traps(igvn);
 
