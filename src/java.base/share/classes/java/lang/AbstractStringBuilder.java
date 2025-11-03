@@ -913,9 +913,8 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         int count = this.count;
         byte[] value = ensureCapacitySameCoder(this.value, coder, count + 2);
         if (isLatin1(coder)) {
-            Unsafe unsafe = Unsafe.getUnsafe();
-            unsafe.putChar(value, Unsafe.ARRAY_BYTE_BASE_OFFSET + count, c1);
-            unsafe.putChar(value, Unsafe.ARRAY_BYTE_BASE_OFFSET + count + 1, c2);
+            value[count    ] = (byte)c1;
+            value[count + 1] = (byte)c2;
         } else {
             StringUTF16.putChar(value, count, c1);
             StringUTF16.putChar(value, count + 1, c2);
