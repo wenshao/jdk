@@ -789,6 +789,9 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      */
     public AbstractStringBuilder append(char[] str) {
         int len = str.length;
+        if (len == 2) {
+            return append(str[0], str[1]);
+        }
         byte coder = this.coder;
         int count = this.count;
         byte[] currValue = ensureCapacitySameCoder(this.value, coder, count + len);
@@ -906,9 +909,26 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
         return this;
     }
 
-    void appendLatin1(char c1, char c2) {
+    /**
+     * Appends two characters to this character sequence.
+     * <p>
+     * The length of this sequence increases by {@code 2}.
+     * The overall effect is exactly as if the two characters were
+     * appended individually using {@link #append(char)}.
+     *
+     * @param   c1   the first {@code char} to append.
+     * @param   c2   the second {@code char} to append.
+     * @return  a reference to this object.
+     */
+    private AbstractStringBuilder append(char c1, char c2) {
+        byte coder = this.coder;
         int count = this.count;
-        byte[] value = ensureCapacitySameCoder(this.value, coder, count + 2);
+        byte[] value = this.value;
+        byte newCoder = (byte) (coder | StringLatin1.coderFromChar(c1) | StringLatin1.coderFromChar(c2));
+        if (needsNewBuffer(value, coder, count + 1, newCoder)) {
+            this.value = value = ensureCapacityNewCoder(value, coder, count, count + 1, newCoder);
+            this.coder = coder = newCoder;
+        }
         if (isLatin1(coder)) {
             value[count    ] = (byte)c1;
             value[count + 1] = (byte)c2;
@@ -917,7 +937,7 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
             StringUTF16.putChar(value, count + 1, c2);
         }
         this.count = count + 2;
-        this.value = value;
+        return this;
     }
 
     /**
