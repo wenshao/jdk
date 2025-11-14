@@ -25,10 +25,10 @@
 
 package jdk.internal.util;
 
-import jdk.internal.access.JavaLangAccess;
-import jdk.internal.access.SharedSecrets;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.Stable;
+
+import java.nio.charset.StandardCharsets;
 
 import static jdk.internal.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
@@ -38,7 +38,6 @@ import static jdk.internal.misc.Unsafe.ARRAY_BYTE_BASE_OFFSET;
  * @since 21
  */
 public final class DecimalDigits {
-    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
     private static final Unsafe UNSAFE = Unsafe.getUnsafe();
 
     /**
@@ -467,8 +466,7 @@ public final class DecimalDigits {
         // by the JVM's escape analysis and scalar replacement optimizations during
         // runtime compilation, avoiding actual heap allocations in optimized code.
         buf.append(
-                JLA.uncheckedNewStringWithLatin1Bytes(
-                        new byte[] {(byte) packed, (byte) (packed >> 8)}));
+                new String(new byte[] {(byte) packed, (byte) (packed >> 8)}, StandardCharsets.ISO_8859_1));
     }
 
     /**
@@ -494,8 +492,7 @@ public final class DecimalDigits {
         // by the JVM's escape analysis and scalar replacement optimizations during
         // runtime compilation, avoiding actual heap allocations in optimized code.
         buf.append(
-                JLA.uncheckedNewStringWithLatin1Bytes(
-                        new byte[] {(byte) packedHigh, (byte) (packedHigh >> 8),
-                                    (byte) packedLow,  (byte) (packedLow  >> 8)}));
+                new String(new byte[] {(byte) packedHigh, (byte) (packedHigh >> 8),
+                                       (byte) packedLow,  (byte) (packedLow  >> 8)}, StandardCharsets.ISO_8859_1));
     }
 }
