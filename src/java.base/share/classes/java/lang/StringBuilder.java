@@ -255,6 +255,20 @@ public final class StringBuilder
     }
 
     @Override
+    @IntrinsicCandidate
+    StringBuilder appendLantin1(char c1, char c2) {
+        super.appendLantin1(c1, c2);
+        return this;
+    }
+
+    @Override
+    @IntrinsicCandidate
+    StringBuilder appendLantin1(char c1, char c2, char c3, char c4) {
+        super.appendLantin1(c1, c2, c3, c4);
+        return this;
+    }
+
+    @Override
     public StringBuilder append(long lng) {
         super.append(lng);
         return this;

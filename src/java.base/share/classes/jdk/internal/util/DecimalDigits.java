@@ -466,9 +466,8 @@ public final class DecimalDigits {
         // The temporary String and byte[] objects created here are typically eliminated
         // by the JVM's escape analysis and scalar replacement optimizations during
         // runtime compilation, avoiding actual heap allocations in optimized code.
-        buf.append(
-                JLA.uncheckedNewStringWithLatin1Bytes(
-                        new byte[] {(byte) packed, (byte) (packed >> 8)}));
+        buf.append((char) (byte)  packed)
+           .append((char) (byte) (packed >> 8));
     }
 
     /**
@@ -488,14 +487,10 @@ public final class DecimalDigits {
     public static void appendQuad(StringBuilder buf, int v) {
         // The & 0x7f operation keeps the index within the safe range [0, 127] for the DIGITS array,
         // which allows the JIT compiler to eliminate array bounds checks for performance.
-        int packedHigh = DIGITS[(v / 100) & 0x7f];
-        int packedLow  = DIGITS[(v % 100) & 0x7f];
-        // The temporary String and byte[] objects created here are typically eliminated
-        // by the JVM's escape analysis and scalar replacement optimizations during
-        // runtime compilation, avoiding actual heap allocations in optimized code.
-        buf.append(
-                JLA.uncheckedNewStringWithLatin1Bytes(
-                        new byte[] {(byte) packedHigh, (byte) (packedHigh >> 8),
-                                    (byte) packedLow,  (byte) (packedLow  >> 8)}));
+        int packed = (DIGITS[(v % 100) & 0x7f] << 16) | DIGITS[(v / 100) & 0x7f];
+        buf.append((char) (byte)  packed)
+           .append((char) (byte) (packed >> 8))
+           .append((char) (byte) (packed >> 16))
+           .append((char) (byte) (packed >> 24));
     }
 }
