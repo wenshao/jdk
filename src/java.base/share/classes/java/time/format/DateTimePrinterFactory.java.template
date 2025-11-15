@@ -28,6 +28,14 @@ final class DateTimePrinterFactory {
     private DateTimePrinterFactory() {
     }
 
+    /**
+     * Creates a DateTimePrinter for formatting date and time values.
+     * Hand-optimized implementations are provided for 1-16 parser combinations
+     * to allow the optimizer's TypeProfile to work effectively for common cases.
+     *
+     * @param printerParsers the parsers to use for formatting
+     * @return a DateTimePrinter instance
+     */
     static DateTimeFormatterBuilder.DateTimePrinter createFormatter(DateTimeFormatterBuilder.DateTimePrinterParser[] printerParsers) {
         int length = printerParsers.length;
         return switch (length) {
@@ -44,6 +52,13 @@ final class DateTimePrinterFactory {
         };
     }
 
+    /**
+     * Creates a default DateTimePrinter that formats values using all provided parsers.
+     * Each parser is applied in sequence until all are processed or one fails.
+     *
+     * @param printerParsers the parsers to use for formatting
+     * @return a DateTimePrinter instance
+     */
     static DateTimeFormatterBuilder.DateTimePrinter createDefaultDateTimePrinter(DateTimeFormatterBuilder.DateTimePrinterParser[] printerParsers) {
         return (context, buf, optional) -> {
             for (DateTimeFormatterBuilder.DateTimePrinterParser pp : printerParsers) {
