@@ -48,6 +48,7 @@ final class DateTimePrinterParserFactory {
             CD_StringBuilder               = ClassDesc.ofDescriptor("Ljava/lang/StringBuilder;"),
             CD_DateTimePrinter             = ClassDesc.ofDescriptor("Ljava/time/format/DateTimeFormatterBuilder$DateTimePrinter;"),
             CD_DateTimePrintContext        = ClassDesc.ofDescriptor("Ljava/time/format/DateTimePrintContext;"),
+            CD_DateTimePrinterParser       = ClassDesc.ofDescriptor("Ljava/time/format/DateTimeFormatterBuilder$DateTimePrinterParser;"),
             CD_DateTimePrinterParser_array = ClassDesc.ofDescriptor("[Ljava/time/format/DateTimeFormatterBuilder$DateTimePrinterParser;");
 
     static final MethodTypeDesc
@@ -91,20 +92,11 @@ final class DateTimePrinterParserFactory {
         var className = "java.time.format.DateTimeFormatterBuilder$$Printer";
         var classDesc = ConstantUtils.binaryNameToDesc(className);
         byte[] classBytes = ClassFile.of().build(classDesc, clb -> {
-                    clb.withFlags(ACC_FINAL | ACC_SUPER | ACC_SYNTHETIC)
+            String fieldName = "printerParsers";
+            clb.withFlags(ACC_FINAL | ACC_SUPER | ACC_SYNTHETIC)
                        .withSuperclass(CD_Object)
-                       .withInterfaces(clb.constantPool().classEntry(CD_DateTimePrinter));
-
-                    /*
-                     * private final DateTimePrinterParser printerParser0;
-                     * private final DateTimePrinterParser printerParser1;
-                     * private final DateTimePrinterParser printerParser2;
-                     * ...
-                     */
-                    for (int i = 0; i < printerParsers.length; ++i) {
-                        clb.withField("printerParser" + i, CD_DateTimePrinter, ACC_FINAL | ACC_PRIVATE);
-                    }
-
+                       .withInterfaces(clb.constantPool().classEntry(CD_DateTimePrinter))
+                       .withField(fieldName, CD_DateTimePrinterParser_array, ACC_FINAL | ACC_PRIVATE);
                     clb.withMethodBody(INIT_NAME, MTD_constructor, ACC_PUBLIC,
                         cb -> {
                             int thisSlot    = cb.receiverSlot(),
@@ -116,19 +108,12 @@ final class DateTimePrinterParserFactory {
                               .invokespecial(CD_Object, INIT_NAME, MTD_void);
 
                             /*
-                             * this.printerParser0 = printerParsers[0];
-                             * this.printerParser1 = printerParsers[1];
-                             * this.printerParser2 = printerParsers[2];
-                             * ...
+                             * this.printerParser = printerParsers;
                              */
-                            for (int i = 0; i < printerParsers.length; ++i) {
-                                cb.aload(thisSlot)
-                                  .aload(parsersSlot)
-                                  .loadConstant(i)
-                                  .arrayLoad(TypeKind.REFERENCE)
-                                  .putfield(classDesc, "printerParser" + i, CD_DateTimePrinter);
-                            }
-                            cb.return_();
+                            cb.aload(thisSlot)
+                              .aload(parsersSlot)
+                              .putfield(classDesc, fieldName, CD_DateTimePrinterParser_array)
+                              .return_();
                         })
                        .withMethodBody("format", MTD_format, ACC_PUBLIC | ACC_FINAL,
                         cb -> {
@@ -144,13 +129,10 @@ final class DateTimePrinterParserFactory {
                              */
                             Label L0 = cb.newLabel(), L1 = cb.newLabel();
                             for (int i = 0; i < printerParsers.length; ++i) {
-                                /*
-                                 * if (!printerParserN.format(context, buf, optional)) {
-                                 *     return false;
-                                 * }
-                                 */
                                 cb.aload(thisSlot)
-                                  .getfield(classDesc, "printerParser" + i, CD_DateTimePrinter)
+                                  .getfield(classDesc, fieldName, CD_DateTimePrinterParser_array)
+                                  .bipush(i)
+                                  .aaload()
                                   .aload(contextSlot)
                                   .aload(bufSlot);
                                 if (optional) {
@@ -158,7 +140,7 @@ final class DateTimePrinterParserFactory {
                                 } else {
                                     cb.iconst_0();
                                 }
-                                cb.invokeinterface(CD_DateTimePrinter, "format", MTD_format)
+                                cb.invokeinterface(CD_DateTimePrinterParser, "format", MTD_format)
                                   .ifeq(L0);
                             }
                             cb.iconst_1()
