@@ -175,7 +175,7 @@ final class Parsed implements TemporalAccessor {
     Parsed(boolean onlyChronoField) {
         // Create the EnumMap with raw types and cast it appropriately
         // This is safe because ChronoField implements TemporalField
-        fieldValues = onlyChronoField ? (Map<TemporalField, Long>) (Map) new EnumMap<>(ChronoField.class)
+        fieldValues = onlyChronoField ? (Map<TemporalField, Long>) (Map) new ChronoFieldMap()
                                       : new HashMap<>();
     }
 
