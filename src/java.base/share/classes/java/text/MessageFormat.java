@@ -601,94 +601,72 @@ public class MessageFormat extends Format {
      * ##makeFormat(int, int, StringBuilder[])} for the implementation of setting
      * a subformat.
      */
-    @SuppressWarnings("fallthrough") // fallthrough in switch is expected, suppress it
     private void applyPatternImpl(String pattern) {
-            StringBuilder[] segments = new StringBuilder[4];
-            // Allocate only segments[SEG_RAW] here. The rest are
-            // allocated on demand.
-            segments[SEG_RAW] = new StringBuilder();
+        StringBuilder raw = new StringBuilder(pattern.length());
+        int index = 0, formatNumber = 0, end = pattern.length();
+        while (index < end) {
+            int singleQuoteIndex = pattern.indexOf('\'', index);
+            if (singleQuoteIndex != -1) {
+                index = applyPatternImplQuote(pattern, raw, index, singleQuoteIndex);
+            }
 
-            int part = SEG_RAW;
-            int formatNumber = 0;
-            boolean inQuote = false;
-            int braceStack = 0;
-            maxOffset = -1;
-            for (int i = 0; i < pattern.length(); ++i) {
-                char ch = pattern.charAt(i);
-                if (part == SEG_RAW) {
-                    if (ch == '\'') {
-                        if (i + 1 < pattern.length()
-                            && pattern.charAt(i+1) == '\'') {
-                            segments[part].append(ch);  // handle doubles
-                            ++i;
-                        } else {
-                            inQuote = !inQuote;
-                        }
-                    } else if (ch == '{' && !inQuote) {
-                        part = SEG_INDEX;
-                        if (segments[SEG_INDEX] == null) {
-                            segments[SEG_INDEX] = new StringBuilder();
-                        }
-                    } else {
-                        segments[part].append(ch);
-                    }
-                } else  {
-                    if (inQuote) {              // just copy quotes in parts
-                        segments[part].append(ch);
-                        if (ch == '\'') {
-                            inQuote = false;
-                        }
-                    } else {
-                        switch (ch) {
-                        case ',':
-                            if (part < SEG_MODIFIER) {
-                                if (segments[++part] == null) {
-                                    segments[part] = new StringBuilder();
-                                }
-                            } else {
-                                segments[part].append(ch);
-                            }
-                            break;
-                        case '{':
-                            ++braceStack;
-                            segments[part].append(ch);
-                            break;
-                        case '}':
-                            if (braceStack == 0) {
-                                part = SEG_RAW;
-                                // Set the subformat
-                                setFormatFromPattern(i, formatNumber, segments);
-                                formatNumber++;
-                                // throw away other segments
-                                segments[SEG_INDEX] = null;
-                                segments[SEG_TYPE] = null;
-                                segments[SEG_MODIFIER] = null;
-                            } else {
-                                --braceStack;
-                                segments[part].append(ch);
-                            }
-                            break;
-                        case ' ':
-                            // Skip any leading space chars for SEG_TYPE.
-                            if (part != SEG_TYPE || segments[SEG_TYPE].length() > 0) {
-                                segments[part].append(ch);
-                            }
-                            break;
-                        case '\'':
-                            inQuote = true;
-                            // fall through, so we keep quotes in other parts
-                        default:
-                            segments[part].append(ch);
-                            break;
-                        }
-                    }
+            int leftBraceIndex = pattern.indexOf('{', index);
+            int rightBraceIndex = pattern.indexOf('}', index);
+            if (leftBraceIndex == -1) {
+                if (rightBraceIndex != -1) {
+                    throw unmatchedBrace();
+                }
+                raw.append(pattern, index, end);
+                break;
+            }
+            raw.append(pattern, index, leftBraceIndex);
+
+            String type = "", style = "";
+            if (rightBraceIndex == -1 || rightBraceIndex < leftBraceIndex) {
+                throw unmatchedBrace();
+            }
+
+            int firstCommaIndex = pattern.indexOf(',', leftBraceIndex + 1, rightBraceIndex);
+            int argIndexEnd = firstCommaIndex != -1 ? firstCommaIndex : rightBraceIndex;
+            int argIndex;
+            try {
+                argIndex = Integer.parseInt(pattern, leftBraceIndex + 1, argIndexEnd, 10);
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("can't parse argument number: " + pattern.substring(leftBraceIndex + 1, argIndexEnd), e);
+            }
+            if (firstCommaIndex != -1) {
+                int secondCommaIndex = pattern.indexOf(',', firstCommaIndex + 1, rightBraceIndex);
+                type = pattern.substring(firstCommaIndex + 1, secondCommaIndex != -1 ? secondCommaIndex : rightBraceIndex);
+                if (secondCommaIndex != -1) {
+                    style = pattern.substring(secondCommaIndex + 1, rightBraceIndex);
                 }
             }
-            if (braceStack == 0 && part != 0) {
-                maxOffset = -1;
-                throw new IllegalArgumentException("Unmatched braces in the pattern.");
+
+            setFormatFromPattern(formatNumber, raw, argIndex, type, style);
+
+            index = rightBraceIndex + 1;
+            formatNumber++;
+        }
+        this.pattern = raw.toString();
+    }
+
+    private static int applyPatternImplQuote(String pattern, StringBuilder raw, int index, int singleQuoteIndex) {
+        do {
+            raw.append(pattern, index, singleQuoteIndex);
+
+            int nextSingleQuoteIndex = pattern.indexOf('\'', singleQuoteIndex + 1);
+            if (nextSingleQuoteIndex == -1) {
+                throw new IllegalArgumentException("Unterminated quote");
             }
-            this.pattern = segments[0].toString();
+            raw.append(pattern, singleQuoteIndex + 1, nextSingleQuoteIndex + ((nextSingleQuoteIndex < pattern.length() - 1 && pattern.charAt(nextSingleQuoteIndex + 1) == '\'') ? 1 : 0));
+            index = nextSingleQuoteIndex + 1;
+        } while ((singleQuoteIndex = pattern.indexOf('\'', index)) != -1);
+        return index;
+    }
+
+    private IllegalArgumentException unmatchedBrace() {
+        maxOffset = -1;
+        return new IllegalArgumentException("Unmatched braces in the pattern.");
     }
 
 
@@ -1614,39 +1592,10 @@ public class MessageFormat extends Format {
         }
     }
 
-    // Indices for segments
-    private static final int SEG_RAW      = 0; // String in MessageFormatPattern
-    private static final int SEG_INDEX    = 1; // ArgumentIndex
-    private static final int SEG_TYPE     = 2; // FormatType
-    private static final int SEG_MODIFIER = 3; // FormatStyle
-
-    /**
-     * This method sets a Format in the {@code formats} array for the
-     * corresponding {@code argumentNumber} based on the pattern supplied.
-     * If the pattern supplied does not contain a {@code FormatType}, null
-     * is stored in the {@code formats} array.
-     */
-    private void setFormatFromPattern(int position, int offsetNumber,
-                            StringBuilder[] textSegments) {
-
-        // Convert any null values in textSegments to empty string
-        String[] segments = new String[textSegments.length];
-        for (int i = 0; i < textSegments.length; i++) {
-            StringBuilder oneseg = textSegments[i];
-            segments[i] = (oneseg != null) ? oneseg.toString() : "";
-        }
-
-        // get the argument number
-        int argumentNumber;
-        try {
-            argumentNumber = Integer.parseInt(segments[SEG_INDEX]); // always unlocalized!
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("can't parse argument number: "
-                                               + segments[SEG_INDEX], e);
-        }
+    private void setFormatFromPattern(int offsetNumber, StringBuilder raw, int argumentNumber, String type, String style) {
         if (argumentNumber < 0) {
             throw new IllegalArgumentException("negative argument number: "
-                                               + argumentNumber);
+                    + argumentNumber);
         }
 
         if (argumentNumber >= MAX_ARGUMENT_INDEX) {
@@ -1670,13 +1619,13 @@ public class MessageFormat extends Format {
 
         int oldMaxOffset = maxOffset;
         maxOffset = offsetNumber;
-        offsets[offsetNumber] = segments[SEG_RAW].length();
+        offsets[offsetNumber] = raw.length();
         argumentNumbers[offsetNumber] = argumentNumber;
 
         // Only search for corresponding type/style if type is not empty
-        if (!segments[SEG_TYPE].isEmpty()) {
+        if (!type.isEmpty()) {
             try {
-                formats[offsetNumber] = formatFromPattern(segments[SEG_TYPE], segments[SEG_MODIFIER]);
+                formats[offsetNumber] = formatFromPattern(type, style);
             } catch (Exception e) {
                 // Catch to reset maxOffset
                 maxOffset = oldMaxOffset;
