@@ -3462,9 +3462,9 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
     private static String getCompactValueString(int signum, long intCompactAbs, int intCompactAbsSize, int scale) {
         /* Insert decimal point */
         int insertionPoint = intCompactAbsSize - scale;
-        byte[] buf;
+        char[] buf;
         if (insertionPoint == 0) {  /* Point goes just before intVal */
-            buf = new byte[intCompactAbsSize + (signum < 0 ? 3 : 2)];
+            buf = new char[intCompactAbsSize + (signum < 0 ? 3 : 2)];
             int off = 0;
             if(signum < 0) {
                 buf[0] = '-';
@@ -3472,9 +3472,9 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
             }
             buf[off    ] = '0';
             buf[off + 1] = '.';
-            DecimalDigits.uncheckedGetCharsLatin1(intCompactAbs, buf.length, buf);
+            DecimalDigits.getChars(intCompactAbs, buf.length, buf);
         } else if (insertionPoint > 0) { /* Point goes inside intVal */
-            buf = new byte[intCompactAbsSize + (signum < 0 ? 2 : 1)];
+            buf = new char[intCompactAbsSize + (signum < 0 ? 2 : 1)];
             if (signum < 0) {
                 buf[0] = '-';
                 insertionPoint++;
@@ -3482,18 +3482,18 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
             long power = LONG_TEN_POWERS_TABLE[scale];
             long highInt = intCompactAbs / power;
             long small = Math.abs(intCompactAbs - highInt * power);
-            DecimalDigits.uncheckedGetCharsLatin1(highInt, insertionPoint, buf);
+            DecimalDigits.getChars(highInt, insertionPoint, buf);
             buf[insertionPoint] = '.';
-            int smallStart = DecimalDigits.uncheckedGetCharsLatin1(small, buf.length, buf);
+            int smallStart = DecimalDigits.getChars(small, buf.length, buf);
             if (smallStart > insertionPoint + 1) { // fill zeros
-                Arrays.fill(buf, insertionPoint + 1, smallStart, (byte) '0');
+                Arrays.fill(buf, insertionPoint + 1, smallStart, '0');
             }
         } else { /* We must insert zeros between point and intVal */
             int len = (signum < 0 ? 3 : 2) + scale;
             if (len < 0) {
                 throw new OutOfMemoryError("too large to fit in a String");
             }
-            buf = new byte[len];
+            buf = new char[len];
             int off = 0;
             if(signum < 0) {
                 buf[0] = '-';
@@ -3501,10 +3501,10 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
             }
             buf[off    ] = '0';
             buf[off + 1] = '.';
-            Arrays.fill(buf, off + 2, off + 2 - insertionPoint, (byte) '0');
-            DecimalDigits.uncheckedGetCharsLatin1(intCompactAbs, buf.length, buf);
+            Arrays.fill(buf, off + 2, off + 2 - insertionPoint, '0');
+            DecimalDigits.getChars(intCompactAbs, buf.length, buf);
         }
-        return JLA.uncheckedNewStringWithLatin1Bytes(buf);
+        return new String(buf);
     }
 
     /* Returns a digit.digit string */
@@ -4199,9 +4199,9 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
             if ((scale >= 0) & (adjusted >= -6)) { // plain number
                 return getCompactValueString(signum, intCompactAbs, coeffLen, scale);
             }
-            byte[] buf = new byte[coeffLen];
-            DecimalDigits.uncheckedGetCharsLatin1(intCompactAbs, buf.length, buf);
-            coeff = JLA.uncheckedNewStringWithLatin1Bytes(buf);
+            char[] buf = new char[coeffLen];
+            DecimalDigits.getChars(intCompactAbs, buf.length, buf);
+            coeff = new String(buf);
         } else {
             signum = intVal.signum();
             coeff = intVal.abs().toString();
@@ -4279,11 +4279,11 @@ public class BigDecimal extends Number implements Comparable<BigDecimal> {
         int highInt = intCompact / 100;
         int lowInt = intCompact - highInt * 100;
         int highIntSize = DecimalDigits.stringSize(highInt);
-        byte[] buf = new byte[highIntSize + 3];
-        DecimalDigits.uncheckedPutPairLatin1(buf, highIntSize + 1, lowInt);
+        char[] buf = new char[highIntSize + 3];
+        DecimalDigits.putPair(buf, highIntSize + 1, lowInt);
         buf[highIntSize] = '.';
-        DecimalDigits.uncheckedGetCharsLatin1(highInt, highIntSize, buf);
-        return JLA.uncheckedNewStringWithLatin1Bytes(buf);
+        DecimalDigits.getChars(highInt, highIntSize, buf);
+        return new String(buf);
     }
 
     private String unscaledString() {
