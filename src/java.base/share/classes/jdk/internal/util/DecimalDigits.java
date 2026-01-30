@@ -137,20 +137,6 @@ public final class DecimalDigits {
     }
 
     /**
-     * Determine whether the two character in str are both digits. If they are, return (str[offset] - '0') * 10 + (str[offset + 1] - '0'), otherwise return -1
-     * @param str The input LATIN1 encoded String value
-     * @param offset the offset
-     * @return If both characters are digits, return (str[offset] - '0') * 10 + (str[offset + 1] - '0'), otherwise return -1
-     */
-    public static int digit2(byte[] str, int offset) {
-        byte c0 = str[offset], c1 = str[offset + 1];
-        if (c0 >= '0' && c0 <= '9' && c1 >= '0' && c1 <= '9') {
-            return c0 * 10 + c1 - ('0' * 10 + '0');
-        }
-        return -1;
-    }
-
-    /**
      * Places characters representing the integer i into the
      * character array buf. The characters are placed into
      * the buffer backwards starting with the least significant

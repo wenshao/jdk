@@ -608,8 +608,13 @@ public final class Integer extends Number
         int i = 1;
         int d;
         while (i + 1 < len
-                && (d = DecimalDigits.digit2(value, i)) != -1
                 && MIN_VALUE / 100 <= result & result <= 0) {
+            byte c0 = value[i], c1 = value[i + 1];
+            if (c0 >= '0' && c0 <= '9' && c1 >= '0' && c1 <= '9') {
+                d = c0 * 10 + c1 - ('0' * 10 + '0');
+            } else {
+                break;
+            }
             result = result * 100 - d;  // overflow from d => result > 0
             i += 2;
         }
