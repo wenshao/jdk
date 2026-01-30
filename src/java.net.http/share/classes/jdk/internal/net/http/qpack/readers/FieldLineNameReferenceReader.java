@@ -66,7 +66,7 @@ final class FieldLineNameReferenceReader extends FieldLineReader {
      * | 0 | 1 | N | T | NameIndex (4+)|
      * +---+---+-----------------------+
      * Where N=1 indicates never indexed, T=1 indicates static table.
-     * 
+     *
      * @param b the first byte of the field line representation
      */
     public void configure(int b) {

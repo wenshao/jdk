@@ -66,7 +66,7 @@ final class FieldLineNameRefPostBaseReader extends FieldLineReader {
      * | 0 | 0 | 0 | 0 | N |NameIdx(3+)|
      * +---+---+---+---+---+-----------+
      * Where N=1 indicates never indexed.
-     * 
+     *
      * @param b the first byte of the field line representation
      */
     public void configure(int b) {

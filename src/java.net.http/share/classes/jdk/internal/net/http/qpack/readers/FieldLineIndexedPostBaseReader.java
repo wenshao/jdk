@@ -57,9 +57,10 @@ final class FieldLineIndexedPostBaseReader extends FieldLineReader {
      * | 0 | 0 | 0 | 1 |  Index (4+)   |
      * +---+---+---+---+---------------+
      * The index is relative to the base of the dynamic table.
-     * 
-     * @param b the first byte of the field line representation (not currently used 
-     *          as all configuration is in the bit pattern already checked)
+     *
+     * @param b the first byte of the field line representation (not currently used
+     *          by the implementation, as all configuration is determined by the
+     *          bit pattern already checked)
      */
     public void configure(int b) {
         integerReader.configure(4);

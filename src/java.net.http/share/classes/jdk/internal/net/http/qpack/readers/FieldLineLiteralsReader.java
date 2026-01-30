@@ -63,7 +63,7 @@ final class FieldLineLiteralsReader extends FieldLineReader {
      * | 0 | 0 | 1 | N | H |NameLen(3+)|
      * +---+---+-----------------------+
      * Where N=1 indicates never indexed.
-     * 
+     *
      * @param b the first byte of the field line representation
      */
     public void configure(int b) {

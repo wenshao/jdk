@@ -57,7 +57,7 @@ final class FieldLineIndexedReader extends FieldLineReader {
      * | 1 | T |     Index (6+)        |
      * +---+---------------------------+
      * Where T=1 indicates static table, T=0 indicates dynamic table.
-     * 
+     *
      * @param b the first byte of the field line representation
      */
     public void configure(int b) {
