@@ -131,7 +131,8 @@ sealed abstract class FieldLineReader permits FieldLineIndexedPostBaseReader,
             }
         } catch (IndexOutOfBoundsException | IllegalStateException | IllegalArgumentException e) {
             throw QPackException.decompressionFailed(
-                    new IOException("header fields table index", e), true);
+                    new IOException("Invalid header table index: " + index +
+                            " (table=" + (fromStaticTable ? "static" : "dynamic") + ")", e), true);
         }
         return f;
     }
