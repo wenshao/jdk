@@ -434,9 +434,8 @@ public final class HexFormat {
         if (delimiter.isEmpty()) {
             // Allocate the byte array and fill in the hex pairs for each byte
             rep = new byte[checkMaxArraySize(length * 2L)];
-            for (int i = 0; i < length; i++) {
+            for (int i = 0, pos = 0; i < length; i++, pos += 2) {
                 short pair = HexDigits.digitPair(bytes[fromIndex + i], ucase);
-                int pos = i * 2;
                 rep[pos] = (byte)pair;
                 rep[pos + 1] = (byte)(pair >>> 8);
             }
@@ -447,12 +446,11 @@ public final class HexFormat {
             short pair = HexDigits.digitPair(bytes[fromIndex], ucase);
             rep[0] = (byte)pair;
             rep[1] = (byte)(pair >>> 8);
-            for (int i = 1; i < length; i++) {
-                int pos = i * 3;
+            for (int i = 1, pos = 2; i < length; i++, pos += 3) {
                 pair = HexDigits.digitPair(bytes[fromIndex + i], ucase);
-                rep[pos - 1] = (byte) sep;
-                rep[pos] = (byte)pair;
-                rep[pos + 1] = (byte)(pair >>> 8);
+                rep[pos] = (byte) sep;
+                rep[pos + 1] = (byte)pair;
+                rep[pos + 2] = (byte)(pair >>> 8);
             }
         } else {
             // Delimiter formatting not to a single byte
