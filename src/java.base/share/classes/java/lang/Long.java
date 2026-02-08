@@ -636,25 +636,22 @@ public final class Long extends Number
         }
         /* Accumulating negatively avoids surprises near MAX_VALUE */
         int fc = value[0];
-        long result = Integer.isDigitLatin1(fc)
+        long result = '0' <= fc && fc <= '9'
                 ? '0' - fc
                 : len != 1 && (fc == '-' || fc == '+')
                 ? 0
                 : 1;  // or any value > 0
         int i = 1;
-        int d;
         // Inline digit2 logic to avoid method call and lookup table
         while (i + 1 < len) {
-            byte c0 = value[i];
-            byte c1 = value[i + 1];
+            int c0 = value[i] - '0', c1 = value[i + 1] - '0';
             // Check if both characters are digits (0-9)
-            if (c0 < '0' || c0 > '9' || c1 < '0' || c1 > '9') break;
-            if (result < MIN_VALUE / 100 || result > 0) break;
+            if ((c0 | c1) < 0 || c0 > 9 || c1 > 9 || result < MIN_VALUE / 100 || result > 0) break;
             // Calculate two-digit value inline without lookup table
-            d = (c0 - '0') * 10 + (c1 - '0');
-            result = result * 100 - d;  // overflow from d => result > 0
+            result = result * 100 - (c0 * 10 + c1);  // overflow from d => result > 0
             i += 2;
         }
+        int d;
         if (i < len
                 && (d = value[i] - '0') >= 0 && d <= 9
                 && result >= MIN_VALUE / 10 && result <= 0) {
