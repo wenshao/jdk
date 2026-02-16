@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -81,6 +81,12 @@ class PhaseStringOpts : public Phase {
 
   // Copy the char into dst_array at index start.
   Node* copy_char(GraphKit& kit, Node* val, Node* dst_array, Node* dst_coder, Node* start);
+
+  // Copy two chars into dst_array at index start (enables MergeStore optimization).
+  Node* copy_char2(GraphKit& kit, Node* c1, Node* c2, Node* dst_array, Node* dst_coder, Node* start);
+
+  // Copy four chars into dst_array at index start (enables MergeStore optimization).
+  Node* copy_char4(GraphKit& kit, Node* c1, Node* c2, Node* c3, Node* c4, Node* dst_array, Node* dst_coder, Node* start);
 
   // Allocate a byte array of specified length.
   Node* allocate_byte_array(GraphKit& kit, IdealKit* ideal, Node* length);

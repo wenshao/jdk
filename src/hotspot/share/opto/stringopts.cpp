@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2009, 2026, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -64,6 +64,8 @@ class StringConcat : public ResourceObj {
     StringMode,
     IntMode,
     CharMode,
+    Char2Mode,            // Two consecutive chars merged
+    Char4Mode,            // Four consecutive chars merged
     StringNullCheckMode,
     NegativeIntCheckMode
   };
@@ -113,6 +115,22 @@ class StringConcat : public ResourceObj {
 
   void push_char(Node* value) {
     push(value, CharMode);
+  }
+
+  void push_char2(Node* c1, Node* c2) {
+    push(c1, Char2Mode);
+    _arguments->add_req(c2);
+    _mode.append(Char2Mode);  // Placeholder mode for second char
+  }
+
+  void push_char4(Node* c1, Node* c2, Node* c3, Node* c4) {
+    push(c1, Char4Mode);
+    _arguments->add_req(c2);
+    _mode.append(Char4Mode);  // Placeholder mode
+    _arguments->add_req(c3);
+    _mode.append(Char4Mode);  // Placeholder mode
+    _arguments->add_req(c4);
+    _mode.append(Char4Mode);  // Placeholder mode
   }
 
   static bool is_SB_toString(Node* call) {
@@ -237,6 +255,102 @@ class StringConcat : public ResourceObj {
   void cleanup() {
     // disconnect the hook node
     _arguments->disconnect_inputs(_stringopts->C);
+  }
+
+  // Merge consecutive CharMode entries into Char2Mode or Char4Mode
+  // This enables more efficient stores and allows MergeStore optimization
+  void merge_consecutive_chars() {
+    if (_mode.length() < 2) return;  // Nothing to merge
+
+    GrowableArray<int> new_mode(_mode.length());
+    GrowableArray<Node*> new_args(_mode.length());
+    int char_count = 0;
+    int start_idx = -1;
+
+    for (int i = 0; i < _mode.length(); i++) {
+      if (_mode.at(i) == CharMode) {
+        if (char_count == 0) {
+          start_idx = i;
+        }
+        char_count++;
+        // Check if we have 4 consecutive chars
+        if (char_count == 4) {
+          // Merge 4 chars into Char4Mode
+          new_mode.append(Char4Mode);
+          new_args.append(_arguments->in(start_idx));
+          new_args.append(_arguments->in(start_idx + 1));
+          new_args.append(_arguments->in(start_idx + 2));
+          new_args.append(_arguments->in(start_idx + 3));
+          new_mode.append(Char4Mode);  // Placeholder for skipped chars
+          new_mode.append(Char4Mode);
+          new_mode.append(Char4Mode);
+          char_count = 0;
+          start_idx = -1;
+        }
+      } else {
+        // Flush any remaining chars (0, 1, 2, or 3)
+        if (char_count == 2) {
+          // Merge 2 chars into Char2Mode
+          new_mode.append(Char2Mode);
+          new_args.append(_arguments->in(start_idx));
+          new_args.append(_arguments->in(start_idx + 1));
+          new_mode.append(Char2Mode);  // Placeholder
+        } else if (char_count == 3) {
+          // Merge 2 chars, leave 1 as CharMode
+          new_mode.append(Char2Mode);
+          new_args.append(_arguments->in(start_idx));
+          new_args.append(_arguments->in(start_idx + 1));
+          new_mode.append(Char2Mode);  // Placeholder
+          new_mode.append(CharMode);
+          new_args.append(_arguments->in(start_idx + 2));
+        } else if (char_count == 1) {
+          // Single char
+          new_mode.append(CharMode);
+          new_args.append(_arguments->in(start_idx));
+        }
+        char_count = 0;
+        start_idx = -1;
+        // Add the non-char mode
+        new_mode.append(_mode.at(i));
+        new_args.append(_arguments->in(i));
+      }
+    }
+
+    // Flush any remaining chars at the end
+    if (char_count == 2) {
+      new_mode.append(Char2Mode);
+      new_args.append(_arguments->in(start_idx));
+      new_args.append(_arguments->in(start_idx + 1));
+      new_mode.append(Char2Mode);  // Placeholder
+    } else if (char_count == 3) {
+      new_mode.append(Char2Mode);
+      new_args.append(_arguments->in(start_idx));
+      new_args.append(_arguments->in(start_idx + 1));
+      new_mode.append(Char2Mode);  // Placeholder
+      new_mode.append(CharMode);
+      new_args.append(_arguments->in(start_idx + 2));
+    } else if (char_count == 1) {
+      new_mode.append(CharMode);
+      new_args.append(_arguments->in(start_idx));
+    } else if (char_count == 4) {
+      // This case is already handled in the loop
+    }
+
+    // Replace the old mode and arguments with the new ones
+    if (new_mode.length() > 0) {
+      _mode.clear();
+      for (int i = 0; i < new_mode.length(); i++) {
+        _mode.append(new_mode.at(i));
+      }
+      // Rebuild _arguments node
+      Compile* C = _stringopts->C;
+      _arguments->disconnect_inputs(C);
+      _arguments = new Node(1);
+      _arguments->del_req(0);
+      for (int i = 0; i < new_args.length(); i++) {
+        _arguments->add_req(new_args.at(i));
+      }
+    }
   }
 };
 
@@ -727,6 +841,7 @@ PhaseStringOpts::PhaseStringOpts(PhaseGVN* gvn):
 
   for (int c = 0; c < concats.length(); c++) {
     StringConcat* sc = concats.at(c);
+    sc->merge_consecutive_chars();  // Optimize consecutive char appends
     replace_string_concat(sc);
   }
 
@@ -1694,6 +1809,83 @@ Node* PhaseStringOpts::copy_char(GraphKit& kit, Node* val, Node* dst_array, Node
   return __ value(end);
 }
 
+// Copy two chars into dst_array at index start.
+// This enables MergeStore optimization to combine two byte stores into a short store.
+Node* PhaseStringOpts::copy_char2(GraphKit& kit, Node* c1, Node* c2, Node* dst_array, Node* dst_coder, Node* start) {
+  bool dcon = (dst_coder != nullptr) && dst_coder->is_Con();
+  bool dbyte = dcon ? (dst_coder->get_int() == java_lang_String::CODER_LATIN1) : false;
+
+  IdealKit ideal(&kit, true, true);
+  IdealVariable end(ideal); __ declarations_done();
+  Node* adr1 = kit.array_element_address(dst_array, start, T_BYTE);
+  Node* adr2 = kit.array_element_address(dst_array, __ AddI(start, __ ConI(1)), T_BYTE);
+  if (!dcon) {
+    __ if_then(dst_coder, BoolTest::eq, __ ConI(java_lang_String::CODER_LATIN1));
+  }
+  if (!dcon || dbyte) {
+    // Destination is Latin1. Store two bytes.
+    __ store(__ ctrl(), adr1, c1, T_BYTE, byte_adr_idx, MemNode::unordered);
+    __ store(__ ctrl(), adr2, c2, T_BYTE, byte_adr_idx, MemNode::unordered);
+    __ set(end, __ AddI(start, __ ConI(2)));
+  }
+  if (!dcon) {
+    __ else_();
+  }
+  if (!dcon || !dbyte) {
+    // Destination is UTF16. Store two chars.
+    Node* adr2_utf16 = kit.array_element_address(dst_array, __ AddI(start, __ ConI(1)), T_BYTE);
+    __ store(__ ctrl(), adr1, c1, T_CHAR, byte_adr_idx, MemNode::unordered, false, true /* mismatched */);
+    __ store(__ ctrl(), adr2_utf16, c2, T_CHAR, byte_adr_idx, MemNode::unordered, false, true /* mismatched */);
+    __ set(end, __ AddI(start, __ ConI(4)));
+  }
+  if (!dcon) {
+    __ end_if();
+  }
+  kit.sync_kit(ideal);
+  return __ value(end);
+}
+
+// Copy four chars into dst_array at index start.
+// This enables MergeStore optimization to combine four byte stores into an int store.
+Node* PhaseStringOpts::copy_char4(GraphKit& kit, Node* c1, Node* c2, Node* c3, Node* c4, Node* dst_array, Node* dst_coder, Node* start) {
+  bool dcon = (dst_coder != nullptr) && dst_coder->is_Con();
+  bool dbyte = dcon ? (dst_coder->get_int() == java_lang_String::CODER_LATIN1) : false;
+
+  IdealKit ideal(&kit, true, true);
+  IdealVariable end(ideal); __ declarations_done();
+  Node* adr1 = kit.array_element_address(dst_array, start, T_BYTE);
+  Node* adr2 = kit.array_element_address(dst_array, __ AddI(start, __ ConI(1)), T_BYTE);
+  Node* adr3 = kit.array_element_address(dst_array, __ AddI(start, __ ConI(2)), T_BYTE);
+  Node* adr4 = kit.array_element_address(dst_array, __ AddI(start, __ ConI(3)), T_BYTE);
+  if (!dcon) {
+    __ if_then(dst_coder, BoolTest::eq, __ ConI(java_lang_String::CODER_LATIN1));
+  }
+  if (!dcon || dbyte) {
+    // Destination is Latin1. Store four bytes.
+    __ store(__ ctrl(), adr1, c1, T_BYTE, byte_adr_idx, MemNode::unordered);
+    __ store(__ ctrl(), adr2, c2, T_BYTE, byte_adr_idx, MemNode::unordered);
+    __ store(__ ctrl(), adr3, c3, T_BYTE, byte_adr_idx, MemNode::unordered);
+    __ store(__ ctrl(), adr4, c4, T_BYTE, byte_adr_idx, MemNode::unordered);
+    __ set(end, __ AddI(start, __ ConI(4)));
+  }
+  if (!dcon) {
+    __ else_();
+  }
+  if (!dcon || !dbyte) {
+    // Destination is UTF16. Store four chars.
+    __ store(__ ctrl(), adr1, c1, T_CHAR, byte_adr_idx, MemNode::unordered, false, true /* mismatched */);
+    __ store(__ ctrl(), adr2, c2, T_CHAR, byte_adr_idx, MemNode::unordered, false, true /* mismatched */);
+    __ store(__ ctrl(), adr3, c3, T_CHAR, byte_adr_idx, MemNode::unordered, false, true /* mismatched */);
+    __ store(__ ctrl(), adr4, c4, T_CHAR, byte_adr_idx, MemNode::unordered, false, true /* mismatched */);
+    __ set(end, __ AddI(start, __ ConI(8)));
+  }
+  if (!dcon) {
+    __ end_if();
+  }
+  kit.sync_kit(ideal);
+  return __ value(end);
+}
+
 #undef __
 #define __ kit.
 
@@ -1965,6 +2157,92 @@ void PhaseStringOpts::replace_string_concat(StringConcat* sc) {
         length = __ AddI(length, __ intcon(1));
         break;
       }
+      case StringConcat::Char2Mode: {
+        // Two consecutive chars - process both
+        Node* c2 = sc->argument(argi + 1);
+        if (!coder_fixed) {
+          // Check coder for both chars
+          const TypeInt* t1 = kit.gvn().type(arg)->is_int();
+          const TypeInt* t2 = kit.gvn().type(c2)->is_int();
+          if (t1->is_con() && t2->is_con()) {
+            if (t1->get_con() <= 255 && t2->get_con() <= 255) {
+              coder = __ OrI(coder, __ intcon(java_lang_String::CODER_LATIN1));
+            } else {
+              coder_fixed = true;
+              coder = __ intcon(java_lang_String::CODER_UTF16);
+            }
+          } else {
+#undef __
+#define __ ideal.
+            IdealKit ideal(&kit, true, true);
+            IdealVariable char_coder(ideal); __ declarations_done();
+            __ set(char_coder, __ ConI(java_lang_String::CODER_LATIN1));
+            __ if_then(arg, BoolTest::gt, __ ConI(0xFF));
+              __ set(char_coder, __ ConI(java_lang_String::CODER_UTF16));
+            __ end_if();
+            __ if_then(c2, BoolTest::gt, __ ConI(0xFF));
+              __ set(char_coder, __ ConI(java_lang_String::CODER_UTF16));
+            __ end_if();
+            kit.sync_kit(ideal);
+            coder = __ OrI(coder, __ value(char_coder));
+#undef __
+#define __ kit.
+          }
+        }
+        length = __ AddI(length, __ intcon(2));
+        string_sizes->init_req(argi + 1, nullptr); // Placeholder for skipped arg
+        argi++; // Skip next char
+        break;
+      }
+      case StringConcat::Char4Mode: {
+        // Four consecutive chars - process all
+        Node* c2 = sc->argument(argi + 1);
+        Node* c3 = sc->argument(argi + 2);
+        Node* c4 = sc->argument(argi + 3);
+        if (!coder_fixed) {
+          const TypeInt* t1 = kit.gvn().type(arg)->is_int();
+          const TypeInt* t2 = kit.gvn().type(c2)->is_int();
+          const TypeInt* t3 = kit.gvn().type(c3)->is_int();
+          const TypeInt* t4 = kit.gvn().type(c4)->is_int();
+          if (t1->is_con() && t2->is_con() && t3->is_con() && t4->is_con()) {
+            if (t1->get_con() <= 255 && t2->get_con() <= 255 &&
+                t3->get_con() <= 255 && t4->get_con() <= 255) {
+              coder = __ OrI(coder, __ intcon(java_lang_String::CODER_LATIN1));
+            } else {
+              coder_fixed = true;
+              coder = __ intcon(java_lang_String::CODER_UTF16);
+            }
+          } else {
+#undef __
+#define __ ideal.
+            IdealKit ideal(&kit, true, true);
+            IdealVariable char_coder(ideal); __ declarations_done();
+            __ set(char_coder, __ ConI(java_lang_String::CODER_LATIN1));
+            __ if_then(arg, BoolTest::gt, __ ConI(0xFF));
+              __ set(char_coder, __ ConI(java_lang_String::CODER_UTF16));
+            __ end_if();
+            __ if_then(c2, BoolTest::gt, __ ConI(0xFF));
+              __ set(char_coder, __ ConI(java_lang_String::CODER_UTF16));
+            __ end_if();
+            __ if_then(c3, BoolTest::gt, __ ConI(0xFF));
+              __ set(char_coder, __ ConI(java_lang_String::CODER_UTF16));
+            __ end_if();
+            __ if_then(c4, BoolTest::gt, __ ConI(0xFF));
+              __ set(char_coder, __ ConI(java_lang_String::CODER_UTF16));
+            __ end_if();
+            kit.sync_kit(ideal);
+            coder = __ OrI(coder, __ value(char_coder));
+#undef __
+#define __ kit.
+          }
+        }
+        length = __ AddI(length, __ intcon(4));
+        string_sizes->init_req(argi + 1, nullptr); // Placeholders for skipped args
+        string_sizes->init_req(argi + 2, nullptr);
+        string_sizes->init_req(argi + 3, nullptr);
+        argi += 3; // Skip next 3 chars
+        break;
+      }
       default:
         ShouldNotReachHere();
     }
@@ -2022,6 +2300,22 @@ void PhaseStringOpts::replace_string_concat(StringConcat* sc) {
           case StringConcat::CharMode: {
             start = copy_char(kit, arg, dst_array, coder, start);
           break;
+          }
+          case StringConcat::Char2Mode: {
+            // Two consecutive chars - get second char from next argument
+            Node* c2 = sc->argument(argi + 1);
+            start = copy_char2(kit, arg, c2, dst_array, coder, start);
+            argi++; // Skip the next char since we processed it
+            break;
+          }
+          case StringConcat::Char4Mode: {
+            // Four consecutive chars - get remaining chars from next arguments
+            Node* c2 = sc->argument(argi + 1);
+            Node* c3 = sc->argument(argi + 2);
+            Node* c4 = sc->argument(argi + 3);
+            start = copy_char4(kit, arg, c2, c3, c4, dst_array, coder, start);
+            argi += 3; // Skip the next 3 chars since we processed them
+            break;
           }
           default:
             ShouldNotReachHere();
