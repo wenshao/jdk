@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 1998, 2025, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1998, 2026, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2026, Alibaba Group Holding Limited. All Rights Reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +26,7 @@
 #include "ci/ciCallSite.hpp"
 #include "ci/ciMethodHandle.hpp"
 #include "ci/ciSymbols.hpp"
+#include "classfile/javaClasses.hpp"
 #include "classfile/vmSymbols.hpp"
 #include "compiler/compileBroker.hpp"
 #include "compiler/compileLog.hpp"
@@ -524,6 +526,254 @@ static bool check_call_consistency(JVMState* jvms, CallGenerator* cg) {
 }
 #endif // ASSERT
 
+// --- String.format/formatted fast-path helpers ---
+
+// Helper: read a character from the format string at position idx.
+static jchar fmt_char_at(ciTypeArray* val_arr, jbyte coder, int idx) {
+  return (coder == java_lang_String::CODER_LATIN1)
+         ? (jchar)(val_arr->byte_at(idx) & 0xFF)
+         : (jchar) val_arr->char_at(idx);
+}
+
+// Scan a constant format string for simple specifiers.
+// Supported format: %[flag][width]conv where:
+//   flag  = optional single flag character: ' ' or '0'
+//   width = optional single digit 1-9
+//   conv  = one of: s, d, x, X
+//
+// spec_indexes[] receives the character position of each '%'.
+// spec_convs[]   receives the conversion character.
+// spec_widths[]  receives the width digit (0 if none).
+// spec_flags[]   receives the flag character (0 if none).
+static int scan_format_string(ciInstance* fmt_inst, int* spec_indexes, char* spec_convs,
+                              int* spec_widths, char* spec_flags, int max_specs) {
+  ciObject* val_obj = fmt_inst->field_value_by_offset(java_lang_String::value_offset()).as_object();
+  if (val_obj == nullptr) return 0;
+  ciTypeArray* val_arr = val_obj->as_type_array();
+  if (val_arr == nullptr) return 0;
+
+  jbyte coder = fmt_inst->field_value_by_offset(java_lang_String::coder_offset()).as_byte();
+  int flen = val_arr->length() >> coder;
+  int count = 0;
+
+  for (int i = 0; i < flen; i++) {
+    if (fmt_char_at(val_arr, coder, i) != '%') continue;
+    if (i + 1 >= flen) return 0;              // trailing %
+    int pos = i + 1;
+    jchar nc = fmt_char_at(val_arr, coder, pos);
+
+    // Check for optional single-char flag (only ' ' and '0' supported)
+    char flag = 0;
+    if (nc == ' ' || nc == '0') {
+      flag = (char)nc;
+      pos++;
+      if (pos >= flen) return 0;
+      nc = fmt_char_at(val_arr, coder, pos);
+    }
+
+    // Check for optional width digit (1-9)
+    int width = 0;
+    if (nc >= '1' && nc <= '9') {
+      width = nc - '0';
+      pos++;
+      if (pos >= flen) return 0;
+      nc = fmt_char_at(val_arr, coder, pos);
+    }
+
+    if (nc == 's' || nc == 'd' || nc == 'x' || nc == 'X') {
+      if (count >= max_specs) return 0;
+      // Flags (' ' and '0') only allowed for numeric conversions, not %s
+      if (flag != 0 && nc == 's') return 0;
+      // specifier position must fit in one byte (specIndexes packs 8 positions into a long)
+      if (i > 0xFF) return 0;
+      spec_indexes[count] = i;
+      spec_convs[count]   = (char)nc;
+      spec_widths[count]  = width;
+      spec_flags[count]   = flag;
+      count++;
+      i = pos;                                 // skip past specifier char
+    } else if (nc == '%' && flag == 0 && width == 0) {
+      // Escaped %%. Skip optimization entirely - the Java helper methods
+      // (formatSplice, formatSplice2) don't handle %% -> % conversion correctly.
+      // This is a conservative approach; format_multi could handle it but
+      // we keep the logic simple by rejecting any %% in the format string.
+      return 0;
+    } else {
+      return 0;                                // unsupported specifier
+    }
+  }
+  return count;
+}
+
+// Map a single specifier character to the format method suffix character.
+// Returns the character if supported, '\0' otherwise.
+static char format_spec_suffix(char spec) {
+  switch (spec) {
+    case 's': case 'd': case 'x': case 'X': return spec;
+    default: return '\0';
+  }
+}
+
+// Try to optimize String.format(constFmt, args) / constFmt.formatted(args)
+// into a call to an optimized format helper.
+// Extra compile-time constant args are pushed onto the operand stack only
+// when there is enough existing capacity (sp + extra <= stk_size).
+// This avoids grow_stack which shifts monoff and breaks exception handler merges.
+void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispatch,
+                                       bool is_virtual_or_interface, bool is_virtual,
+                                       bool& did_redirect, int& extra_args) {
+  if (callee->holder() != C->env()->String_klass()) return;
+
+  const char* mname = callee->name()->as_utf8();
+  bool is_static  = !call_does_dispatch && !is_virtual_or_interface && strcmp(mname, "format") == 0
+                    && callee->arg_size_no_receiver() == 2;  // exclude format(Locale, String, Object...)
+  bool is_virtual_fmt = is_virtual && strcmp(mname, "formatted") == 0;
+  if (!is_static && !is_virtual_fmt) return;
+
+  // Stack: [sp-2]=format, [sp-1]=Object[] array
+  Node* format_node = stack(sp() - 2);
+  Node* args_node   = stack(sp() - 1);
+
+  // Check format is a constant String
+  const TypeOopPtr* fmt_type = _gvn.type(format_node)->isa_oopptr();
+  if (fmt_type == nullptr || !fmt_type->klass_is_exact() || fmt_type->const_oop() == nullptr) return;
+  ciInstance* fmt_inst = fmt_type->const_oop()->as_instance();
+  if (fmt_inst == nullptr) return;
+
+  // Scan format string for specifier positions, characters, widths, and flags (up to 8)
+  int  spec_indexes[8];
+  char spec_convs[8];
+  int  spec_widths[8];
+  char spec_flags[8];
+  int spec_count = scan_format_string(fmt_inst, spec_indexes, spec_convs, spec_widths, spec_flags, 8);
+  if (spec_count == 0) return;
+
+  // Check args is a freshly allocated Object[spec_count]
+  Node* arr = args_node;
+  while (arr != nullptr && arr->is_CheckCastPP()) arr = arr->in(1);
+  if (arr == nullptr || !arr->is_Proj()) return;
+  AllocateArrayNode* alloc = arr->in(0)->isa_AllocateArray();
+  if (alloc == nullptr) return;
+  Node* len_nd = alloc->in(AllocateNode::ALength);
+  const TypeInt* len_t = _gvn.type(len_nd)->isa_int();
+  if (len_t == nullptr || !len_t->is_con() || len_t->get_con() != spec_count) return;
+
+  // Validate all specifiers are supported conversion characters
+  for (int i = 0; i < spec_count; i++) {
+    if (format_spec_suffix(spec_convs[i]) == '\0') return;
+  }
+
+  // Compute how many extra stack slots the target method needs beyond the
+  // original 2 (format, args).  We must NOT call grow_stack (which shifts
+  // monoff/scloff/endoff and breaks exception handler merges).  Instead,
+  // only proceed when the existing operand stack has enough spare capacity.
+  // All optimized methods use signature (String, Object[], long) → 4 slots total, was 2 → +2
+  int needed_extra = 2;
+  if (spec_count > 8) return;  // not supported
+
+  uint stk_capacity = jvms()->stk_size();  // max operand stack depth
+  if ((uint)(sp() + needed_extra) > stk_capacity) return;  // not enough room, skip
+
+  // All optimized format methods use the same stack layout: (String, Object[], long).
+  // This avoids extracting args from the array and dropping the array reference,
+  // which would cause bad oop during deoptimization in TieredCompilation mode.
+
+  // Determine target method name and signature
+  // Static: format_s/d/x/X(format, args, meta) - signature (String, Object[], long)String
+  // Virtual: formatted_s/d/x/X(args, meta) - signature (Object[], long)String (this=format)
+  const char* target_name = nullptr;
+  const char* target_sig = nullptr;
+  char method_name_buf[16];
+
+  if (spec_count == 1 && spec_flags[0] == 0) {
+    // Single specifier without flags: format_s/d/x/X or formatted_s/d/x/X
+    if (is_static) {
+      method_name_buf[0] = 'f'; method_name_buf[1] = 'o'; method_name_buf[2] = 'r';
+      method_name_buf[3] = 'm'; method_name_buf[4] = 'a'; method_name_buf[5] = 't';
+      method_name_buf[6] = '_'; method_name_buf[7] = spec_convs[0]; method_name_buf[8] = '\0';
+    } else {
+      method_name_buf[0] = 'f'; method_name_buf[1] = 'o'; method_name_buf[2] = 'r';
+      method_name_buf[3] = 'm'; method_name_buf[4] = 'a'; method_name_buf[5] = 't';
+      method_name_buf[6] = 't'; method_name_buf[7] = 'e'; method_name_buf[8] = 'd';
+      method_name_buf[9] = '_'; method_name_buf[10] = spec_convs[0]; method_name_buf[11] = '\0';
+    }
+    target_name = method_name_buf;
+    target_sig = is_static ? "(Ljava/lang/String;[Ljava/lang/Object;J)Ljava/lang/String;"
+                           : "([Ljava/lang/Object;J)Ljava/lang/String;";
+  } else if (spec_count == 2 &&
+             spec_flags[0] == 0 && spec_flags[1] == 0 &&
+             (spec_convs[0] == 's' || spec_convs[0] == 'd') &&
+             (spec_convs[1] == 's' || spec_convs[1] == 'd')) {
+    // Two specifiers with s/d only: format_ss/sd/ds/dd or formatted_ss/sd/ds/dd
+    if (is_static) {
+      method_name_buf[0] = 'f'; method_name_buf[1] = 'o'; method_name_buf[2] = 'r';
+      method_name_buf[3] = 'm'; method_name_buf[4] = 'a'; method_name_buf[5] = 't';
+      method_name_buf[6] = '_'; method_name_buf[7] = spec_convs[0];
+      method_name_buf[8] = spec_convs[1]; method_name_buf[9] = '\0';
+    } else {
+      method_name_buf[0] = 'f'; method_name_buf[1] = 'o'; method_name_buf[2] = 'r';
+      method_name_buf[3] = 'm'; method_name_buf[4] = 'a'; method_name_buf[5] = 't';
+      method_name_buf[6] = 't'; method_name_buf[7] = 'e'; method_name_buf[8] = 'd';
+      method_name_buf[9] = '_'; method_name_buf[10] = spec_convs[0];
+      method_name_buf[11] = spec_convs[1]; method_name_buf[12] = '\0';
+    }
+    target_name = method_name_buf;
+    target_sig = is_static ? "(Ljava/lang/String;[Ljava/lang/Object;J)Ljava/lang/String;"
+                           : "([Ljava/lang/Object;J)Ljava/lang/String;";
+  } else {
+    // format_multi or formatted_multi for 3-8 specifiers (or 2 with flags/x/X)
+    target_name = is_static ? "format_multi" : "formatted_multi";
+    target_sig = is_static ? "(Ljava/lang/String;[Ljava/lang/Object;J)Ljava/lang/String;"
+                           : "([Ljava/lang/Object;J)Ljava/lang/String;";
+  }
+
+  // Pack specifier metadata into a long
+  // Use & 0xFF to avoid sign extension when value >= 128
+  // Naming: packedSpecIndexes matches Java-side parameter name for consistency
+  jlong packedSpecIndexes = 0;
+  if (spec_count == 1 && spec_flags[0] == 0) {
+    // Single specifier: byte0=specIndex, byte1=width
+    packedSpecIndexes = ((jlong)(spec_indexes[0] & 0xFF)) |
+                         (((jlong)(spec_widths[0] & 0xFF)) << 8);
+  } else if (spec_count == 2 &&
+             spec_flags[0] == 0 && spec_flags[1] == 0 &&
+             (spec_convs[0] == 's' || spec_convs[0] == 'd') &&
+             (spec_convs[1] == 's' || spec_convs[1] == 'd')) {
+    // Two s/d specifiers: byte0=ci1, byte1=w1, byte2=ci2, byte3=w2
+    packedSpecIndexes = ((jlong)(spec_indexes[0] & 0xFF)) |
+                         (((jlong)(spec_widths[0] & 0xFF)) << 8) |
+                         (((jlong)(spec_indexes[1] & 0xFF)) << 16) |
+                         (((jlong)(spec_widths[1] & 0xFF)) << 24);
+  } else {
+    // format_multi/formatted_multi: pack only specifier positions.
+    // Flags and widths are re-parsed at runtime in format_multi() since the
+    // format string is a compile-time constant and the long has limited space.
+    // This design trades some runtime work for simpler packing and allows
+    // extending flag support without changing the packed format.
+    for (int i = 0; i < spec_count; i++) {
+      packedSpecIndexes |= ((jlong)(spec_indexes[i] & 0xFF)) << (i * 8);
+    }
+  }
+
+  ciSymbol* nm  = ciSymbol::make(target_name);
+  ciSymbol* sig = ciSymbol::make(target_sig);
+  ciMethod* target = C->env()->String_klass()->find_method(nm, sig);
+  if (target == nullptr) return;
+
+  // Stack: [sp-2]=format, [sp-1]=Object[] args — keep as-is, push long
+  push(_gvn.longcon(packedSpecIndexes));
+  push(C->top());  // second half of long
+  extra_args = 2;
+  callee = target;
+
+  call_does_dispatch = false;  // Devirtualize: target is a specific private method
+  did_redirect = true;
+  NOT_PRODUCT(if (PrintOptimizeStringConcat) {
+    tty->print_cr("StringFormat: optimized '%s' -> %s in %s",
+                  mname, callee->name()->as_utf8(), method()->name()->as_utf8());
+  });
+}
+
 //------------------------------do_call----------------------------------------
 // Handle your basic call.  Inline if we can & want to, else just setup call.
 void Parse::do_call() {
@@ -647,15 +897,35 @@ void Parse::do_call() {
   // unless it knows how to optimize the receiver dispatch.
   bool try_inline = (C->do_inlining() || InlineAccessors);
 
+  // --- String.format/formatted fast-path optimization (must be before dec_sp) ---
+  bool did_format_redirect = false;
+  int  format_extra_args = 0;
+  try_optimize_string_format(callee, call_does_dispatch, is_virtual_or_interface, is_virtual,
+                             did_format_redirect, format_extra_args);
+  // Disable inlining for the redirected call: the callee's signature differs
+  // from the original bytecode's expectation, so inlining would produce
+  // scope values that confuse the deoptimizer (bad oop during frame reconstruction).
+  if (did_format_redirect) {
+    try_inline = false;
+  }
+
   // ---------------------
-  dec_sp(nargs);              // Temporarily pop args for JVM state of call
+  dec_sp(nargs + format_extra_args);  // Temporarily pop args for JVM state of call
+
   JVMState* jvms = sync_jvms();
 
   // ---------------------
   // Decide call tactic.
   // This call checks with CHA, the interpreter profile, intrinsics table, etc.
   // It decides whether inlining is desirable or not.
-  CallGenerator* cg = C->call_generator(callee, vtable_index, call_does_dispatch, jvms, try_inline, prof_factor(), speculative_receiver_type);
+  // For String.format/formatted redirect, bypass call_generator to avoid guarded call
+  // wrapper which would prevent setting override_symbolic_info on the actual call node.
+  CallGenerator* cg;
+  if (did_format_redirect) {
+    cg = CallGenerator::for_direct_call(callee);
+  } else {
+    cg = C->call_generator(callee, vtable_index, call_does_dispatch, jvms, try_inline, prof_factor(), speculative_receiver_type);
+  }
 
   // NOTE:  Don't use orig_callee and callee after this point!  Use cg->method() instead.
   orig_callee = callee = nullptr;
@@ -688,6 +958,16 @@ void Parse::do_call() {
   }
 
   JVMState* new_jvms = cg->generate(jvms);
+  // When we redirected format/formatted -> optimized helper, mark the call node to
+  // bypass the symbolic-info consistency check (bci still refers to original method).
+  if (did_format_redirect && cg->call_node() != nullptr) {
+    CallNode* cn = cg->call_node();
+    if (cn->is_CallStaticJava()) {
+      cn->as_CallStaticJava()->set_override_symbolic_info(true);
+    } else if (cn->is_CallDynamicJava()) {
+      cn->as_CallDynamicJava()->set_override_symbolic_info(true);
+    }
+  }
   if (new_jvms == nullptr) {
     // When inlining attempt fails (e.g., too many arguments),
     // it may contaminate the current compile state, making it
@@ -723,7 +1003,8 @@ void Parse::do_call() {
     set_jvms(new_jvms);
   }
 
-  assert(check_call_consistency(jvms, cg), "inconsistent info");
+  // Skip consistency check when we deliberately redirected format/formatted -> format1s.
+  assert(did_format_redirect || check_call_consistency(jvms, cg), "inconsistent info");
 
   if (!stopped()) {
     // This was some sort of virtual call, which did a null check for us.
