@@ -1,7 +1,7 @@
 /*
  * @test /nodynamiccopyright/
- * @bug 8019340
- * @summary varargs-related warnings are meaningless on signature-polymorphic methods such as MethodHandle.invokeExact
+ * @summary Verify that invalid bootstrap method signatures are rejected by javac
+ *          when annotated with @CallSiteBootstrap or @ConstantBootstrap
  *
  * @compile/fail/ref=BadBootstrapAnnotations.out -XDrawDiagnostics BadBootstrapAnnotations.java
  */

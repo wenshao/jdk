@@ -33,9 +33,10 @@ import java.lang.annotation.Target;
 
 /**
  * Indicates that a method or constructor is intended to be a legal
- * bootstrap method declaration for a dynamically-computed call site.
+ * bootstrap method declaration for a dynamically-computed call site
+ * (an {@code invokedynamic} instruction).
  *
- * If a method or constructor is annotated with an annotation of this
+ * <p>If a method or constructor is annotated with an annotation of this
  * interface, compilers are required to generate an error message if
  * any of the following does not hold:
  * <ul>
@@ -43,11 +44,13 @@ import java.lang.annotation.Target;
  *     if the declaration is an instance method.  The arguments can be
  *     variable-arity.
  * <li>The first argument type is {@linkplain MethodHandle#asType(MethodType)
- *     convertible} from {@link MethodHandles.Lookup}.
- * <li>The second argument type is convertible from {@link String}.
- * <li>The third argument type is convertible from {@link MethodType}.
+ *     method handle convertible} from {@link MethodHandles.Lookup}.
+ *     That is, the parameter type must be {@code MethodHandles.Lookup},
+ *     {@code Object}, or a supertype of {@code MethodHandles.Lookup}.
+ * <li>The second argument type is method handle convertible from {@link String}.
+ * <li>The third argument type is method handle convertible from {@link MethodType}.
  * <li>The method return type or the declaring class of the constructor is
- *     convertible to {@link CallSite}.
+ *     method handle convertible to {@link CallSite}.
  * </ul>
  *
  * @see java.lang.invoke##bsm Execution of bootstrap methods

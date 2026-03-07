@@ -33,9 +33,10 @@ import java.lang.annotation.Target;
 
 /**
  * Indicates that a method or constructor is intended to be a legal
- * bootstrap method declaration for a dynamically-computed constant.
+ * bootstrap method declaration for a dynamically-computed constant
+ * (a {@code ldc} instruction with a constant dynamic).
  *
- * If a method or constructor is annotated with an annotation of this
+ * <p>If a method or constructor is annotated with an annotation of this
  * interface, compilers are required to generate an error message if
  * any of the following does not hold:
  * <ul>
@@ -43,9 +44,11 @@ import java.lang.annotation.Target;
  *     if the declaration is an instance method.  The arguments can be
  *     variable-arity.
  * <li>The first argument type is exactly {@link MethodHandles.Lookup}.
+ *     Unlike {@link CallSiteBootstrap}, no supertypes are permitted here
+ *     because the lookup object provides access control.
  * <li>The second argument type is {@linkplain MethodHandle#asType(MethodType)
- *     convertible} from {@link String}.
- * <li>The third argument type is convertible from {@link Class}.
+ *     method handle convertible} from {@link String}.
+ * <li>The third argument type is method handle convertible from {@link Class}.
  * </ul>
  *
  * @apiNote

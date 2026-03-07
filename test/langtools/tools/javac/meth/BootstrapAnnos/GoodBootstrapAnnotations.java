@@ -64,4 +64,6 @@ public class GoodBootstrapAnnotations {
 
     // weird condys
     @ConstantBootstrap static void constNull(MethodHandles.Lookup l, Object... o) {}
+    // void return type for condy BSM with standard signature (returns null constant)
+    @ConstantBootstrap static void voidCondyBootstrap(MethodHandles.Lookup lookup, String name, Class<?> type) {}
 }

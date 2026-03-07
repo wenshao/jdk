@@ -3744,13 +3744,18 @@ public class Check {
     }
 
     private Type paramType(int index, List<Type> paramTypes, boolean varargs) {
+        if (paramTypes.isEmpty()) {
+            return Type.noType;
+        }
         if (index < paramTypes.size() - 1) {
             return paramTypes.get(index);
         }
         if (!varargs) {
             return index == paramTypes.size() - 1 ? paramTypes.getLast() : Type.noType;
         }
-        return types.elemtype(paramTypes.getLast());
+        // For varargs, return the element type of the last parameter (the varargs array)
+        var lastParam = paramTypes.getLast();
+        return lastParam.hasTag(ARRAY) ? types.elemtype(lastParam) : Type.noType;
     }
 
     void checkDeprecatedAnnotation(DiagnosticPosition pos, Symbol s) {
