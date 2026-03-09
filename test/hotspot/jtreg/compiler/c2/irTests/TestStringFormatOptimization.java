@@ -307,6 +307,27 @@ public class TestStringFormatOptimization {
 
     @Test
     @IR(failOn = { IRNode.ALLOC_ARRAY })
+    @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_d", "= 1" })
+    static String testSingle_null_d() {
+        return String.format("%d", (Object) null);
+    }
+
+    @Test
+    @IR(failOn = { IRNode.ALLOC_ARRAY })
+    @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_1", "= 1" })
+    static String testSingle_null_x() {
+        return String.format("%x", (Object) null);
+    }
+
+    @Test
+    @IR(failOn = { IRNode.ALLOC_ARRAY })
+    @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_1", "= 1" })
+    static String testSingle_null_X() {
+        return String.format("%X", (Object) null);
+    }
+
+    @Test
+    @IR(failOn = { IRNode.ALLOC_ARRAY })
     @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_ss", "= 1" })
     static String testTwo_nullFirst() {
         return String.format("%s %s", (Object) null, "b");
@@ -336,13 +357,18 @@ public class TestStringFormatOptimization {
 
     @Run(test = {"testSingle_s", "testSingle_sPrefix",
                  "testSingle_d", "testSingle_dLong",
-                 "testSingle_null"})
+                 "testSingle_null", "testSingle_null_d",
+                 "testSingle_null_x", "testSingle_null_X"})
     void runSingleTests() {
         assertEquals("hello", testSingle_s("hello"));
         assertEquals("value: hello", testSingle_sPrefix("hello"));
         assertEquals("count=42", testSingle_d(42));
         assertEquals("value=123456789012345", testSingle_dLong(123456789012345L));
         assertEquals("null", testSingle_null());
+        // Null arguments for numeric conversions
+        assertEquals("null", testSingle_null_d());
+        assertEquals("null", testSingle_null_x());
+        assertEquals("NULL", testSingle_null_X());
     }
 
     @Run(test = {"testFormatted_s", "testFormatted_d"})

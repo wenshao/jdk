@@ -35,6 +35,12 @@ public class TestStringFormatOptimization {
     static String testFormat_s(String s) { return String.format("%s", s); }
     static String testFormat_sPrefix(String s) { return String.format("value : %s", s); }
     static String testFormat_sNull() { return String.format("%s", (Object) null); }
+    static String testFormat_dNull() { return String.format("%d", (Object) null); }
+    static String testFormat_xNull() { return String.format("%x", (Object) null); }
+    static String testFormat_XNull() { return String.format("%X", (Object) null); }
+    // null with LEADING_SPACE flag - Formatter does NOT apply flag to null
+    static String testFormat_dNullLeadingSpace() { return String.format("[% d]", (Object) null); }
+    static String testFormat_dNullZeroPad() { return String.format("[%05d]", (Object) null); }
     static String testFormat_sFormattable(FormattableString fs) { return String.format("[%s]", fs); }
     static String testFormat_sFormattableWidth(FormattableString fs) { return String.format("[%14s]", fs); }
     static String testFormat_dInt(int v) { return String.format("count=%d", v); }
@@ -47,6 +53,22 @@ public class TestStringFormatOptimization {
     static String testFormat_xShort(short v) { return String.format("short=0x%x", v); }
     static String testFormat_xByte(byte v) { return String.format("byte=0x%x", v); }
     static String testFormat_X(int v) { return String.format("0x%X", v); }
+
+    // ========== BigInteger tests (supported by Formatter) ==========
+
+    static String testFormat_dBigInteger(java.math.BigInteger v) { return String.format("big=%d", v); }
+    static String testFormat_dBigIntegerNull() { return String.format("%d", (java.math.BigInteger) null); }
+    static String testFormat_xBigInteger(java.math.BigInteger v) { return String.format("0x%x", v); }
+    static String testFormat_xBigIntegerNull() { return String.format("%x", (java.math.BigInteger) null); }
+    static String testFormat_XBigInteger(java.math.BigInteger v) { return String.format("0x%X", v); }
+    static String testFormat_XBigIntegerNull() { return String.format("%X", (java.math.BigInteger) null); }
+    // BigInteger negative hex tests (different from int/long which use 2's complement)
+    static String testFormat_xBigIntegerNeg(java.math.BigInteger v) { return String.format("hex=%x", v); }
+    static String testFormat_XBigIntegerNeg(java.math.BigInteger v) { return String.format("HEX=%X", v); }
+    static String testFormat_xBigIntegerNegWidth(java.math.BigInteger v) { return String.format("[%08x]", v); }
+    // Multi-specifier tests for format_arg path (3+ specifiers)
+    static String testFormat_xNullZeroPadMulti() { return String.format("[%08x][%s][%s]", (Object) null, "a", "b"); }
+    static String testFormat_xBigIntegerNegZeroPadMulti(java.math.BigInteger v) { return String.format("[%08x][%s][%s]", v, "a", "b"); }
 
     // ========== Exception tests (wrong arg types) ==========
 
@@ -97,6 +119,10 @@ public class TestStringFormatOptimization {
     static String testFormat_xWidth(int v) { return String.format("[%4x]", v); }
     static String testFormat_XWidth(int v) { return String.format("[%4X]", v); }
     static String testFormat_ssWidth(String a, String b) { return String.format("[%5s|%3s]", a, b); }
+    // Null with width tests
+    static String testFormat_dWidthNull() { return String.format("[%5d]", (Object) null); }
+    static String testFormat_xWidthNull() { return String.format("[%5x]", (Object) null); }
+    static String testFormat_XWidthNull() { return String.format("[%5X]", (Object) null); }
 
     // ========== formatted() - width tests (optimized) ==========
 
@@ -126,6 +152,7 @@ public class TestStringFormatOptimization {
 
     static String testFormat3s(String a, String b, String c) { return String.format("%s %s %s", a, b, c); }
     static String testFormat3d(int a, int b, int c) { return String.format("%d+%d=%d", a, b, c); }
+    static String testFormat_d3(int a, int b, int c) { return String.format("[%05d][%05d][%05d]", a, b, c); }
     static String testFormatMixed(String s, int d, int x) { return String.format("name=%s id=%d hex=%x", s, d, x); }
     static String testFormat4s(String a, String b, String c, String d) { return String.format("[%s|%s|%s|%s]", a, b, c, d); }
     static String testFormatMultiWidth(String a, int b, String c) { return String.format("[%5s|%3d|%s]", a, b, c); }
@@ -174,6 +201,14 @@ public class TestStringFormatOptimization {
             check("hello", testFormat_s("hello"));
             check("value : world", testFormat_sPrefix("world"));
             check("null", testFormat_sNull());
+            // Null arguments for numeric conversions (consistent with Formatter behavior)
+            check("null", testFormat_dNull());
+            check("null", testFormat_xNull());
+            check("NULL", testFormat_XNull());
+            // null with LEADING_SPACE flag (no width) - flag is ignored for null
+            check("[null]", testFormat_dNullLeadingSpace());
+            // null with ZERO_PAD and width - ZERO_PAD ignored but width applied with space padding
+            check("[ null]", testFormat_dNullZeroPad());
             // Formattable objects use formatTo() for %s
             check("[FORMATTABLE]", testFormat_sFormattable(new FormattableString("formattable")));
             check("[   FORMATTABLE]", testFormat_sFormattableWidth(new FormattableString("formattable")));
@@ -187,6 +222,23 @@ public class TestStringFormatOptimization {
             check("short=0xffff", testFormat_xShort((short) -1));
             check("byte=0xff", testFormat_xByte((byte) -1));
             check("0xFF", testFormat_X(255));
+
+            // ===== BigInteger tests (consistent with Formatter) =====
+            java.math.BigInteger bigInt = new java.math.BigInteger("123456789012345678901234567890");
+            check("big=123456789012345678901234567890", testFormat_dBigInteger(bigInt));
+            check("null", testFormat_dBigIntegerNull());
+            check("0x18ee90ff6c373e0ee4e3f0ad2", testFormat_xBigInteger(bigInt));
+            check("null", testFormat_xBigIntegerNull());
+            check("0x18EE90FF6C373E0EE4E3F0AD2", testFormat_XBigInteger(bigInt));
+            check("NULL", testFormat_XBigIntegerNull());
+            // BigInteger negative hex (uses sign + magnitude, not 2's complement like int/long)
+            java.math.BigInteger bigNeg = java.math.BigInteger.valueOf(-255);
+            check("hex=-ff", testFormat_xBigIntegerNeg(bigNeg));
+            check("HEX=-FF", testFormat_XBigIntegerNeg(bigNeg));
+            check("[-00000ff]", testFormat_xBigIntegerNegWidth(bigNeg));
+            // Multi-specifier path (format_arg) - null and negative BigInteger with ZERO_PAD
+            check("[    null][a][b]", testFormat_xNullZeroPadMulti());
+            check("[-00000ff][a][b]", testFormat_xBigIntegerNegZeroPadMulti(bigNeg));
 
             // ===== formatted() - single specifier (optimized) =====
             check("formatted test", testFormatted_s("test"));
@@ -225,6 +277,10 @@ public class TestStringFormatOptimization {
             check("[  ff]", testFormat_xWidth(255));
             check("[  FF]", testFormat_XWidth(255));
             check("[   ab|  c]", testFormat_ssWidth("ab", "c"));
+            // Null with width
+            check("[ null]", testFormat_dWidthNull());
+            check("[ null]", testFormat_xWidthNull());
+            check("[ NULL]", testFormat_XWidthNull());
 
             // ===== formatted() - width tests (optimized) =====
             check("[   hello]", testFormatted_sWidth("hello"));
@@ -304,23 +360,88 @@ public class TestStringFormatOptimization {
             // Test with Arabic locale (uses different digits and minus sign)
             java.util.Locale arabic = java.util.Locale.forLanguageTag("ar-EG");
             java.util.Locale.setDefault(java.util.Locale.Category.FORMAT, arabic);
+            java.text.DecimalFormatSymbols arDfs = java.text.DecimalFormatSymbols.getInstance(arabic);
+            char arZero = arDfs.getZeroDigit();
+            char arOne = (char) (arZero + 1);
+            char arTwo = (char) (arZero + 2);
+            char arFour = (char) (arZero + 4);
+            char arFive = (char) (arZero + 5);
 
-            // Re-run tests that should be localized
+            // Re-run tests that should be localized with exact content validation
             for (int i = 0; i < 5_000; i++) {
-                // Test ZERO_PAD with negative - should use locale-specific minus sign
+                // Test ZERO_PAD with negative - should use locale-specific digits
                 String result = testFormat_dZeroPadNeg(-5);
-                // Arabic uses locale-specific digits (٠١٢٣٤٥٦٧٨٩) and minus sign
-                // Verify the result has correct structure: [sign + 3 zeros + 5]
-                // Length should be 7: [ + sign + 3 padding zeros + digit 5 + ]
-                if (result.length() != 7) {
-                    throw new AssertionError("ZERO_PAD negative length wrong: " + result.length() + " - " + result);
+                // Expected: [-٠٠٠٥] with Arabic digits, width 5 includes sign
+                String expected = "[-" + arZero + arZero + arZero + arFive + "]";
+                if (!result.equals(expected)) {
+                    throw new AssertionError("Arabic ZERO_PAD negative: expected [" + expected + "] but got [" + result + "]");
                 }
 
                 // Test LEADING_SPACE with positive
                 result = testFormat_dLeadingSpace(42);
-                // Should have space prefix and locale-specific digits
-                if (result.length() != 5) {
-                    throw new AssertionError("LEADING_SPACE length wrong: " + result.length() + " - " + result);
+                // Expected: [ ٤٢] with Arabic digits
+                expected = "[ " + arFour + arTwo + "]";
+                if (!result.equals(expected)) {
+                    throw new AssertionError("Arabic LEADING_SPACE: expected [" + expected + "] but got [" + result + "]");
+                }
+
+                // Test %x/%X zero-padding should use ASCII '0', not localized digits
+                result = testFormat_xZeroPad(255);
+                expected = "[00ff]";  // ASCII zeros, not Arabic
+                if (!result.equals(expected)) {
+                    throw new AssertionError("Arabic %x ZERO_PAD should use ASCII '0': expected [" + expected + "] but got [" + result + "]");
+                }
+
+                result = testFormat_XZeroPad(255);
+                expected = "[00FF]";  // ASCII zeros, not Arabic
+                if (!result.equals(expected)) {
+                    throw new AssertionError("Arabic %X ZERO_PAD should use ASCII '0': expected [" + expected + "] but got [" + result + "]");
+                }
+            }
+
+            // Test with gsw locale (has zero='0', decSep='.', but minus='−' U+2212)
+            // This tests the early-exit condition in format_localizeDigits
+            // Note: Formatter does NOT localize the minus sign for %d, it uses ASCII '-'
+            java.util.Locale gsw = java.util.Locale.forLanguageTag("gsw");
+            java.util.Locale.setDefault(java.util.Locale.Category.FORMAT, gsw);
+            java.text.DecimalFormatSymbols gswDfs = java.text.DecimalFormatSymbols.getInstance(gsw);
+
+            for (int i = 0; i < 5_000; i++) {
+                // Test ZERO_PAD with negative - uses ASCII minus sign (per Formatter spec)
+                String result = testFormat_dZeroPadNeg(-5);
+                // Expected: [-0005] with ASCII minus, not U+2212
+                // Formatter.leadingSign() uses hardcoded '-', not localized
+                char firstChar = result.charAt(1);
+                if (firstChar != '-') {
+                    throw new AssertionError("gsw ZERO_PAD negative: expected ASCII '-' at pos 1, got U+" + String.format("%04X", (int)firstChar));
+                }
+                // Verify the rest is "0005"
+                String rest = result.substring(2, 6);
+                if (!rest.equals("0005")) {
+                    throw new AssertionError("gsw ZERO_PAD negative: expected [0005] after minus, got [" + rest + "]");
+                }
+
+                // Test positive number with zero padding - should work normally
+                result = testFormat_dZeroPad(42);
+                // Content should be "00042" regardless of internal encoding
+                if (!result.contains("00042")) {
+                    throw new AssertionError("gsw ZERO_PAD positive: expected to contain [00042], got [" + result + "]");
+                }
+            }
+
+            // Test with Arabic locale again for format_arg (multi-specifier path)
+            java.util.Locale.setDefault(java.util.Locale.Category.FORMAT, arabic);
+
+            for (int i = 0; i < 5_000; i++) {
+                // Test 3 specifiers (format_multi -> format_arg path)
+                String result = testFormat_d3(-1, 42, -123);
+                // Expected: [-٠٠٠١][٠٠٠٤٢][-٠١٢٣] with Arabic zero digit
+                char arThree = (char) (arZero + 3);
+                String expected = "[-" + arZero + arZero + arZero + arOne + "][" +
+                                  arZero + arZero + arZero + arFour + arTwo + "][" +
+                                  "-" + arZero + arOne + arTwo + arThree + "]";
+                if (!result.equals(expected)) {
+                    throw new AssertionError("Arabic format_arg: expected [" + expected + "] but got [" + result + "]");
                 }
             }
         } finally {

@@ -4917,18 +4917,18 @@ public final class String
     }
 
     /**
-     * Localize digits and minus sign in a byte array.
-     * Converts ASCII digits '0'-'9' to locale-specific digits and '-' to locale-specific minus sign.
+     * Localize digits in a byte array.
+     * Converts ASCII digits '0'-'9' to locale-specific digits.
+     * Note: Minus sign '-' is NOT localized (per Formatter.leadingSign behavior).
      */
     private static void format_localizeDigitsInPlace(byte[] bytes, int start, int end, byte coder,
-                                               char zeroDigit, char minusSign) {
+                                               char zeroDigit) {
         for (int i = start; i < end; i++) {
             char c = coder == LATIN1 ? (char) (bytes[i] & 0xFF) : StringUTF16.charAt(bytes, i);
-            if (c == '-') {
-                c = minusSign;
-            } else if (c >= '0' && c <= '9') {
+            if (c >= '0' && c <= '9') {
                 c = (char) (c - '0' + zeroDigit);
             }
+            // Note: minus sign '-' is NOT localized (per Formatter.leadingSign behavior)
             if (coder == LATIN1) {
                 bytes[i] = (byte) c;
             } else {
@@ -4939,18 +4939,17 @@ public final class String
 
     /**
      * Primitive overload for int - avoids boxing and intermediate String.
-     * Handles localization of digits and minus sign.
+     * Handles localization of digits.
      */
     @ForceInline
     private static String format_splice1(String format, int arg, int specIndex) {
         var dfs = DecimalFormat.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
         char zeroDigit = dfs.getZeroDigit();
-        char minusSign = dfs.getMinusSign();
 
         int argLen = DecimalDigits.stringSize(arg);
-        // Coder must account for both zeroDigit and minusSign (for negative numbers)
+        // Coder must account for zeroDigit (for digits localization)
+        // Note: minus sign is NOT localized, so coder only depends on zeroDigit
         byte coder = (byte) (StringLatin1.coderFromChar(zeroDigit)
-                           | StringLatin1.coderFromChar(minusSign)
                            | format.coder());
         int newLen = format.length() - 2 + argLen;
         byte[] bytes = new byte[newLen << coder];
@@ -4963,9 +4962,9 @@ public final class String
         }
         format.getBytes(bytes, specIndex + 2, fillEnd, coder, format.length() - specIndex - 2);
 
-        // Localize digits and minus sign if needed
-        if (zeroDigit != '0' || minusSign != '-') {
-            format_localizeDigitsInPlace(bytes, specIndex, fillEnd, coder, zeroDigit, minusSign);
+        // Localize digits if needed
+        if (zeroDigit != '0') {
+            format_localizeDigitsInPlace(bytes, specIndex, fillEnd, coder, zeroDigit);
         }
 
         return new String(bytes, coder);
@@ -4976,12 +4975,11 @@ public final class String
     private static String format_splice1(String format, long arg, int specIndex) {
         var dfs = DecimalFormat.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
         char zeroDigit = dfs.getZeroDigit();
-        char minusSign = dfs.getMinusSign();
 
         int argLen = DecimalDigits.stringSize(arg);
-        // Coder must account for both zeroDigit and minusSign (for negative numbers)
+        // Coder must account for zeroDigit (for digits localization)
+        // Note: minus sign is NOT localized, so coder only depends on zeroDigit
         byte coder = (byte) (StringLatin1.coderFromChar(zeroDigit)
-                           | StringLatin1.coderFromChar(minusSign)
                            | format.coder());
         int newLen = format.length() - 2 + argLen;
         byte[] bytes = new byte[newLen << coder];
@@ -4994,9 +4992,9 @@ public final class String
         }
         format.getBytes(bytes, specIndex + 2, fillEnd, coder, format.length() - specIndex - 2);
 
-        // Localize digits and minus sign if needed
-        if (zeroDigit != '0' || minusSign != '-') {
-            format_localizeDigitsInPlace(bytes, specIndex, fillEnd, coder, zeroDigit, minusSign);
+        // Localize digits if needed
+        if (zeroDigit != '0') {
+            format_localizeDigitsInPlace(bytes, specIndex, fillEnd, coder, zeroDigit);
         }
 
         return new String(bytes, coder);
@@ -5087,9 +5085,14 @@ public final class String
     /**
      * Convert an {@code Object} argument to its decimal string representation
      * with externally provided DecimalFormatSymbols for locale-aware formatting.
+     * Returns "null" if arg is null (consistent with Formatter behavior).
+     * Supports Integer, Long, Short, Byte, and BigInteger (consistent with Formatter).
      * @throws java.util.IllegalFormatConversionException if arg is not a supported numeric type
      */
     private static String format_toDecimalString(Object arg, java.text.DecimalFormatSymbols dfs) {
+        if (arg == null) {
+            return "null";
+        }
         String s;
         if (arg instanceof Integer v) {
             s = Integer.toString(v);
@@ -5099,8 +5102,10 @@ public final class String
             s = Integer.toString(v);
         } else if (arg instanceof Byte v) {
             s = Integer.toString(v);
+        } else if (arg instanceof java.math.BigInteger v) {
+            s = v.toString();
         } else {
-            throw new java.util.IllegalFormatConversionException('d', arg != null ? arg.getClass() : Object.class);
+            throw new java.util.IllegalFormatConversionException('d', arg.getClass());
         }
         return format_localizeDigits(s, dfs);
     }
@@ -5115,8 +5120,8 @@ public final class String
     }
 
     /**
-     * Replace ASCII digits '0'-'9' and minus sign '-' with locale-specific
-     * characters using the provided DecimalFormatSymbols.
+     * Replace ASCII digits '0'-'9' with locale-specific characters.
+     * Note: Minus sign '-' is NOT localized (per Formatter spec).
      * Note: decimal separator '.' handling is included for future %f support,
      * though current callers (Integer/Long.toString) never produce '.'.
      */
@@ -5126,21 +5131,15 @@ public final class String
         if (zero == '0' && decSep == '.') {
             return s;
         }
-        char minus = dfs.getMinusSign();
-        char[] chars = new char[s.length()];
-        int i = 0;
-        if (s.length() != 0 && s.charAt(0) == '-') {
-            chars[i++] = minus;
-        }
-        for (; i < chars.length; i++) {
-            char c = s.charAt(i);
+        char[] chars = s.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            char c = chars[i];
             if (c >= '0' && c <= '9') {
                 chars[i] = (char) (c - '0' + zero);
             } else if (c == '.') {
                 chars[i] = decSep;
-            } else {
-                chars[i] = c;
             }
+            // Note: minus sign '-' is NOT localized (per Formatter.leadingSign behavior)
         }
         return new String(chars);
     }
@@ -5148,10 +5147,14 @@ public final class String
     /**
      * Convert an {@code Object} argument to its lowercase hexadecimal string
      * representation. Supports {@code Integer}, {@code Long}, {@code Short},
-     * and {@code Byte}.
+     * {@code Byte}, and {@code BigInteger} (consistent with Formatter).
+     * Returns "null" if arg is null (consistent with Formatter behavior).
      * @throws java.util.IllegalFormatConversionException if arg is not a supported numeric type
      */
     private static String format_toHexString(Object arg) {
+        if (arg == null) {
+            return "null";
+        }
         if (arg instanceof Integer v) {
             return Integer.toHexString(v);
         } else if (arg instanceof Long v) {
@@ -5160,17 +5163,23 @@ public final class String
             return Integer.toHexString(v & 0xFFFF);
         } else if (arg instanceof Byte v) {
             return Integer.toHexString(v & 0xFF);
+        } else if (arg instanceof java.math.BigInteger v) {
+            return v.toString(16);
         }
-        throw new java.util.IllegalFormatConversionException('x', arg != null ? arg.getClass() : Object.class);
+        throw new java.util.IllegalFormatConversionException('x', arg.getClass());
     }
 
     /**
      * Convert an {@code Object} argument to its uppercase hexadecimal string
      * representation. Supports {@code Integer}, {@code Long}, {@code Short},
-     * and {@code Byte}.
+     * {@code Byte}, and {@code BigInteger} (consistent with Formatter).
+     * Returns "NULL" if arg is null (consistent with Formatter behavior for %X).
      * @throws java.util.IllegalFormatConversionException if arg is not a supported numeric type
      */
     private static String format_toUpperHexString(Object arg) {
+        if (arg == null) {
+            return "NULL";
+        }
         if (arg instanceof Integer v) {
             return Integer.toHexString(v).toUpperCase(java.util.Locale.ROOT);
         } else if (arg instanceof Long v) {
@@ -5179,8 +5188,10 @@ public final class String
             return Integer.toHexString(v & 0xFFFF).toUpperCase(java.util.Locale.ROOT);
         } else if (arg instanceof Byte v) {
             return Integer.toHexString(v & 0xFF).toUpperCase(java.util.Locale.ROOT);
+        } else if (arg instanceof java.math.BigInteger v) {
+            return v.toString(16).toUpperCase(java.util.Locale.ROOT);
         }
-        throw new java.util.IllegalFormatConversionException('X', arg != null ? arg.getClass() : Object.class);
+        throw new java.util.IllegalFormatConversionException('X', arg.getClass());
     }
 
     // --- Format methods continued ---
@@ -5224,27 +5235,45 @@ public final class String
             return format_splice1(format, format_toStringArg(arg, width), ci);
         }
 
-        var dfs = DecimalFormat.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
-        String argStr;
-        switch (conv) {
-            case 'd' -> argStr = format_toDecimalString(arg, dfs);
-            case 'x' -> argStr = format_toHexString(arg);
-            case 'X' -> argStr = format_toUpperHexString(arg);
-            default  -> argStr = String.valueOf(arg); // 's'
-        }
-
-        // No width/flag - use simple splice
-        if (width == 0 && flag == 0) {
+        // Fast path for %x/%X without width/flag - no DFS lookup needed
+        if ((conv == 'x' || conv == 'X') && width == 0 && flag == 0) {
+            String argStr = (conv == 'x') ? format_toHexString(arg) : format_toUpperHexString(arg);
             return format_splice1(format, argStr, ci);
         }
 
-        char minusSign = dfs.getMinusSign();
+        // Only %d needs DFS for locale-aware formatting
+        // For %x/%X and %s, use ASCII '-' and '0' (per Formatter spec)
+        // Note: %s without width/flag is handled by format_s, not format_1
+        // Note: Minus sign is NOT localized (per Formatter.leadingSign behavior)
+        final String argStr;
+        final char zeroDigit;
+
+        if (conv == 'd') {
+            var dfs = DecimalFormat.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
+            argStr = format_toDecimalString(arg, dfs);
+            zeroDigit = dfs.getZeroDigit();
+        } else if (conv == 'x') {
+            argStr = format_toHexString(arg);
+            zeroDigit = '0';
+        } else if (conv == 'X') {
+            argStr = format_toUpperHexString(arg);
+            zeroDigit = '0';
+        } else {
+            argStr = String.valueOf(arg); // 's'
+            zeroDigit = '0';
+        }
 
         // Handle flags and padding
+        // Note: Minus sign is always ASCII '-' (per Formatter.leadingSign behavior)
+        // Note: LEADING_SPACE (' ') only applies to numeric values, not null
+        final char minusSign = '-';
         int argLen = argStr.length();
+        boolean isNull = argStr.equals("null") || argStr.equals("NULL");
         boolean isNegative = !argStr.isEmpty() && argStr.charAt(0) == minusSign;
-        boolean hasLeadingSpace = (flag == ' ' && !isNegative);
-        boolean isZeroPad = (flag == '0');
+        // LEADING_SPACE and ZERO_PAD flags only apply to numeric values, not null
+        boolean hasLeadingSpace = (flag == ' ' && !isNegative && !isNull);
+        // ZERO_PAD for null uses space padding instead (per Formatter behavior)
+        boolean isZeroPad = (flag == '0' && !isNull);
 
         // Calculate specifier length: % + [flag] + [width] + conv
         int convLen = 2 + (flag != 0 ? 1 : 0) + (width > 0 ? 1 : 0);
@@ -5273,7 +5302,6 @@ public final class String
 
         // Handle padding
         if (padding > 0) {
-            char zero = dfs.getZeroDigit();
             if (isZeroPad && isNegative) {
                 // Zero pad with negative: sign first, then zeros, then digits
                 if (coder == LATIN1) {
@@ -5283,20 +5311,20 @@ public final class String
                 }
                 for (int i = 0; i < padding; i++) {
                     if (coder == LATIN1) {
-                        bytes[dstPos++] = (byte) zero;
+                        bytes[dstPos++] = (byte) zeroDigit;
                     } else {
-                        StringUTF16.putChar(bytes, dstPos++, zero);
+                        StringUTF16.putChar(bytes, dstPos++, zeroDigit);
                     }
                 }
                 argStr.getBytes(bytes, 1, dstPos, coder, argLen - 1);
                 dstPos += argLen - 1;
             } else {
                 // Space pad or zero pad without negative sign
-                byte padChar = (isZeroPad && !isNegative) ? (byte) zero : (byte) ' ';
+                byte padChar = (isZeroPad && !isNegative) ? (byte) zeroDigit : (byte) ' ';
                 if (coder == LATIN1) {
                     Arrays.fill(bytes, dstPos, dstPos + padding, padChar);
                 } else {
-                    char padChar16 = (isZeroPad && !isNegative) ? zero : ' ';
+                    char padChar16 = (isZeroPad && !isNegative) ? zeroDigit : ' ';
                     for (int i = 0; i < padding; i++) {
                         StringUTF16.putChar(bytes, dstPos + i, padChar16);
                     }
@@ -5503,11 +5531,14 @@ public final class String
         int argLen = argStr.length();
         int padding = width - argLen;
 
-        // Only 'd' needs locale-aware negative handling
+        // Only 'd' needs locale-aware zero padding
+        // Note: Minus sign is NOT localized (per Formatter.leadingSign behavior)
+        // Note: LEADING_SPACE (' ') only applies to numeric values, not null
         if (conv == 'd') {
-            char minusSign = dfs.getMinusSign();
-            boolean isNegative = !argStr.isEmpty() && argStr.charAt(0) == minusSign;
-            boolean hasLeadingSpace = (flag == ' ' && !isNegative);
+            char zeroDigit = dfs.getZeroDigit();
+            boolean isNull = argStr.equals("null");
+            boolean isNegative = !argStr.isEmpty() && argStr.charAt(0) == '-';
+            boolean hasLeadingSpace = (flag == ' ' && !isNegative && !isNull);
 
             // Leading space occupies one position in the width, adjust padding
             if (hasLeadingSpace && padding > 0) {
@@ -5519,10 +5550,32 @@ public final class String
                 sb.append(' ');
             }
 
-            if (padding > 0 && flag == '0') {
+            // ZERO_PAD for null uses space padding instead (per Formatter behavior)
+            if (padding > 0 && flag == '0' && !isNull) {
                 if (isNegative) {
                     // ZERO_PAD with negative: sign first, then zeros, then digits
-                    sb.append(minusSign)
+                    sb.append('-')
+                      .repeat(zeroDigit, padding)
+                      .append(argStr, 1, argLen);
+                } else {
+                    sb.repeat(zeroDigit, padding)
+                      .append(argStr);
+                }
+            } else {
+                if (padding > 0) {
+                    sb.repeat(' ', padding);
+                }
+                sb.append(argStr);
+            }
+        } else {
+            // 's', 'x', 'X' - padding (ASCII '0' for %x/%X, per Formatter spec)
+            boolean isNull = argStr.equals("null") || argStr.equals("NULL");
+            boolean isNegative = !argStr.isEmpty() && argStr.charAt(0) == '-';
+            // ZERO_PAD for null uses space padding instead (per Formatter behavior)
+            if (padding > 0 && flag == '0' && !isNull) {
+                if (isNegative) {
+                    // ZERO_PAD with negative: sign first, then zeros, then digits
+                    sb.append('-')
                       .repeat('0', padding)
                       .append(argStr, 1, argLen);
                 } else {
@@ -5535,12 +5588,6 @@ public final class String
                 }
                 sb.append(argStr);
             }
-        } else {
-            // 's', 'x', 'X' - simple padding only
-            if (padding > 0) {
-                sb.repeat(flag == '0' ? '0' : ' ', padding);
-            }
-            sb.append(argStr);
         }
     }
 
