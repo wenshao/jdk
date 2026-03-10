@@ -94,9 +94,11 @@ public class TestStringFormatOptimization {
     static String testFormat_sd(String s, int v) { return String.format("name=%s age=%d", s, v); }
     static String testFormat_ds(int v, String s) { return String.format("id=%d name=%s", v, s); }
     static String testFormat_dd(int a, int b) { return String.format("%d+%d", a, b); }
-    // %x/%X uses format_multi
+    // %x/%X uses format_2
     static String testFormat_xx(int a, int b) { return String.format("%x %x", a, b); }
     static String testFormat_XX(int a, int b) { return String.format("%X %X", a, b); }
+    // Formattable with %x - tests format_2 path handles Formattable correctly
+    static String testFormat_sxFormattable(FormattableString fs, int v) { return String.format("%s=%x", fs, v); }
 
     // ========== formatted() - two specifiers (optimized for s/d only) ==========
 
@@ -258,6 +260,8 @@ public class TestStringFormatOptimization {
             check("1+2", testFormat_dd(1, 2));
             check("ff 10", testFormat_xx(255, 16));
             check("FF 10", testFormat_XX(255, 16));
+            // Formattable with format_2 path (%s=%x)
+            check("FORMATTABLE=ff", testFormat_sxFormattable(new FormattableString("formattable"), 255));
 
             // ===== formatted() - two specifiers (optimized for s/d) =====
             check("foo and bar", testFormatted_ss("foo", "bar"));

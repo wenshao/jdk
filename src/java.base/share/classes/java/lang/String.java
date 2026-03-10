@@ -5491,7 +5491,8 @@ public final class String
             case 'd' -> format_toDecimalString(arg);
             case 'x' -> format_toHexString(arg);
             case 'X' -> format_toUpperHexString(arg);
-            default  -> String.valueOf(arg); // 's'
+            default  -> (arg instanceof java.util.Formattable) // 's'
+                         ? format_toStringArg(arg, 0) : String.valueOf(arg);
         };
     }
 
