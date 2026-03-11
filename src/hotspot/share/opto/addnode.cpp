@@ -1327,9 +1327,9 @@ Node* MergePrimitiveLoads::run() {
   // go up through combine operators to find load node
   LoadNode* load = nullptr;
   Node* oper = _combine;
-  NOT_PRODUCT(int steps = 0;)    // prevent dead loop in bad graph
-  while (load == nullptr NOT_PRODUCT(&& steps < 30)) {
-    NOT_PRODUCT(steps++;)
+  int steps = 0;
+  while (load == nullptr && steps < 30) {
+    steps++;
     assert(is_supported_combine_opcode(oper->Opcode())
            || oper->Opcode() == Op_ConvI2L || oper->is_LShift(), "unexpected node");
     Node* lhs = oper->in(1); // Check one input is enough
@@ -1348,7 +1348,7 @@ Node* MergePrimitiveLoads::run() {
     }
   }
   if (load == nullptr) {
-    // Reached loop limit in debug build
+    // Reached loop limit
     return nullptr;
   }
   NOT_PRODUCT( if (is_trace_basic()) { tty->print("[TraceMergeLoads] candidate:"); _combine->dump(); tty->cr(); })
@@ -1531,7 +1531,7 @@ int MergePrimitiveLoads::collect_merge_list(MergeLoadInfoList* merge_list, const
     return -1;
   }
 
-  if (_combine->bottom_type() == TypeLong::LONG && bytes < 8) {
+  if (_combine->bottom_type()->isa_long() && bytes < 8) {
     // not cover all bits of result
     return -1;
   }
