@@ -23,7 +23,6 @@
 
 /**
  * @test
- * @bug 9999902
  * @summary PipedReader.close() should synchronize state changes and use
  *          volatile for closedByReader, matching PipedInputStream behavior
  * @run main CloseVisibility
@@ -38,14 +37,12 @@ import java.lang.reflect.Modifier;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class CloseVisibility {
 
     public static void main(String[] args) throws Exception {
         testFieldIsVolatile();
         testCloseIsSynchronized();
-        testConcurrentCloseWrite();
     }
 
     /**
@@ -60,23 +57,27 @@ public class CloseVisibility {
 
         if (!prVolatile) {
             throw new RuntimeException(
-                "PipedReader.closedByReader should be volatile (PipedInputStream's is: "
-                + pisVolatile + ")");
+                "PipedReader.closedByReader should be volatile "
+                + "(PipedInputStream's is: " + pisVolatile + ")");
         }
         System.out.println("PASS: PipedReader.closedByReader is volatile");
     }
 
     /**
-     * Verify PipedReader.close() acquires the monitor (synchronized on 'in = -1').
+     * Verify PipedReader.close() acquires the monitor lock.
+     *
+     * Hold the PipedReader lock from another thread, then call close().
+     * If close() uses synchronized(this), it should block until the
+     * lock is released. If it completes immediately, close() is not
+     * synchronized.
      */
     static void testCloseIsSynchronized() throws Exception {
         PipedWriter pw = new PipedWriter();
         PipedReader pr = new PipedReader(pw);
         CountDownLatch lockHeld = new CountDownLatch(1);
         CountDownLatch closeDone = new CountDownLatch(1);
-        AtomicBoolean closeCompleted = new AtomicBoolean(false);
 
-        // Thread 1: hold the PipedReader lock
+        // Thread 1: hold the PipedReader lock for 2 seconds
         Thread holder = new Thread(() -> {
             synchronized (pr) {
                 lockHeld.countDown();
@@ -92,6 +93,7 @@ public class CloseVisibility {
         lockHeld.await();
 
         // Thread 2: call close() — should block on synchronized(this)
+        AtomicBoolean closeCompleted = new AtomicBoolean(false);
         Thread closer = new Thread(() -> {
             try {
                 pr.close();
@@ -102,73 +104,25 @@ public class CloseVisibility {
         closer.setDaemon(true);
         closer.start();
 
-        // close() should NOT complete within 500ms if it's synchronized
+        // close() should NOT complete within 500ms because holder has
+        // the lock for 2 seconds. If close() has no synchronized block,
+        // it would return immediately.
         boolean doneEarly = closeDone.await(500, TimeUnit.MILLISECONDS);
+        if (doneEarly) {
+            throw new RuntimeException(
+                "close() completed while another thread held the monitor. "
+                + "Expected close() to block on synchronized(this).");
+        }
 
-        // After fix, close() has synchronized(this) { in = -1; }
-        // so it should block while holder has the lock.
-        // Note: closedByReader is set BEFORE the synchronized block,
-        // so close() partially completes but blocks on 'in = -1'.
-        // We check that close() doesn't fully complete quickly.
+        // Release the lock and verify close() completes
         holder.interrupt();
         holder.join(2000);
         closer.join(2000);
 
         if (!closeCompleted.get()) {
             throw new RuntimeException(
-                "close() did not complete even after lock was released");
+                "close() did not complete after lock was released");
         }
-        System.out.println("PASS: PipedReader.close() uses synchronization");
-    }
-
-    /**
-     * Stress test: concurrent close() and write() should not allow
-     * writes to succeed after close.
-     */
-    static void testConcurrentCloseWrite() throws Exception {
-        AtomicInteger writeAfterClose = new AtomicInteger(0);
-        int iterations = 5000;
-
-        for (int i = 0; i < iterations; i++) {
-            PipedWriter pw = new PipedWriter();
-            PipedReader pr = new PipedReader(pw);
-            pw.write('x');
-
-            CountDownLatch start = new CountDownLatch(1);
-            AtomicBoolean closed = new AtomicBoolean(false);
-
-            Thread writerThread = new Thread(() -> {
-                try {
-                    start.await();
-                    pw.write('y');
-                    if (closed.get()) {
-                        writeAfterClose.incrementAndGet();
-                    }
-                } catch (IOException | InterruptedException e) {
-                    // Expected after close
-                }
-            });
-            writerThread.setDaemon(true);
-
-            Thread closeThread = new Thread(() -> {
-                try {
-                    start.await();
-                    pr.close();
-                    closed.set(true);
-                } catch (IOException | InterruptedException e) { /* ignore */ }
-            });
-            closeThread.setDaemon(true);
-
-            writerThread.start();
-            closeThread.start();
-            start.countDown();
-            writerThread.join(1000);
-            closeThread.join(1000);
-        }
-
-        System.out.println("Concurrent close/write (" + iterations
-            + " iters): writes after close = " + writeAfterClose.get());
-        // With the fix, writes after close should be rare/zero
-        System.out.println("PASS: concurrent close/write test completed");
+        System.out.println("PASS: PipedReader.close() blocks on monitor lock");
     }
 }
