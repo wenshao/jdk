@@ -621,7 +621,7 @@ public class Mac implements Cloneable {
             throw new IllegalStateException("MAC not initialized");
         }
         int macLen = getMacLength();
-        if (output == null || output.length-outOffset < macLen) {
+        if (output == null || outOffset < 0 || output.length-outOffset < macLen) {
             throw new ShortBufferException
                 ("Cannot store MAC in output buffer");
         }
