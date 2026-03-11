@@ -299,7 +299,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
             PoolEntry e = entryByIndex(map.getIndexByToken(token));
             if (e.tag() == TAG_FLOAT
                     && e instanceof AbstractPoolEntry.FloatEntryImpl ce
-                    && ce.floatValue() == val)
+                    && Float.floatToRawIntBits(ce.floatValue()) == Float.floatToRawIntBits(val))
                 return ce;
         }
         if (!doneFullScan) {
@@ -316,7 +316,7 @@ public final class SplitConstantPool implements ConstantPoolBuilder {
             PoolEntry e = entryByIndex(map.getIndexByToken(token));
             if (e.tag() == TAG_DOUBLE
                     && e instanceof AbstractPoolEntry.DoubleEntryImpl ce
-                    && ce.doubleValue() == val)
+                    && Double.doubleToRawLongBits(ce.doubleValue()) == Double.doubleToRawLongBits(val))
                 return ce;
         }
         if (!doneFullScan) {
