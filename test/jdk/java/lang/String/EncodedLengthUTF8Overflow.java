@@ -23,11 +23,10 @@
 
 /**
  * @test
- * @bug 9999903
  * @summary String.encodedLengthUTF8() LATIN1 path should use long accumulator
  *          to avoid integer overflow, matching the UTF16 path
- * @requires os.maxMemory > 3g
- * @run main/othervm -Xmx3g EncodedLengthUTF8Overflow
+ * @requires os.maxMemory > 5g
+ * @run main/othervm -Xmx5g EncodedLengthUTF8Overflow
  */
 
 import java.nio.charset.StandardCharsets;
@@ -36,46 +35,58 @@ import java.util.Arrays;
 public class EncodedLengthUTF8Overflow {
 
     public static void main(String[] args) throws Exception {
-        testSmallStringCorrectness();
+        testSmallStringEncodedLength();
         testLargeStringOverflow();
     }
 
     /**
-     * Verify small LATIN1 strings with non-ASCII bytes encode correctly.
+     * Verify encodedLength(UTF_8) returns correct values for small
+     * LATIN1 strings with non-ASCII bytes.
      */
-    static void testSmallStringCorrectness() {
-        // Each of these LATIN1 chars (0x80-0xFF) encodes to 2 UTF-8 bytes
-        String s = "\u00e9\u00e8\u00ea\u00eb"; // éèêë
-        byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
-        if (utf8.length != 8) {
+    static void testSmallStringEncodedLength() {
+        // Each LATIN1 char 0x80-0xFF encodes to 2 UTF-8 bytes
+        String latin1 = "\u00e9\u00e8\u00ea\u00eb"; // éèêë
+        int len = latin1.encodedLength(StandardCharsets.UTF_8);
+        if (len != 8) {
             throw new RuntimeException(
-                "Expected 8 UTF-8 bytes for 4 LATIN1 non-ASCII chars, got "
-                + utf8.length);
+                "Expected encodedLength=8 for 4 non-ASCII LATIN1 chars, got " + len);
         }
 
         // Mix of ASCII and non-ASCII
+        // 3 ASCII (1 byte each) + 1 non-ASCII (2 bytes) = 5
         String mixed = "abc\u00ff";
-        byte[] mixedUtf8 = mixed.getBytes(StandardCharsets.UTF_8);
-        if (mixedUtf8.length != 5) { // 3 ASCII (1 byte each) + 1 non-ASCII (2 bytes)
+        int mixedLen = mixed.encodedLength(StandardCharsets.UTF_8);
+        if (mixedLen != 5) {
             throw new RuntimeException(
-                "Expected 5 UTF-8 bytes for mixed string, got "
-                + mixedUtf8.length);
+                "Expected encodedLength=5 for mixed string, got " + mixedLen);
         }
 
-        System.out.println("PASS: small string correctness verified");
+        // Pure ASCII
+        String ascii = "hello";
+        int asciiLen = ascii.encodedLength(StandardCharsets.UTF_8);
+        if (asciiLen != 5) {
+            throw new RuntimeException(
+                "Expected encodedLength=5 for ASCII string, got " + asciiLen);
+        }
+
+        System.out.println("PASS: small string encodedLength correctness verified");
     }
 
     /**
-     * Test that a very large LATIN1 string with all non-ASCII bytes
-     * throws OutOfMemoryError instead of silently overflowing.
+     * Test that encodedLength(UTF_8) throws OutOfMemoryError for a very
+     * large LATIN1 string whose UTF-8 length exceeds Integer.MAX_VALUE,
+     * instead of silently overflowing to a negative value.
+     *
+     * Uses encodedLength() directly which calls encodedLengthUTF8()
+     * internally, avoiding the need to allocate a 2GB+ output buffer.
      */
     static void testLargeStringOverflow() {
         // We need > Integer.MAX_VALUE/2 non-ASCII bytes to overflow.
-        // Each non-ASCII LATIN1 byte → 2 UTF-8 bytes, so:
+        // Each non-ASCII LATIN1 byte encodes to 2 UTF-8 bytes, so:
         //   dp = 2 * length > Integer.MAX_VALUE when length > MAX_VALUE/2
         int length = Integer.MAX_VALUE / 2 + 1; // 1,073,741,824
 
-        System.out.println("Allocating " + (length / (1024*1024))
+        System.out.println("Allocating " + (length / (1024 * 1024))
             + " MB byte array...");
         byte[] bigArray;
         try {
@@ -96,22 +107,26 @@ public class EncodedLengthUTF8Overflow {
             System.out.println("SKIP: not enough memory for String creation");
             return;
         }
+        bigArray = null; // allow GC
 
-        System.out.println("Encoding to UTF-8 (should throw OutOfMemoryError)...");
+        // Use encodedLength() which directly calls encodedLengthUTF8().
+        // This avoids allocating a 2GB+ output byte array, making the
+        // test much more memory-efficient and reliable.
+        System.out.println("Calling encodedLength(UTF_8) "
+            + "(should throw OutOfMemoryError)...");
         try {
-            byte[] utf8 = bigString.getBytes(StandardCharsets.UTF_8);
-            // If we get here, either the JVM has >2GB arrays (unlikely)
-            // or the overflow wasn't caught
+            int encodedLen = bigString.encodedLength(StandardCharsets.UTF_8);
+            // If we get here with a negative or small value, the int overflowed
+            if (encodedLen < length) {
+                throw new RuntimeException(
+                    "BUG: encodedLength returned " + encodedLen
+                    + " (likely int overflow), expected > " + length);
+            }
             throw new RuntimeException(
-                "Expected OutOfMemoryError but got " + utf8.length + " bytes");
+                "Expected OutOfMemoryError but got encodedLength=" + encodedLen);
         } catch (OutOfMemoryError e) {
             System.out.println("PASS: OutOfMemoryError thrown as expected: "
                 + e.getMessage());
-        } catch (NegativeArraySizeException e) {
-            // This is the bug: int overflow → negative dp → negative array size
-            throw new RuntimeException(
-                "BUG: int overflow in encodedLengthUTF8 caused "
-                + "NegativeArraySizeException", e);
         }
     }
 }
