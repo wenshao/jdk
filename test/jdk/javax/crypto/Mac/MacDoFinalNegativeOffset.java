@@ -24,7 +24,9 @@
 /**
  * @test
  * @bug 9999901
- * @summary Mac.doFinal(byte[], int) should reject negative outOffset
+ * @summary Mac.doFinal(byte[], int) should reject null output and negative
+ *          outOffset with IllegalArgumentException, consistent with
+ *          Cipher.doFinal() and Mac.update()
  * @run main MacDoFinalNegativeOffset
  */
 
@@ -39,33 +41,59 @@ public class MacDoFinalNegativeOffset {
         byte[] keyBytes = new byte[32];
         SecretKeySpec key = new SecretKeySpec(keyBytes, "HmacSHA256");
 
-        // Test offset = -1: should throw ShortBufferException
-        mac.init(key);
-        mac.update(new byte[]{1, 2, 3});
         int macLen = mac.getMacLength();
         byte[] output = new byte[macLen + 64];
 
+        // Test 1: offset = -1 should throw IllegalArgumentException
+        mac.init(key);
+        mac.update(new byte[]{1, 2, 3});
         try {
             mac.doFinal(output, -1);
-            throw new RuntimeException("Expected ShortBufferException for offset=-1");
-        } catch (ShortBufferException e) {
-            System.out.println("PASS: offset=-1 threw ShortBufferException");
+            throw new RuntimeException("Expected IllegalArgumentException for offset=-1");
+        } catch (IllegalArgumentException e) {
+            System.out.println("PASS: offset=-1 threw IllegalArgumentException");
         }
 
-        // Test offset = Integer.MIN_VALUE
+        // Test 2: offset = Integer.MIN_VALUE should throw IllegalArgumentException
         mac.init(key);
         mac.update(new byte[]{1, 2, 3});
         try {
             mac.doFinal(output, Integer.MIN_VALUE);
-            throw new RuntimeException("Expected ShortBufferException for MIN_VALUE");
-        } catch (ShortBufferException e) {
-            System.out.println("PASS: offset=MIN_VALUE threw ShortBufferException");
+            throw new RuntimeException("Expected IllegalArgumentException for MIN_VALUE");
+        } catch (IllegalArgumentException e) {
+            System.out.println("PASS: offset=MIN_VALUE threw IllegalArgumentException");
         }
 
-        // Test valid offset still works
+        // Test 3: null output should throw IllegalArgumentException
+        mac.init(key);
+        mac.update(new byte[]{1, 2, 3});
+        try {
+            mac.doFinal(null, 0);
+            throw new RuntimeException("Expected IllegalArgumentException for null output");
+        } catch (IllegalArgumentException e) {
+            System.out.println("PASS: null output threw IllegalArgumentException");
+        }
+
+        // Test 4: buffer too small should throw ShortBufferException
+        mac.init(key);
+        mac.update(new byte[]{1, 2, 3});
+        try {
+            mac.doFinal(new byte[macLen - 1], 0);
+            throw new RuntimeException("Expected ShortBufferException for small buffer");
+        } catch (ShortBufferException e) {
+            System.out.println("PASS: small buffer threw ShortBufferException");
+        }
+
+        // Test 5: valid offset = 0 works
         mac.init(key);
         mac.update(new byte[]{1, 2, 3});
         mac.doFinal(output, 0);
         System.out.println("PASS: offset=0 succeeded normally");
+
+        // Test 6: valid offset at end of buffer works
+        mac.init(key);
+        mac.update(new byte[]{1, 2, 3});
+        mac.doFinal(output, 64);
+        System.out.println("PASS: offset=64 succeeded normally");
     }
 }
