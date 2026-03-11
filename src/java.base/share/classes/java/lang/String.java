@@ -1504,8 +1504,8 @@ public final class String
         if (positives == val.length) {
             return positives;
         }
-        int dp = positives;
-        for (int i = dp; i < val.length; i++) {
+        long dp = positives;
+        for (int i = positives; i < val.length; i++) {
             byte c = val[i];
             if (c < 0) {
                 dp += 2;
@@ -1513,7 +1513,10 @@ public final class String
                 dp++;
             }
         }
-        return dp;
+        if (dp > (long)Integer.MAX_VALUE) {
+            throw new OutOfMemoryError("Required length exceeds implementation limit");
+        }
+        return (int) dp;
     }
 
     /**
