@@ -43,6 +43,9 @@ public class TestStringFormatOptimization {
     static String testFormat_dNullZeroPad() { return String.format("[%05d]", (Object) null); }
     static String testFormat_sFormattable(FormattableString fs) { return String.format("[%s]", fs); }
     static String testFormat_sFormattableWidth(FormattableString fs) { return String.format("[%14s]", fs); }
+    // Single-digit width + Formattable: exercises format_1 path (width 1-9 only)
+    static String testFormat_sFormattableWidth5(FormattableString fs) { return String.format("[%5s]", fs); }
+    static String testFormat_sFormattableWidth9(FormattableString fs) { return String.format("[%9s]", fs); }
     static String testFormat_dInt(int v) { return String.format("count=%d", v); }
     static String testFormat_dShort(short v) { return String.format("short=%d", v); }
     static String testFormat_dByte(byte v) { return String.format("byte=%d", v); }
@@ -75,6 +78,14 @@ public class TestStringFormatOptimization {
     static void testFormat_dWrongType() { String.format("%d", "string"); }
     static void testFormat_xWrongType() { String.format("%x", "string"); }
     static void testFormat_XWrongType() { String.format("%X", "string"); }
+    // Float/Double should also throw for %d (consistent with Formatter)
+    static void testFormat_dFloat() { String.format("%d", 1.5f); }
+    static void testFormat_dDouble() { String.format("%d", 1.5); }
+
+    // ========== Edge case tests ==========
+
+    static String testFormat_sEmpty(String s) { return String.format("%s", s); }
+    static String testFormatted_sFormattableWidth(FormattableString fs) { return "[%5s]".formatted(fs); }
 
     // ========== formatted() - single specifier (optimized) ==========
 
@@ -99,6 +110,10 @@ public class TestStringFormatOptimization {
     static String testFormat_XX(int a, int b) { return String.format("%X %X", a, b); }
     // Formattable with %x - tests format_2 path handles Formattable correctly
     static String testFormat_sxFormattable(FormattableString fs, int v) { return String.format("%s=%x", fs, v); }
+    // Two-specifier Formattable + width: exercises format_ss/sd/ds paths with convLen fix
+    static String testFormat_ssFormattableWidth(FormattableString fs, String s) { return String.format("[%5s|%3s]", fs, s); }
+    static String testFormat_sdFormattableWidth(FormattableString fs, int v) { return String.format("[%5s|%3d]", fs, v); }
+    static String testFormat_dsFormattableWidth(int v, FormattableString fs) { return String.format("[%3d|%5s]", v, fs); }
 
     // ========== formatted() - two specifiers (optimized for s/d only) ==========
 
@@ -214,6 +229,9 @@ public class TestStringFormatOptimization {
             // Formattable objects use formatTo() for %s
             check("[FORMATTABLE]", testFormat_sFormattable(new FormattableString("formattable")));
             check("[   FORMATTABLE]", testFormat_sFormattableWidth(new FormattableString("formattable")));
+            // Formattable with single-digit width (format_1 path) - verifies convLen fix
+            check("[   HI]", testFormat_sFormattableWidth5(new FormattableString("hi")));
+            check("[    HELLO]", testFormat_sFormattableWidth9(new FormattableString("hello")));
             check("count=42", testFormat_dInt(42));
             check("short=100", testFormat_dShort((short) 100));
             check("byte=127", testFormat_dByte((byte) 127));
@@ -262,6 +280,10 @@ public class TestStringFormatOptimization {
             check("FF 10", testFormat_XX(255, 16));
             // Formattable with format_2 path (%s=%x)
             check("FORMATTABLE=ff", testFormat_sxFormattable(new FormattableString("formattable"), 255));
+            // Two-specifier Formattable + width (format_ss/sd/ds paths) - verifies convLen fix
+            check("[   HI|  x]", testFormat_ssFormattableWidth(new FormattableString("hi"), "x"));
+            check("[   HI|  1]", testFormat_sdFormattableWidth(new FormattableString("hi"), 1));
+            check("[  1|   HI]", testFormat_dsFormattableWidth(1, new FormattableString("hi")));
 
             // ===== formatted() - two specifiers (optimized for s/d) =====
             check("foo and bar", testFormatted_ss("foo", "bar"));
@@ -340,6 +362,12 @@ public class TestStringFormatOptimization {
             check("progress:%complete", testFormat_percentStart("complete"));
             check("value=100%", testFormat_percentEnd(100));
             check("100%", testFormat_percentOnly());
+
+            // ===== Edge case tests =====
+            // Empty string argument
+            check("", testFormat_sEmpty(""));
+            // formatted() with Formattable + width
+            check("[   HI]", testFormatted_sFormattableWidth(new FormattableString("hi")));
         }
 
         // Non-optimized fallback patterns
@@ -349,6 +377,9 @@ public class TestStringFormatOptimization {
         testException("d", () -> testFormat_dWrongType());
         testException("x", () -> testFormat_xWrongType());
         testException("X", () -> testFormat_XWrongType());
+        // Float/Double should throw for %d (consistent with Formatter)
+        testException("d", () -> testFormat_dFloat());
+        testException("d", () -> testFormat_dDouble());
 
         // ===== Locale-specific tests =====
         testLocaleSpecific();

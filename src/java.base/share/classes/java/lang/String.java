@@ -4907,12 +4907,22 @@ public final class String
      */
     @ForceInline
     private static String format_splice1(String format, String argStr, int specIndex) {
+        return format_splice1(format, argStr, specIndex, 2);
+    }
+
+    /**
+     * Core single-specifier formatting with explicit specifier length.
+     * Replaces the specifier (convLen characters starting at specIndex) with argStr.
+     * @param convLen length of the specifier in the format string (e.g. 2 for %s, 3 for %5s)
+     */
+    @ForceInline
+    private static String format_splice1(String format, String argStr, int specIndex, int convLen) {
         byte coder = (byte) (argStr.coder() | format.coder());
-        int newLen = format.length() - 2 + argStr.length();
+        int newLen = format.length() - convLen + argStr.length();
         byte[] bytes = new byte[newLen << coder];
         format.getBytes(bytes, 0, 0, coder, specIndex);
         argStr.getBytes(bytes, 0, specIndex, coder, argStr.length());
-        format.getBytes(bytes, specIndex + 2, specIndex + argStr.length(), coder, format.length() - specIndex - 2);
+        format.getBytes(bytes, specIndex + convLen, specIndex + argStr.length(), coder, format.length() - specIndex - convLen);
         return new String(bytes, coder);
     }
 
@@ -4943,7 +4953,7 @@ public final class String
      */
     @ForceInline
     private static String format_splice1(String format, int arg, int specIndex) {
-        var dfs = DecimalFormat.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
+        var dfs = FormatterAccessHolder.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
         char zeroDigit = dfs.getZeroDigit();
 
         int argLen = DecimalDigits.stringSize(arg);
@@ -4973,7 +4983,7 @@ public final class String
     /** Primitive overload for long - avoids boxing and intermediate String. */
     @ForceInline
     private static String format_splice1(String format, long arg, int specIndex) {
-        var dfs = DecimalFormat.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
+        var dfs = FormatterAccessHolder.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
         char zeroDigit = dfs.getZeroDigit();
 
         int argLen = DecimalDigits.stringSize(arg);
@@ -5078,7 +5088,7 @@ public final class String
      * @throws java.util.IllegalFormatConversionException if arg is not a supported numeric type
      */
     private static String format_toDecimalString(Object arg) {
-        return format_toDecimalString(arg, DecimalFormat.FORMATTER_ACCESS
+        return format_toDecimalString(arg, FormatterAccessHolder.FORMATTER_ACCESS
                 .getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT)));
     }
 
@@ -5114,7 +5124,7 @@ public final class String
      * Holder for locale-aware decimal formatting via SharedSecrets.
      * The static final field ensures the access is resolved once on first use.
      */
-    private static final class DecimalFormat {
+    private static final class FormatterAccessHolder {
         static final jdk.internal.access.JavaUtilFormatterAccess FORMATTER_ACCESS =
                 jdk.internal.access.SharedSecrets.getJavaUtilFormatterAccess();
     }
@@ -5230,9 +5240,12 @@ public final class String
         int width = (meta >>> 16) & 0xFF;
         int flag = (meta >>> 24) & 0xFF;
 
+        // Calculate specifier length: % + [flag] + [width] + conv
+        int convLen = 2 + (flag != 0 ? 1 : 0) + (width > 0 ? 1 : 0);
+
         // For %s with Formattable, let formatTo handle width
         if (conv == 's' && arg instanceof java.util.Formattable) {
-            return format_splice1(format, format_toStringArg(arg, width), ci);
+            return format_splice1(format, format_toStringArg(arg, width), ci, convLen);
         }
 
         // Fast path for %x/%X without width/flag - no DFS lookup needed
@@ -5249,7 +5262,7 @@ public final class String
         final char zeroDigit;
 
         if (conv == 'd') {
-            var dfs = DecimalFormat.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
+            var dfs = FormatterAccessHolder.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
             argStr = format_toDecimalString(arg, dfs);
             zeroDigit = dfs.getZeroDigit();
         } else if (conv == 'x') {
@@ -5268,15 +5281,12 @@ public final class String
         // Note: LEADING_SPACE (' ') only applies to numeric values, not null
         final char minusSign = '-';
         int argLen = argStr.length();
-        boolean isNull = argStr.equals("null") || argStr.equals("NULL");
+        boolean isNull = (arg == null);
         boolean isNegative = !argStr.isEmpty() && argStr.charAt(0) == minusSign;
         // LEADING_SPACE and ZERO_PAD flags only apply to numeric values, not null
         boolean hasLeadingSpace = (flag == ' ' && !isNegative && !isNull);
         // ZERO_PAD for null uses space padding instead (per Formatter behavior)
         boolean isZeroPad = (flag == '0' && !isNull);
-
-        // Calculate specifier length: % + [flag] + [width] + conv
-        int convLen = 2 + (flag != 0 ? 1 : 0) + (width > 0 ? 1 : 0);
 
         // Leading space occupies one position in width
         int effectiveWidth = width;
@@ -5351,20 +5361,22 @@ public final class String
     /**
      * Core two-specifier formatting: splice argStr1 and argStr2 into format,
      * with optional left-padding for each.
-     * @param meta packed: byte0=ci1, byte1=w1, byte2=ci2, byte3=w2
+     * @param meta packed: byte0=ci1, byte1=padW1, byte2=ci2, byte3=padW2
+     *        padW1/padW2 are the effective padding widths (may be 0 for Formattable
+     *        args where formatTo already handles width internally).
+     * @param convLen1 length of the first specifier in the format string (e.g. 2 for %s, 3 for %5s)
+     * @param convLen2 length of the second specifier in the format string
      *
      * Note: This method assumes specifiers have no flags (only optional width).
      * Specifiers with flags (' ', '0') are handled by format_multi instead.
-     * The convLen calculation (2 or 3) is correct only for %[width]s or %[width]d.
      */
     @ForceInline
-    private static String format_splice2(String format, String argStr1, String argStr2, int meta) {
+    private static String format_splice2(String format, String argStr1, String argStr2, int meta,
+                                         int convLen1, int convLen2) {
         int ci1 = meta & 0xFF;
         int w1  = (meta >> 8) & 0xFF;
         int ci2 = (meta >> 16) & 0xFF;
         int w2  = (meta >> 24) & 0xFF;
-        int convLen1 = (w1 > 0) ? 3 : 2;
-        int convLen2 = (w2 > 0) ? 3 : 2;
         int pad1 = Math.max(w1 - argStr1.length(), 0);
         int pad2 = Math.max(w2 - argStr2.length(), 0);
         byte coder = (byte) (argStr1.coder() | argStr2.coder() | format.coder());
@@ -5403,13 +5415,16 @@ public final class String
     private static String format_ss(String format, Object arg1, Object arg2, int specIndexes) {
         int ci1 = specIndexes & 0xFF, w1 = (specIndexes >> 8) & 0xFF;
         int ci2 = (specIndexes >> 16) & 0xFF, w2 = (specIndexes >> 24) & 0xFF;
+        // Compute convLen from original width BEFORE Formattable adjustment
+        int convLen1 = (w1 > 0) ? 3 : 2;
+        int convLen2 = (w2 > 0) ? 3 : 2;
         // For Formattable, formatTo handles width; adjust meta to skip extra padding
         String s1 = (arg1 instanceof java.util.Formattable) ? format_toStringArg(arg1, w1) : String.valueOf(arg1);
         String s2 = (arg2 instanceof java.util.Formattable) ? format_toStringArg(arg2, w2) : String.valueOf(arg2);
         int adjW1 = (arg1 instanceof java.util.Formattable) ? 0 : w1;
         int adjW2 = (arg2 instanceof java.util.Formattable) ? 0 : w2;
         int adjMeta = ci1 | (adjW1 << 8) | (ci2 << 16) | (adjW2 << 24);
-        return format_splice2(format, s1, s2, adjMeta);
+        return format_splice2(format, s1, s2, adjMeta, convLen1, convLen2);
     }
 
     /** Fast-path for {@code %s} followed by {@code %d}.
@@ -5419,11 +5434,14 @@ public final class String
     private static String format_sd(String format, Object arg1, Object arg2, int specIndexes) {
         int ci1 = specIndexes & 0xFF, w1 = (specIndexes >> 8) & 0xFF;
         int ci2 = (specIndexes >> 16) & 0xFF, w2 = (specIndexes >> 24) & 0xFF;
+        // Compute convLen from original width BEFORE Formattable adjustment
+        int convLen1 = (w1 > 0) ? 3 : 2;
+        int convLen2 = (w2 > 0) ? 3 : 2;
         // For Formattable, formatTo handles width; adjust meta to skip extra padding
         String s1 = (arg1 instanceof java.util.Formattable) ? format_toStringArg(arg1, w1) : String.valueOf(arg1);
         int adjW1 = (arg1 instanceof java.util.Formattable) ? 0 : w1;
         int adjMeta = ci1 | (adjW1 << 8) | (ci2 << 16) | (w2 << 24);
-        return format_splice2(format, s1, format_toDecimalString(arg2), adjMeta);
+        return format_splice2(format, s1, format_toDecimalString(arg2), adjMeta, convLen1, convLen2);
     }
 
     /** Fast-path for {@code %d} followed by {@code %s}.
@@ -5433,11 +5451,14 @@ public final class String
     private static String format_ds(String format, Object arg1, Object arg2, int specIndexes) {
         int ci1 = specIndexes & 0xFF, w1 = (specIndexes >> 8) & 0xFF;
         int ci2 = (specIndexes >> 16) & 0xFF, w2 = (specIndexes >> 24) & 0xFF;
+        // Compute convLen from original width BEFORE Formattable adjustment
+        int convLen1 = (w1 > 0) ? 3 : 2;
+        int convLen2 = (w2 > 0) ? 3 : 2;
         // For Formattable, formatTo handles width; adjust meta to skip extra padding
         String s2 = (arg2 instanceof java.util.Formattable) ? format_toStringArg(arg2, w2) : String.valueOf(arg2);
         int adjW2 = (arg2 instanceof java.util.Formattable) ? 0 : w2;
         int adjMeta = ci1 | (w1 << 8) | (ci2 << 16) | (adjW2 << 24);
-        return format_splice2(format, format_toDecimalString(arg1), s2, adjMeta);
+        return format_splice2(format, format_toDecimalString(arg1), s2, adjMeta, convLen1, convLen2);
     }
 
     /** Fast-path for two {@code %d} specifiers.
@@ -5445,7 +5466,10 @@ public final class String
      */
     @ForceInline
     private static String format_dd(String format, Object arg1, Object arg2, int specIndexes) {
-        return format_splice2(format, format_toDecimalString(arg1), format_toDecimalString(arg2), specIndexes);
+        int w1 = (specIndexes >> 8) & 0xFF;
+        int w2 = (specIndexes >> 24) & 0xFF;
+        return format_splice2(format, format_toDecimalString(arg1), format_toDecimalString(arg2), specIndexes,
+                              (w1 > 0) ? 3 : 2, (w2 > 0) ? 3 : 2);
     }
 
     /**
@@ -5531,13 +5555,13 @@ public final class String
 
         int argLen = argStr.length();
         int padding = width - argLen;
+        boolean isNull = (arg == null);
 
         // Only 'd' needs locale-aware zero padding
         // Note: Minus sign is NOT localized (per Formatter.leadingSign behavior)
         // Note: LEADING_SPACE (' ') only applies to numeric values, not null
         if (conv == 'd') {
             char zeroDigit = dfs.getZeroDigit();
-            boolean isNull = argStr.equals("null");
             boolean isNegative = !argStr.isEmpty() && argStr.charAt(0) == '-';
             boolean hasLeadingSpace = (flag == ' ' && !isNegative && !isNull);
 
@@ -5570,7 +5594,6 @@ public final class String
             }
         } else {
             // 's', 'x', 'X' - padding (ASCII '0' for %x/%X, per Formatter spec)
-            boolean isNull = argStr.equals("null") || argStr.equals("NULL");
             boolean isNegative = !argStr.isEmpty() && argStr.charAt(0) == '-';
             // ZERO_PAD for null uses space padding instead (per Formatter behavior)
             if (padding > 0 && flag == '0' && !isNull) {
@@ -5608,8 +5631,9 @@ public final class String
         int count = args.length;
         StringBuilder sb = new StringBuilder(format.length() + count * 8);
         int fmtPos = 0;
-        // Get DecimalFormatSymbols once for the entire loop
-        var dfs = DecimalFormat.FORMATTER_ACCESS.getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
+        // Lazily acquire DecimalFormatSymbols only when a %d specifier is encountered.
+        // This avoids the locale/DFS lookup overhead when all specifiers are %s/%x/%X.
+        java.text.DecimalFormatSymbols dfs = null;
 
         for (int i = 0; i < count; i++) {
             int ci = (int) ((specIndexes >>> (i * 8)) & 0xFF);
@@ -5636,12 +5660,18 @@ public final class String
             char conv = nc;
             int convLen = pos - ci + 1;
 
+            // Lazily acquire DFS on first %d specifier
+            if (conv == 'd' && dfs == null) {
+                dfs = FormatterAccessHolder.FORMATTER_ACCESS
+                        .getDecimalFormatSymbols(Locale.getDefault(Locale.Category.FORMAT));
+            }
+
             // Append literal segment before this specifier
             if (ci > fmtPos) {
                 sb.append(format, fmtPos, ci);
             }
 
-            // Format argument with padding and flags
+            // Format argument with padding and flags (dfs may be null for non-%d specifiers)
             format_arg(sb, args[i], conv, flag, width, dfs);
 
             fmtPos = ci + convLen;
