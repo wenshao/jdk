@@ -174,6 +174,20 @@ public class TestStringFormatOptimization {
     static String testFormat4s(String a, String b, String c, String d) { return String.format("[%s|%s|%s|%s]", a, b, c, d); }
     static String testFormatMultiWidth(String a, int b, String c) { return String.format("[%5s|%3d|%s]", a, b, c); }
 
+    // ========== String.format() - 5-8 specifiers (format_multi boundary) ==========
+
+    static String testFormat5(String a, String b, int c, String d, int e) { return String.format("%s-%s-%d-%s-%d", a, b, c, d, e); }
+    static String testFormat6(String a, String b, String c, String d, String e, String f) { return String.format("%s|%s|%s|%s|%s|%s", a, b, c, d, e, f); }
+    static String testFormat7(int a, int b, int c, int d, int e, int f, int g) { return String.format("%d%d%d%d%d%d%d", a, b, c, d, e, f, g); }
+    static String testFormat8(int a, int b, int c, int d, int e, int f, int g, int h) { return String.format("%d%d%d%d%d%d%d%d", a, b, c, d, e, f, g, h); }
+    // 9 specifiers: exceeds MAX_FORMAT_SPECS, falls back to Formatter
+    static String testFormat9(int a, int b, int c, int d, int e, int f, int g, int h, int i) { return String.format("%d%d%d%d%d%d%d%d%d", a, b, c, d, e, f, g, h, i); }
+
+    // ========== Width >= 10 (falls back to Formatter since only single-digit width 1-9 is parsed) ==========
+
+    static String testFormat_sWidth10(String s) { return String.format("[%10s]", s); }
+    static String testFormat_dWidth15(int v) { return String.format("[%15d]", v); }
+
     // ========== formatted() - 3+ specifiers (fallback to Formatter) ==========
 
     static String testFormatted3s(String a, String b, String c) { return "%s %s %s".formatted(a, b, c); }
@@ -334,6 +348,18 @@ public class TestStringFormatOptimization {
             check("name=Alice id=42 hex=ff", testFormatMixed("Alice", 42, 255));
             check("[a|b|c|d]", testFormat4s("a", "b", "c", "d"));
             check("[   hi|  7|end]", testFormatMultiWidth("hi", 7, "end"));
+
+            // ===== String.format() - 5-8 specifiers (format_multi boundary) =====
+            check("a-b-3-d-5", testFormat5("a", "b", 3, "d", 5));
+            check("a|b|c|d|e|f", testFormat6("a", "b", "c", "d", "e", "f"));
+            check("1234567", testFormat7(1, 2, 3, 4, 5, 6, 7));
+            check("12345678", testFormat8(1, 2, 3, 4, 5, 6, 7, 8));
+            // 9 specifiers: exceeds MAX_FORMAT_SPECS, falls back to Formatter
+            check("123456789", testFormat9(1, 2, 3, 4, 5, 6, 7, 8, 9));
+
+            // ===== Width >= 10 (falls back to Formatter) =====
+            check("[       abc]", testFormat_sWidth10("abc"));
+            check("[             42]", testFormat_dWidth15(42));
 
             // ===== formatted() - 3+ specifiers (fallback) =====
             check("a b c", testFormatted3s("a", "b", "c"));

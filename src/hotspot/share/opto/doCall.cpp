@@ -530,6 +530,20 @@ static bool check_call_consistency(JVMState* jvms, CallGenerator* cg) {
 
 // --- String.format/formatted fast-path helpers ---
 
+// Maximum number of format specifiers supported by the fast-path optimization.
+// Specifier metadata is packed into a jlong (8 bytes), one byte per position.
+static const int MAX_FORMAT_SPECS = 8;
+
+// Kinds of optimized format helper methods selected at compile time.
+// Used to dispatch metadata packing and argument handling without strcmp.
+enum FormatTargetKind {
+  FMT_TARGET_SIMPLE,    // format_s/d, formatted_s/d (single %s/%d, no width/flags)
+  FMT_TARGET_1,         // format_1, formatted_1     (single specifier with width/flags or %x/%X)
+  FMT_TARGET_SS_DD,     // format_ss/sd/ds/dd        (two %s/%d specifiers)
+  FMT_TARGET_2,         // format_2, formatted_2     (two specifiers with %x/%X, no width/flags)
+  FMT_TARGET_MULTI      // format_multi              (3-8 specifiers or complex 2-specifier patterns)
+};
+
 // Helper: read a character from the format string at position idx.
 static jchar fmt_char_at(ciTypeArray* val_arr, jbyte coder, int idx) {
   return (coder == java_lang_String::CODER_LATIN1)
@@ -696,12 +710,12 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
   ciInstance* fmt_inst = fmt_type->const_oop()->as_instance();
   if (fmt_inst == nullptr) return;
 
-  // Scan format string for specifier positions, characters, widths, and flags (up to 8)
-  int  spec_indexes[8];
-  char spec_convs[8];
-  int  spec_widths[8];
-  char spec_flags[8];
-  int spec_count = scan_format_string(fmt_inst, spec_indexes, spec_convs, spec_widths, spec_flags, 8);
+  // Scan format string for specifier positions, characters, widths, and flags
+  int  spec_indexes[MAX_FORMAT_SPECS];
+  char spec_convs[MAX_FORMAT_SPECS];
+  int  spec_widths[MAX_FORMAT_SPECS];
+  char spec_flags[MAX_FORMAT_SPECS];
+  int spec_count = scan_format_string(fmt_inst, spec_indexes, spec_convs, spec_widths, spec_flags, MAX_FORMAT_SPECS);
   if (spec_count == 0) return;
 
   // Check args is a freshly allocated Object[spec_count]
@@ -716,7 +730,7 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
 
   // For 1-2 specifiers, extract arguments from the array stores to avoid Object[] allocation.
   // For 3+ specifiers, keep Object[] and use format_multi.
-  Node* arg_nodes[8] = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+  Node* arg_nodes[MAX_FORMAT_SPECS] = {};
   bool use_individual_args = (spec_count >= 1 && spec_count <= 2);
 
   if (use_individual_args) {
@@ -747,13 +761,11 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
                 Node* offset_node = adr->in(AddPNode::Offset);
                 if (offset_node->is_Con()) {
                   // For Object[], the offset is base + header + idx * element_size
-                  // Use arrayOopDesc::base_offset_in_bytes(T_OBJECT) for header offset
-                  // and heapOopSize for element size (4 with compressed oops, 8 without)
                   jlong offset = offset_node->bottom_type()->is_long()->get_con();
                   int base_offset = arrayOopDesc::base_offset_in_bytes(T_OBJECT);
-                  int elem_size = UseCompressedOops ? 4 : 8;
-                  int idx = (int)((offset - base_offset) / elem_size);
-                  if (idx >= 0 && idx < spec_count) {
+                  jlong idx_l = (offset - base_offset) / heapOopSize;
+                  if (idx_l >= 0 && idx_l < spec_count) {
+                    int idx = (int)idx_l;
                     arg_nodes[idx] = store->in(MemNode::ValueIn);
                     stores_found++;
                   }
@@ -806,17 +818,18 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
   // - 1 arg with long: format + arg + long = 4 slots → +2
   // - 2 args with int: format + arg1 + arg2 + int = 4 slots → +2
   int needed_extra = 2;
-  if (spec_count > 8) return;  // not supported
+  if (spec_count > MAX_FORMAT_SPECS) return;  // not supported
 
   uint stk_capacity = jvms()->stk_size();  // max operand stack depth
   if ((uint)(sp() + needed_extra) > stk_capacity) return;  // not enough room, skip
 
-  // Determine target method name and signature
+  // Determine target method name, signature, and target kind.
   // Static: format_s/d/x/X(format, args, meta) - signature (String, Object[], long)String
   // Virtual: formatted_s/d/x/X(args, meta) - signature (Object[], long)String (this=format)
   const char* target_name = nullptr;
   const char* target_sig = nullptr;
   char method_name_buf[16];
+  FormatTargetKind target_kind = FMT_TARGET_MULTI;  // default
 
   // For primitive overloads (format_d with int/long)
   bool use_primitive_d = false;
@@ -826,6 +839,7 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
   if (spec_count == 1 && spec_flags[0] == 0 && spec_widths[0] == 0 &&
       (spec_convs[0] == 's' || spec_convs[0] == 'd')) {
     // Single specifier without width or flags: format_s/d or formatted_s/d
+    target_kind = FMT_TARGET_SIMPLE;
     os::snprintf_checked(method_name_buf, sizeof(method_name_buf),
                          "%s_%c", is_static ? "format" : "formatted", spec_convs[0]);
     target_name = method_name_buf;
@@ -858,6 +872,7 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
              spec_convs[0] == 'x' || spec_convs[0] == 'X')) {
     // Single specifier with width/flags OR %x/%X: format_1 or formatted_1
     // Meta: byte0=specIndex, byte1=conv, byte2=width, byte3=flag
+    target_kind = FMT_TARGET_1;
     target_name = is_static ? "format_1" : "formatted_1";
     if (use_individual_args) {
       // Single arg with width/flags uses int for meta (4 bytes packed)
@@ -872,6 +887,7 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
              (spec_convs[0] == 's' || spec_convs[0] == 'd') &&
              (spec_convs[1] == 's' || spec_convs[1] == 'd')) {
     // Two specifiers with s/d only: format_ss/sd/ds/dd or formatted_ss/sd/ds/dd
+    target_kind = FMT_TARGET_SS_DD;
     os::snprintf_checked(method_name_buf, sizeof(method_name_buf),
                          "%s_%c%c", is_static ? "format" : "formatted",
                          spec_convs[0], spec_convs[1]);
@@ -890,6 +906,7 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
              (spec_convs[0] == 'x' || spec_convs[0] == 'X' ||
               spec_convs[1] == 'x' || spec_convs[1] == 'X')) {
     // Two specifiers with at least one x/X (no width/flags): format_2 or formatted_2
+    target_kind = FMT_TARGET_2;
     target_name = is_static ? "format_2" : "formatted_2";
     if (use_individual_args) {
       target_sig = is_static ? "(Ljava/lang/String;Ljava/lang/Object;Ljava/lang/Object;I)Ljava/lang/String;"
@@ -953,7 +970,13 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
   ciSymbol* nm  = ciSymbol::make(target_name);
   ciSymbol* sig = ciSymbol::make(target_sig);
   ciMethod* target = C->env()->String_klass()->find_method(nm, sig);
-  if (target == nullptr) return;
+  if (target == nullptr) {
+    NOT_PRODUCT(if (PrintOptimizeStringConcat) {
+      tty->print_cr("StringFormat: helper method %s%s not found in %s",
+                     target_name, target_sig, method()->name()->as_utf8());
+    });
+    return;
+  }
 
   // Stack: [sp-2]=format, [sp-1]=Object[] args
   if (use_primitive_d) {
@@ -962,12 +985,14 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
     if (primitive_is_int) {
       // format_d(String, int, int) - int takes 1 slot
       push(primitive_arg);
+      assert((packedSpecIndexes & ~(jlong)0xFFFFFFFF) == 0, "metadata must fit in 32 bits");
       push(_gvn.intcon((jint)packedSpecIndexes));
       extra_args = 1;  // 1 int + 1 int meta - 1 Object[] = 1
     } else {
       // format_d(String, long, int) - long takes 2 slots
       push(primitive_arg);
       push(C->top());  // second half of long
+      assert((packedSpecIndexes & ~(jlong)0xFFFFFFFF) == 0, "metadata must fit in 32 bits");
       push(_gvn.intcon((jint)packedSpecIndexes));
       extra_args = 2;  // 2 long + 1 int meta - 1 Object[] = 2
     }
@@ -990,7 +1015,7 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
       jint packedMeta;
       // format_ss/sd/ds/dd: byte0=ci1, byte1=w1, byte2=ci2, byte3=w2
       // format_2: byte0=ci1, byte1=conv1, byte2=ci2, byte3=conv2
-      if (strcmp(target_name, "format_2") == 0 || strcmp(target_name, "formatted_2") == 0) {
+      if (target_kind == FMT_TARGET_2) {
         packedMeta = (jint)(((spec_indexes[0] & 0xFF)) |
                             (((spec_convs[0] & 0xFF)) << 8) |
                             (((spec_indexes[1] & 0xFF)) << 16) |
@@ -1005,6 +1030,7 @@ void Parse::try_optimize_string_format(ciMethod*& callee, bool& call_does_dispat
       extra_args = spec_count;  // spec_count args + 1 int - 1 Object[] = spec_count
     } else {
       // Single arg uses int for meta (1 slot) to reduce stack pressure
+      assert((packedSpecIndexes & ~(jlong)0xFFFFFFFF) == 0, "metadata must fit in 32 bits");
       jint packedMeta = (jint)packedSpecIndexes;
       push(_gvn.intcon(packedMeta));
       extra_args = spec_count;  // spec_count args + 1 int - 1 Object[] = spec_count

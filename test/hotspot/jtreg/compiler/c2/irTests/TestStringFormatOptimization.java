@@ -335,6 +335,8 @@ public class TestStringFormatOptimization {
     }
 
     // ========== Three+ specifiers - uses format_multi ==========
+    // Note: format_multi keeps the Object[] (no individual arg extraction for 3+ specifiers),
+    // so AllocateArray elimination is NOT expected here.
 
     @Test
     @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_multi", "= 1" })
@@ -352,6 +354,96 @@ public class TestStringFormatOptimization {
     @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_multi", "= 1" })
     static String testFour_ssss(String a, String b, String c, String d) {
         return String.format("[%s|%s|%s|%s]", a, b, c, d);
+    }
+
+    @Test
+    @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_multi", "= 1" })
+    static String testFive_ssdsd(String a, String b, int c, String d, int e) {
+        return String.format("%s-%s-%d-%s-%d", a, b, c, d, e);
+    }
+
+    @Test
+    @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_multi", "= 1" })
+    static String testSix_ssssss(String a, String b, String c, String d, String e, String f) {
+        return String.format("%s|%s|%s|%s|%s|%s", a, b, c, d, e, f);
+    }
+
+    @Test
+    @IR(counts = { IRNode.STATIC_CALL_OF_METHOD, "format_multi", "= 1" })
+    static String testEight_dddddddd(int a, int b, int c, int d, int e, int f, int g, int h) {
+        return String.format("%d%d%d%d%d%d%d%d", a, b, c, d, e, f, g, h);
+    }
+
+    // ========== Negative tests: verify optimization does NOT happen for unsupported patterns ==========
+
+    // Unsupported flag: %+d (positive sign flag)
+    @Test
+    @IR(failOn = { IRNode.STATIC_CALL_OF_METHOD, "format_d",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_1",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_multi" })
+    static String testNoOpt_plusFlag(int v) {
+        return String.format("%+d", v);
+    }
+
+    // Unsupported flag: %-5d (left-justify)
+    @Test
+    @IR(failOn = { IRNode.STATIC_CALL_OF_METHOD, "format_d",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_1",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_multi" })
+    static String testNoOpt_leftJustify(int v) {
+        return String.format("%-5d", v);
+    }
+
+    // Unsupported flag: %,d (grouping separator)
+    @Test
+    @IR(failOn = { IRNode.STATIC_CALL_OF_METHOD, "format_d",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_1",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_multi" })
+    static String testNoOpt_grouping(int v) {
+        return String.format("%,d", v);
+    }
+
+    // Escaped %% causes fallback
+    @Test
+    @IR(failOn = { IRNode.STATIC_CALL_OF_METHOD, "format_s",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_1",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_multi" })
+    static String testNoOpt_escapedPercent(String s) {
+        return String.format("%%%s", s);
+    }
+
+    // Multi-digit width (%10s) - only single-digit 1-9 is parsed
+    @Test
+    @IR(failOn = { IRNode.STATIC_CALL_OF_METHOD, "format_s",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_1",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_multi" })
+    static String testNoOpt_width10(String s) {
+        return String.format("%10s", s);
+    }
+
+    // 9 specifiers exceeds MAX_FORMAT_SPECS (8)
+    @Test
+    @IR(failOn = { IRNode.STATIC_CALL_OF_METHOD, "format_multi" })
+    static String testNoOpt_nineSpecs(int a, int b, int c, int d, int e, int f, int g, int h, int i) {
+        return String.format("%d%d%d%d%d%d%d%d%d", a, b, c, d, e, f, g, h, i);
+    }
+
+    // Unsupported conversion: %.2f
+    @Test
+    @IR(failOn = { IRNode.STATIC_CALL_OF_METHOD, "format_d",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_1",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_multi" })
+    static String testNoOpt_floatFormat(double v) {
+        return String.format("%.2f", v);
+    }
+
+    // Locale overload: String.format(Locale, String, Object...) is not optimized
+    @Test
+    @IR(failOn = { IRNode.STATIC_CALL_OF_METHOD, "format_s",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_1",
+                   IRNode.STATIC_CALL_OF_METHOD, "format_multi" })
+    static String testNoOpt_localeOverload(String s) {
+        return String.format(java.util.Locale.US, "%s", s);
     }
 
     // ========== Run methods to verify correctness ==========
@@ -428,11 +520,29 @@ public class TestStringFormatOptimization {
         assertEquals("0xFF", testFormatted_X(255));
     }
 
-    @Run(test = {"testThree_sss", "testThree_ddd", "testFour_ssss"})
+    @Run(test = {"testThree_sss", "testThree_ddd", "testFour_ssss",
+                 "testFive_ssdsd", "testSix_ssssss", "testEight_dddddddd"})
     void runMultiTests() {
         assertEquals("a b c", testThree_sss("a", "b", "c"));
         assertEquals("1+2=3", testThree_ddd(1, 2, 3));
         assertEquals("[a|b|c|d]", testFour_ssss("a", "b", "c", "d"));
+        assertEquals("a-b-3-d-5", testFive_ssdsd("a", "b", 3, "d", 5));
+        assertEquals("a|b|c|d|e|f", testSix_ssssss("a", "b", "c", "d", "e", "f"));
+        assertEquals("12345678", testEight_dddddddd(1, 2, 3, 4, 5, 6, 7, 8));
+    }
+
+    @Run(test = {"testNoOpt_plusFlag", "testNoOpt_leftJustify", "testNoOpt_grouping",
+                 "testNoOpt_escapedPercent", "testNoOpt_width10", "testNoOpt_nineSpecs",
+                 "testNoOpt_floatFormat", "testNoOpt_localeOverload"})
+    void runNegativeTests() {
+        assertEquals("+42", testNoOpt_plusFlag(42));
+        assertEquals("42   ", testNoOpt_leftJustify(42));
+        assertEquals(String.format("%,d", 1000), testNoOpt_grouping(1000));
+        assertEquals("%hello", testNoOpt_escapedPercent("hello"));
+        assertEquals("       abc", testNoOpt_width10("abc"));
+        assertEquals("123456789", testNoOpt_nineSpecs(1, 2, 3, 4, 5, 6, 7, 8, 9));
+        assertEquals(String.format("%.2f", 3.14), testNoOpt_floatFormat(3.14));
+        assertEquals("test", testNoOpt_localeOverload("test"));
     }
 
     static void assertEquals(String expected, String actual) {
