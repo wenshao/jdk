@@ -672,6 +672,9 @@ DirectiveSet* DirectiveSet::clone(DirectiveSet const* src) {
 
   set->_intrinsic_control_words = src->_intrinsic_control_words;
   set->set_ideal_phase_name_set(src->_ideal_phase_name_set);
+  set->_trace_auto_vectorization_tags.set_from(src->_trace_auto_vectorization_tags);
+  set->_trace_merge_stores_tags.set_from(src->_trace_merge_stores_tags);
+  set->_trace_merge_loads_tags.set_from(src->_trace_merge_loads_tags);
   return set;
 }
 
