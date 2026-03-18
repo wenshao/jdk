@@ -387,12 +387,13 @@ class ConstantPoolNaNTest {
     @SuppressWarnings("unchecked")
     private static <T extends PoolEntry> T findEntry(ClassModel cm, Class<T> type) {
         var cp = cm.constantPool();
-        for (int i = 1; i < cp.size(); i++) {
+        int i = 1;
+        while (i < cp.size()) {
             PoolEntry e = cp.entryByIndex(i);
             if (type.isInstance(e)) {
                 return (T) e;
             }
-            i += e.width() - 1;
+            i += e.width();
         }
         throw new AssertionError("No entry of type " + type.getSimpleName() + " found in constant pool");
     }
