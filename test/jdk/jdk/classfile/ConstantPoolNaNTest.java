@@ -204,6 +204,186 @@ class ConstantPoolNaNTest {
         assertEquals(de, de2, "NaN double entries from original and rebuilt should be equal");
     }
 
+    @Test
+    void testFloatNaNWithDifferentBitPatternsAreDistinct() {
+        var cc = ClassFile.of();
+        byte[] bytes = cc.build(ClassDesc.of("TestClass"), clb ->
+            clb.withMethod("test", MethodTypeDesc.of(ConstantDescs.CD_void),
+                ClassFile.ACC_STATIC, mb -> mb.withCode(cob -> {
+                    var cpb = cob.constantPool();
+                    // Create NaN values with different bit patterns
+                    float nan1 = Float.intBitsToFloat(0x7fc00000); // Canonical quiet NaN
+                    float nan2 = Float.intBitsToFloat(0x7fc00001); // Different NaN with payload
+                    float nan3 = Float.intBitsToFloat(0x7f800001); // Signaling NaN
+                    float nan4 = Float.intBitsToFloat(0xffc00001); // Negative NaN
+
+                    FloatEntry f1 = cpb.floatEntry(nan1);
+                    FloatEntry f2 = cpb.floatEntry(nan2);
+                    FloatEntry f3 = cpb.floatEntry(nan3);
+                    FloatEntry f4 = cpb.floatEntry(nan4);
+
+                    // All NaNs with different bit patterns should be distinct entries
+                    assertNotSame(f1, f2, "Float NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(f1, f3, "Float NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(f1, f4, "Float NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(f2, f3, "Float NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(f2, f4, "Float NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(f3, f4, "Float NaNs with different bit patterns should not be deduplicated");
+
+                    // Verify all entries hold NaN values
+                    assertTrue(Float.isNaN(f1.floatValue()), "Entry should hold NaN");
+                    assertTrue(Float.isNaN(f2.floatValue()), "Entry should hold NaN");
+                    assertTrue(Float.isNaN(f3.floatValue()), "Entry should hold NaN");
+                    assertTrue(Float.isNaN(f4.floatValue()), "Entry should hold NaN");
+
+                    cob.return_();
+                })));
+    }
+
+    @Test
+    void testDoubleNaNWithDifferentBitPatternsAreDistinct() {
+        var cc = ClassFile.of();
+        byte[] bytes = cc.build(ClassDesc.of("TestClass"), clb ->
+            clb.withMethod("test", MethodTypeDesc.of(ConstantDescs.CD_void),
+                ClassFile.ACC_STATIC, mb -> mb.withCode(cob -> {
+                    var cpb = cob.constantPool();
+                    // Create NaN values with different bit patterns
+                    double nan1 = Double.longBitsToDouble(0x7ff8000000000000L); // Canonical quiet NaN
+                    double nan2 = Double.longBitsToDouble(0x7ff8000000000001L); // Different NaN with payload
+                    double nan3 = Double.longBitsToDouble(0x7ff0000000000001L); // Signaling NaN
+                    double nan4 = Double.longBitsToDouble(0xfff8000000000001L); // Negative NaN
+
+                    DoubleEntry d1 = cpb.doubleEntry(nan1);
+                    DoubleEntry d2 = cpb.doubleEntry(nan2);
+                    DoubleEntry d3 = cpb.doubleEntry(nan3);
+                    DoubleEntry d4 = cpb.doubleEntry(nan4);
+
+                    // All NaNs with different bit patterns should be distinct entries
+                    assertNotSame(d1, d2, "Double NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(d1, d3, "Double NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(d1, d4, "Double NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(d2, d3, "Double NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(d2, d4, "Double NaNs with different bit patterns should not be deduplicated");
+                    assertNotSame(d3, d4, "Double NaNs with different bit patterns should not be deduplicated");
+
+                    // Verify all entries hold NaN values
+                    assertTrue(Double.isNaN(d1.doubleValue()), "Entry should hold NaN");
+                    assertTrue(Double.isNaN(d2.doubleValue()), "Entry should hold NaN");
+                    assertTrue(Double.isNaN(d3.doubleValue()), "Entry should hold NaN");
+                    assertTrue(Double.isNaN(d4.doubleValue()), "Entry should hold NaN");
+
+                    cob.return_();
+                })));
+    }
+
+    @Test
+    void testFloatNaNWithDifferentBitPatternsAreNotEqual() {
+        var cc = ClassFile.of();
+
+        // Build class file with one NaN pattern
+        byte[] bytes1 = cc.build(ClassDesc.of("TestClass1"), clb ->
+            clb.withMethod("test", MethodTypeDesc.of(ConstantDescs.CD_void),
+                ClassFile.ACC_STATIC, mb -> mb.withCode(cob -> {
+                    float nan = Float.intBitsToFloat(0x7fc00000);
+                    cob.constantPool().floatEntry(nan);
+                    cob.return_();
+                })));
+
+        // Build class file with different NaN pattern
+        byte[] bytes2 = cc.build(ClassDesc.of("TestClass2"), clb ->
+            clb.withMethod("test", MethodTypeDesc.of(ConstantDescs.CD_void),
+                ClassFile.ACC_STATIC, mb -> mb.withCode(cob -> {
+                    float nan = Float.intBitsToFloat(0x7fc00001);
+                    cob.constantPool().floatEntry(nan);
+                    cob.return_();
+                })));
+
+        // Parse to get FloatEntry objects from different pools
+        ClassModel cm1 = cc.parse(bytes1);
+        ClassModel cm2 = cc.parse(bytes2);
+        FloatEntry fe1 = findEntry(cm1, FloatEntry.class);
+        FloatEntry fe2 = findEntry(cm2, FloatEntry.class);
+
+        // Both are NaN
+        assertTrue(Float.isNaN(fe1.floatValue()), "Entry should hold NaN");
+        assertTrue(Float.isNaN(fe2.floatValue()), "Entry should hold NaN");
+
+        // But they should not be equal since they have different bit patterns
+        assertNotEquals(fe1, fe2, "Float NaNs with different bit patterns should not be equal");
+    }
+
+    @Test
+    void testDoubleNaNWithDifferentBitPatternsAreNotEqual() {
+        var cc = ClassFile.of();
+
+        // Build class file with one NaN pattern
+        byte[] bytes1 = cc.build(ClassDesc.of("TestClass1"), clb ->
+            clb.withMethod("test", MethodTypeDesc.of(ConstantDescs.CD_void),
+                ClassFile.ACC_STATIC, mb -> mb.withCode(cob -> {
+                    double nan = Double.longBitsToDouble(0x7ff8000000000000L);
+                    cob.constantPool().doubleEntry(nan);
+                    cob.return_();
+                })));
+
+        // Build class file with different NaN pattern
+        byte[] bytes2 = cc.build(ClassDesc.of("TestClass2"), clb ->
+            clb.withMethod("test", MethodTypeDesc.of(ConstantDescs.CD_void),
+                ClassFile.ACC_STATIC, mb -> mb.withCode(cob -> {
+                    double nan = Double.longBitsToDouble(0x7ff8000000000001L);
+                    cob.constantPool().doubleEntry(nan);
+                    cob.return_();
+                })));
+
+        // Parse to get DoubleEntry objects from different pools
+        ClassModel cm1 = cc.parse(bytes1);
+        ClassModel cm2 = cc.parse(bytes2);
+        DoubleEntry de1 = findEntry(cm1, DoubleEntry.class);
+        DoubleEntry de2 = findEntry(cm2, DoubleEntry.class);
+
+        // Both are NaN
+        assertTrue(Double.isNaN(de1.doubleValue()), "Entry should hold NaN");
+        assertTrue(Double.isNaN(de2.doubleValue()), "Entry should hold NaN");
+
+        // But they should not be equal since they have different bit patterns
+        assertNotEquals(de1, de2, "Double NaNs with different bit patterns should not be equal");
+    }
+
+    @Test
+    void testFloatNaNWithSameBitPatternIsDeduplicated() {
+        var cc = ClassFile.of();
+        byte[] bytes = cc.build(ClassDesc.of("TestClass"), clb ->
+            clb.withMethod("test", MethodTypeDesc.of(ConstantDescs.CD_void),
+                ClassFile.ACC_STATIC, mb -> mb.withCode(cob -> {
+                    var cpb = cob.constantPool();
+                    // Create the same NaN value using bit conversion
+                    float nan = Float.intBitsToFloat(0x7fc00001);
+                    FloatEntry f1 = cpb.floatEntry(nan);
+                    FloatEntry f2 = cpb.floatEntry(nan);
+
+                    // Same NaN value with same bit pattern should be deduplicated
+                    assertSame(f1, f2, "Float NaNs with same bit pattern should be deduplicated");
+                    cob.return_();
+                })));
+    }
+
+    @Test
+    void testDoubleNaNWithSameBitPatternIsDeduplicated() {
+        var cc = ClassFile.of();
+        byte[] bytes = cc.build(ClassDesc.of("TestClass"), clb ->
+            clb.withMethod("test", MethodTypeDesc.of(ConstantDescs.CD_void),
+                ClassFile.ACC_STATIC, mb -> mb.withCode(cob -> {
+                    var cpb = cob.constantPool();
+                    // Create the same NaN value using bit conversion
+                    double nan = Double.longBitsToDouble(0x7ff8000000000001L);
+                    DoubleEntry d1 = cpb.doubleEntry(nan);
+                    DoubleEntry d2 = cpb.doubleEntry(nan);
+
+                    // Same NaN value with same bit pattern should be deduplicated
+                    assertSame(d1, d2, "Double NaNs with same bit pattern should be deduplicated");
+                    cob.return_();
+                })));
+    }
+
     @SuppressWarnings("unchecked")
     private static <T extends PoolEntry> T findEntry(ClassModel cm, Class<T> type) {
         var cp = cm.constantPool();
