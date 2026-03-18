@@ -387,8 +387,7 @@ class ConstantPoolNaNTest {
     @SuppressWarnings("unchecked")
     private static <T extends PoolEntry> T findEntry(ClassModel cm, Class<T> type) {
         var cp = cm.constantPool();
-        int i = 1;
-        while (i < cp.size()) {
+        for (int i = 1; i < cp.size(); ) {
             PoolEntry e = cp.entryByIndex(i);
             if (type.isInstance(e)) {
                 return (T) e;
