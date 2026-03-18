@@ -30,7 +30,6 @@
  */
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class EncodedLengthUTF8Overflow {
 
@@ -86,28 +85,16 @@ public class EncodedLengthUTF8Overflow {
         //   dp = 2 * length > Integer.MAX_VALUE when length > MAX_VALUE/2
         int length = Integer.MAX_VALUE / 2 + 1; // 1,073,741,824
 
-        System.out.println("Allocating " + (length / (1024 * 1024))
-            + " MB byte array...");
-        byte[] bigArray;
-        try {
-            bigArray = new byte[length];
-        } catch (OutOfMemoryError e) {
-            System.out.println("SKIP: not enough memory to allocate test array");
-            return;
-        }
-
-        // Fill with 0xFF (non-ASCII in LATIN1, signed byte = -1)
-        Arrays.fill(bigArray, (byte) 0xFF);
-
-        System.out.println("Creating LATIN1 string...");
+        System.out.println("Creating " + (length / (1024 * 1024))
+            + " char LATIN1 string...");
         String bigString;
         try {
-            bigString = new String(bigArray, StandardCharsets.ISO_8859_1);
+            // Create a LATIN1 string with non-ASCII chars (U+00FF encodes to 2 bytes in UTF-8)
+            bigString = "\u00ff".repeat(length);
         } catch (OutOfMemoryError e) {
             System.out.println("SKIP: not enough memory for String creation");
             return;
         }
-        bigArray = null; // allow GC
 
         // Use encodedLength() which directly calls encodedLengthUTF8().
         // This avoids allocating a 2GB+ output byte array, making the
