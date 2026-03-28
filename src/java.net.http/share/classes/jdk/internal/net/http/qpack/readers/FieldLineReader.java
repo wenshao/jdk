@@ -40,6 +40,12 @@ sealed abstract class FieldLineReader permits FieldLineIndexedPostBaseReader,
         FieldLineIndexedReader, FieldLineLiteralsReader, FieldLineNameRefPostBaseReader,
         FieldLineNameReferenceReader {
 
+    // Constants for StringBuilder initialization sizes
+    static final int TYPICAL_NAME_SIZE = 512;
+    static final int TYPICAL_VALUE_SIZE = 1024;
+    // Overhead constant for field line limit calculation (QPACK framing overhead)
+    private static final int FIELD_LINE_OVERHEAD = 32;
+
     final long maxSectionSize;
     boolean fromStaticTable;
     private final AtomicLong sectionSizeTracker;
@@ -73,7 +79,7 @@ sealed abstract class FieldLineReader permits FieldLineIndexedPostBaseReader,
     final int getMaxFieldLineLimit(int partiallyRead) {
         int maxLimit = -1;
         if (maxSectionSize > 0) {
-            maxLimit = Math.clamp(maxSectionSize - partiallyRead - 32 -
+            maxLimit = Math.clamp(maxSectionSize - partiallyRead - FIELD_LINE_OVERHEAD -
                                   sectionSizeTracker.get(), 0, Integer.MAX_VALUE);
         }
         return maxLimit;
@@ -98,6 +104,10 @@ sealed abstract class FieldLineReader permits FieldLineIndexedPostBaseReader,
      * @param prefix field line section prefix
      */
     void checkEntryIndex(long absoluteIndex, FieldSectionPrefix prefix) {
+        if (absoluteIndex < 0) {
+            throw QPackException.decompressionFailed(
+                    new IOException("Negative absolute index: " + absoluteIndex), true);
+        }
         if (!fromStaticTable && absoluteIndex >= prefix.requiredInsertCount()) {
             throw QPackException.decompressionFailed(
                     new IOException("header index is greater than RIC"), true);
@@ -121,7 +131,8 @@ sealed abstract class FieldLineReader permits FieldLineIndexedPostBaseReader,
             }
         } catch (IndexOutOfBoundsException | IllegalStateException | IllegalArgumentException e) {
             throw QPackException.decompressionFailed(
-                    new IOException("header fields table index", e), true);
+                    new IOException("Invalid header table index: " + index +
+                            " (table=" + (fromStaticTable ? "static" : "dynamic") + ")", e), true);
         }
         return f;
     }
