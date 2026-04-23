@@ -435,9 +435,8 @@ public final class HexFormat {
         if (delimiter.isEmpty()) {
             // Allocate the byte array and fill in the hex pairs for each byte
             rep = new byte[checkMaxArraySize(length * 2L)];
-            for (int i = 0; i < length; i++) {
+            for (int i = 0, pos = 0; i < length; i++, pos += 2) {
                 short pair = HexDigits.digitPair(bytes[fromIndex + i], ucase);
-                int pos = i * 2;
                 rep[pos] = (byte)pair;
                 rep[pos + 1] = (byte)(pair >>> 8);
             }
@@ -448,12 +447,11 @@ public final class HexFormat {
             short pair = HexDigits.digitPair(bytes[fromIndex], ucase);
             rep[0] = (byte)pair;
             rep[1] = (byte)(pair >>> 8);
-            for (int i = 1; i < length; i++) {
-                int pos = i * 3;
+            for (int i = 1, pos = 2; i < length; i++, pos += 3) {
                 pair = HexDigits.digitPair(bytes[fromIndex + i], ucase);
-                rep[pos - 1] = (byte) sep;
-                rep[pos] = (byte)pair;
-                rep[pos + 1] = (byte)(pair >>> 8);
+                rep[pos] = (byte) sep;
+                rep[pos + 1] = (byte)pair;
+                rep[pos + 2] = (byte)(pair >>> 8);
             }
         } else {
             // Delimiter formatting not to a single byte
@@ -687,8 +685,9 @@ public final class HexFormat {
      */
     public String toHexDigits(byte value) {
         byte[] rep = new byte[2];
-        rep[0] = (byte)toHighHexDigit(value);
-        rep[1] = (byte)toLowHexDigit(value);
+        short pair = HexDigits.digitPair(value, ucase);
+        rep[0] = (byte)pair;
+        rep[1] = (byte)(pair >>> 8);
         return jla.uncheckedNewStringWithLatin1Bytes(rep);
     }
 
@@ -716,10 +715,12 @@ public final class HexFormat {
      */
     public String toHexDigits(short value) {
         byte[] rep = new byte[4];
-        rep[0] = (byte)toHighHexDigit((byte)(value >> 8));
-        rep[1] = (byte)toLowHexDigit((byte)(value >> 8));
-        rep[2] = (byte)toHighHexDigit((byte)value);
-        rep[3] = (byte)toLowHexDigit((byte)value);
+        short pair = HexDigits.digitPair((byte)(value >> 8), ucase);
+        rep[0] = (byte)pair;
+        rep[1] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)value, ucase);
+        rep[2] = (byte)pair;
+        rep[3] = (byte)(pair >>> 8);
 
         return jla.uncheckedNewStringWithLatin1Bytes(rep);
     }
@@ -736,14 +737,18 @@ public final class HexFormat {
      */
     public String toHexDigits(int value) {
         byte[] rep = new byte[8];
-        rep[0] = (byte)toHighHexDigit((byte)(value >> 24));
-        rep[1] = (byte)toLowHexDigit((byte)(value >> 24));
-        rep[2] = (byte)toHighHexDigit((byte)(value >> 16));
-        rep[3] = (byte)toLowHexDigit((byte)(value >> 16));
-        rep[4] = (byte)toHighHexDigit((byte)(value >> 8));
-        rep[5] = (byte)toLowHexDigit((byte)(value >> 8));
-        rep[6] = (byte)toHighHexDigit((byte)value);
-        rep[7] = (byte)toLowHexDigit((byte)value);
+        short pair = HexDigits.digitPair((byte)(value >> 24), ucase);
+        rep[0] = (byte)pair;
+        rep[1] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)(value >> 16), ucase);
+        rep[2] = (byte)pair;
+        rep[3] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)(value >> 8), ucase);
+        rep[4] = (byte)pair;
+        rep[5] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)value, ucase);
+        rep[6] = (byte)pair;
+        rep[7] = (byte)(pair >>> 8);
 
         return jla.uncheckedNewStringWithLatin1Bytes(rep);
     }
@@ -760,22 +765,30 @@ public final class HexFormat {
      */
     public String toHexDigits(long value) {
         byte[] rep = new byte[16];
-        rep[0] = (byte)toHighHexDigit((byte)(value >>> 56));
-        rep[1] = (byte)toLowHexDigit((byte)(value >>> 56));
-        rep[2] = (byte)toHighHexDigit((byte)(value >>> 48));
-        rep[3] = (byte)toLowHexDigit((byte)(value >>> 48));
-        rep[4] = (byte)toHighHexDigit((byte)(value >>> 40));
-        rep[5] = (byte)toLowHexDigit((byte)(value >>> 40));
-        rep[6] = (byte)toHighHexDigit((byte)(value >>> 32));
-        rep[7] = (byte)toLowHexDigit((byte)(value >>> 32));
-        rep[8] = (byte)toHighHexDigit((byte)(value >>> 24));
-        rep[9] = (byte)toLowHexDigit((byte)(value >>> 24));
-        rep[10] = (byte)toHighHexDigit((byte)(value >>> 16));
-        rep[11] = (byte)toLowHexDigit((byte)(value >>> 16));
-        rep[12] = (byte)toHighHexDigit((byte)(value >>> 8));
-        rep[13] = (byte)toLowHexDigit((byte)(value >>> 8));
-        rep[14] = (byte)toHighHexDigit((byte)value);
-        rep[15] = (byte)toLowHexDigit((byte)value);
+        short pair = HexDigits.digitPair((byte)(value >>> 56), ucase);
+        rep[0] = (byte)pair;
+        rep[1] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)(value >>> 48), ucase);
+        rep[2] = (byte)pair;
+        rep[3] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)(value >>> 40), ucase);
+        rep[4] = (byte)pair;
+        rep[5] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)(value >>> 32), ucase);
+        rep[6] = (byte)pair;
+        rep[7] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)(value >>> 24), ucase);
+        rep[8] = (byte)pair;
+        rep[9] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)(value >>> 16), ucase);
+        rep[10] = (byte)pair;
+        rep[11] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)(value >>> 8), ucase);
+        rep[12] = (byte)pair;
+        rep[13] = (byte)(pair >>> 8);
+        pair = HexDigits.digitPair((byte)value, ucase);
+        rep[14] = (byte)pair;
+        rep[15] = (byte)(pair >>> 8);
 
         return jla.uncheckedNewStringWithLatin1Bytes(rep);
     }
