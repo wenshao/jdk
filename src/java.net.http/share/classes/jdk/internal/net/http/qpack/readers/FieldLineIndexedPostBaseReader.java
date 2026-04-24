@@ -49,6 +49,19 @@ final class FieldLineIndexedPostBaseReader extends FieldLineReader {
         this.logger = logger;
     }
 
+    /**
+     * Configures the reader based on the first byte of the field line representation.
+     * According to QPACK specification, the post-base indexed format is:
+     *   0   1   2   3   4   5   6   7
+     * +---+---+---+---+---+---+---+---+
+     * | 0 | 0 | 0 | 1 |  Index (4+)   |
+     * +---+---+---+---+---------------+
+     * The index is relative to the base of the dynamic table.
+     *
+     * @param b the first byte of the field line representation (not currently used
+     *          by the implementation, as all configuration is determined by the
+     *          bit pattern already checked)
+     */
     public void configure(int b) {
         integerReader.configure(4);
     }

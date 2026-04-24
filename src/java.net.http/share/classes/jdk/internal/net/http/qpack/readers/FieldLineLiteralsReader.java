@@ -51,10 +51,21 @@ final class FieldLineLiteralsReader extends FieldLineReader {
         super(null, maxSectionSize, sectionSizeTracker);
         this.logger = logger;
         stringReader = new StringReader(new ReaderError(QPACK_DECOMPRESSION_FAILED, false));
-        name = new StringBuilder(512);
-        value = new StringBuilder(1024);
+        name = new StringBuilder(TYPICAL_NAME_SIZE);
+        value = new StringBuilder(TYPICAL_VALUE_SIZE);
     }
 
+    /**
+     * Configures the reader based on the first byte of the field line representation.
+     * According to QPACK specification, the literal with literal name format is:
+     *   0   1   2   3   4   5   6   7
+     * +---+---+---+---+---+---+---+---+
+     * | 0 | 0 | 1 | N | H |NameLen(3+)|
+     * +---+---+-----------------------+
+     * Where N=1 indicates never indexed.
+     *
+     * @param b the first byte of the field line representation
+     */
     public void configure(int b) {
         hideIntermediary = (b & 0b0001_0000) != 0;
     }
