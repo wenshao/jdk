@@ -55,9 +55,20 @@ final class FieldLineNameReferenceReader extends FieldLineReader {
         var errorToReport = new ReaderError(QPACK_DECOMPRESSION_FAILED, false);
         integerReader = new IntegerReader(errorToReport);
         stringReader = new StringReader(errorToReport);
-        value = new StringBuilder(1024);
+        value = new StringBuilder(TYPICAL_VALUE_SIZE);
     }
 
+    /**
+     * Configures the reader based on the first byte of the field line representation.
+     * According to QPACK specification, the literal with name reference format is:
+     *   0   1   2   3   4   5   6   7
+     * +---+---+---+---+---+---+---+---+
+     * | 0 | 1 | N | T | NameIndex (4+)|
+     * +---+---+-----------------------+
+     * Where N=1 indicates never indexed, T=1 indicates static table.
+     *
+     * @param b the first byte of the field line representation
+     */
     public void configure(int b) {
         fromStaticTable = (b & 0b0001_0000) != 0;
         hideIntermediary = (b & 0b0010_0000) != 0;

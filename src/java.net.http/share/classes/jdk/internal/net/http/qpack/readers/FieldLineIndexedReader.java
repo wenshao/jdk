@@ -49,6 +49,17 @@ final class FieldLineIndexedReader extends FieldLineReader {
                 new ReaderError(Http3Error.QPACK_DECOMPRESSION_FAILED, false));
     }
 
+    /**
+     * Configures the reader based on the first byte of the field line representation.
+     * According to QPACK specification, the indexed field line format is:
+     *   0   1   2   3   4   5   6   7
+     * +---+---+---+---+---+---+---+---+
+     * | 1 | T |     Index (6+)        |
+     * +---+---------------------------+
+     * Where T=1 indicates static table, T=0 indicates dynamic table.
+     *
+     * @param b the first byte of the field line representation
+     */
     public void configure(int b) {
         integerReader.configure(6);
         fromStaticTable = (b & 0b0100_0000) != 0;

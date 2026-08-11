@@ -55,9 +55,20 @@ final class FieldLineNameRefPostBaseReader extends FieldLineReader {
         var errorToReport = new ReaderError(QPACK_DECOMPRESSION_FAILED, false);
         integerReader = new IntegerReader(errorToReport);
         stringReader = new StringReader(errorToReport);
-        value = new StringBuilder(1024);
+        value = new StringBuilder(TYPICAL_VALUE_SIZE);
     }
 
+    /**
+     * Configures the reader based on the first byte of the field line representation.
+     * According to QPACK specification, the post-base name reference format is:
+     *   0   1   2   3   4   5   6   7
+     * +---+---+---+---+---+---+---+---+
+     * | 0 | 0 | 0 | 0 | N |NameIdx(3+)|
+     * +---+---+---+---+---+-----------+
+     * Where N=1 indicates never indexed.
+     *
+     * @param b the first byte of the field line representation
+     */
     public void configure(int b) {
         hideIntermediary = (b & 0b0000_1000) != 0;
         integerReader.configure(3);
